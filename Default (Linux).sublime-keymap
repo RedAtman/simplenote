@@ -1,0 +1,11 @@
+[
+    {
+        "keys": ["super+shift+s", "super+shift+s"], "command": "show_notes"
+    },
+    {
+        "keys": ["super+shift+s", "super+shift+n"], "command": "create_note"
+    },
+    {
+        "keys": ["super+shift+s", "super+shift+d"], "command": "delete_note"
+    }
+]
