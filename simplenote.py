@@ -1,9 +1,11 @@
+from ast import Dict
 import copy
 from datetime import datetime
 import functools
 import logging
 import os
 import pickle
+import re
 import sys
 from threading import Lock, Semaphore
 import time
@@ -24,7 +26,7 @@ from operations import (
     OperationManager,
 )
 from utils.patterns.singleton.base import Singleton
-from utils.sublime import show_message
+from utils.sublime import close_view, show_message
 
 
 logger = logging.getLogger()
@@ -32,10 +34,10 @@ logger = logging.getLogger()
 
 PACKAGE_PATH = os.path.join(sublime.packages_path(), CONFIG.PROJECT_NAME)
 TEMP_PATH = os.path.join(PACKAGE_PATH, "temp")
+SETTINGS = sublime.load_settings(CONFIG.SETTINGS_FILE)
 
 
 class SimplenoteManager(Singleton):
-    SETTINGS = sublime.load_settings(CONFIG.SETTINGS_FILE)
     NOTE_CACHE_FILE_PATH = os.path.join(PACKAGE_PATH, CONFIG.NOTE_CACHE_FILE)
     notes: List[Any] = []
 
@@ -70,6 +72,53 @@ class SimplenoteManager(Singleton):
     @classmethod
     def save_notes(cls):
         cls._save_notes(cls.NOTE_CACHE_FILE_PATH, cls.notes)
+
+    @staticmethod
+    def get_filename_for_note(title_extension_map: List[Dict], note: Dict) -> str:
+        # Take out invalid characters from title and use that as base for the name
+        import string
+
+        valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+        note_name = get_note_name(note)
+        base = "".join(c for c in note_name if c in valid_chars)
+        # Determine extension based on title
+        extension = ""
+        if title_extension_map:
+            for item in title_extension_map:
+                pattern = re.compile(item["title_regex"], re.UNICODE)
+                logger.info(("pattern", pattern, "note_name", note_name, re.search(pattern, note_name)))
+                if re.search(pattern, note_name):
+                    extension = "." + item["extension"]
+                    break
+        return base + " (" + note["key"] + ")" + extension
+
+    @classmethod
+    def _get_filename_for_note(cls, note: Dict):
+        title_extension_map = SETTINGS.get("title_extension_map")
+        assert isinstance(title_extension_map, list), f"Invalid title_extension_map: {title_extension_map}"
+        return cls.get_filename_for_note(title_extension_map, note)
+
+    @classmethod
+    def get_path_for_note(cls, note: Dict):
+        return os.path.join(TEMP_PATH, cls._get_filename_for_note(note))
+
+    @classmethod
+    def get_note_from_path(cls, view_filepath: str):
+        note = None
+        if view_filepath:
+            if os.path.dirname(view_filepath) == TEMP_PATH:
+                view_note_filename = os.path.split(view_filepath)[1]
+                note = [note for note in cls.notes if cls._get_filename_for_note(note) == view_note_filename]
+                if not note:
+
+                    pattern = re.compile(r"\((.*?)\)")
+                    results = re.findall(pattern, view_note_filename)
+                    if results:
+                        noteKey = results[len(results) - 1]
+                        note = [note for note in cls.notes if note["key"] == noteKey]
+                if note:
+                    note = note[0]
+        return note
 
 
 simplenote_manager = SimplenoteManager()
@@ -129,7 +178,7 @@ def write_note_to_path(note, filepath):
 def open_note(note, window=None):
     if not window:
         window = sublime.active_window()
-    filepath = get_path_for_note(note)
+    filepath = SimplenoteManager.get_path_for_note(note)
     write_note_to_path(note, filepath)
     return window.open_file(filepath)
 
@@ -150,54 +199,8 @@ def get_note_name(note):
     return title
 
 
-def get_filename_for_note(note):
-    # Take out invalid characters from title and use that as base for the name
-    import string
-
-    valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-    note_name = get_note_name(note)
-    base = "".join(c for c in note_name if c in valid_chars)
-    # Determine extension based on title
-    extension_map = simplenote_manager.SETTINGS.get("title_extension_map")
-    extension = ""
-    if extension_map:
-        for item in extension_map:
-            import re
-
-            pattern = re.compile(item["title_regex"], re.UNICODE)
-            if re.search(pattern, note_name):
-                extension = "." + item["extension"]
-                break
-
-    return base + " (" + note["key"] + ")" + extension
-
-
-def get_path_for_note(note):
-    return os.path.join(TEMP_PATH, get_filename_for_note(note))
-
-
-def get_note_from_path(view_filepath):
-    note = None
-    if view_filepath:
-        if os.path.dirname(view_filepath) == TEMP_PATH:
-            note_filename = os.path.split(view_filepath)[1]
-            note = [note for note in simplenote_manager.notes if get_filename_for_note(note) == note_filename]
-            if not note:
-                import re
-
-                pattern = re.compile(r"\((.*?)\)")
-                results = re.findall(pattern, note_filename)
-                if results:
-                    noteKey = results[len(results) - 1]
-                    note = [note for note in simplenote_manager.notes if note["key"] == noteKey]
-            if note:
-                note = note[0]
-
-    return note
-
-
 def handle_open_filename_change(old_file_path, updated_note):
-    new_file_path = get_path_for_note(updated_note)
+    new_file_path = SimplenoteManager.get_path_for_note(updated_note)
     old_note_view = None
     new_view = None
     # If name changed
@@ -238,15 +241,6 @@ def handle_open_filename_change(old_file_path, updated_note):
     return False
 
 
-def close_view(view):
-    view.set_scratch(True)
-    view_window = view.window()
-    if not view_window:
-        view_window = sublime.active_window()
-    view_window.focus_view(view)
-    view_window.run_command("close_file")
-
-
 def synch_note_resume(existing_note_entry, updated_note_resume):
     for key in updated_note_resume:
         existing_note_entry[key] = updated_note_resume[key]
@@ -257,7 +251,7 @@ def update_note(existing_note, updated_note):
     synch_note_resume(existing_note, updated_note)
     existing_note["local_modifydate"] = time.time()
     existing_note["needs_update"] = False
-    filename = get_filename_for_note(existing_note)
+    filename = SimplenoteManager._get_filename_for_note(existing_note)
     logger.info(("Updating note", "filename", filename, "existing_note", existing_note))
     existing_note["filename"] = filename
 
@@ -283,9 +277,9 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
                     break
 
         view_filepath = view.file_name()
-        note = get_note_from_path(view_filepath)
+        note = SimplenoteManager.get_note_from_path(view_filepath)
         if note:
-            debounce_time = simplenote_manager.SETTINGS.get("autosave_debounce_time")
+            debounce_time = SETTINGS.get("autosave_debounce_time")
             if not debounce_time:
                 return
             debounce_time = debounce_time * 1000
@@ -307,7 +301,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
 
     def on_load(self, view):
         view_filepath = view.file_name()
-        note = get_note_from_path(view_filepath)
+        note = SimplenoteManager.get_note_from_path(view_filepath)
         SETTINGS = sublime.load_settings(CONFIG.SETTINGS_FILE)
         note_syntax = SETTINGS.get("note_syntax")
         logger.info(("note_syntax", note_syntax))
@@ -336,7 +330,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
                 # If we didn't reopen the view with the name changed, but the content has changed
                 # we have to update the view anyway
                 if updated_from_server and not name_changed:
-                    filepath = get_path_for_note(note)
+                    filepath = SimplenoteManager.get_path_for_note(note)
                     write_note_to_path(note, filepath)
                     sublime.set_timeout(functools.partial(open_view.run_command, "revert"), 0)
                 break
@@ -345,7 +339,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
 
     def on_post_save(self, view):
         view_filepath = view.file_name()
-        note = get_note_from_path(view_filepath)
+        note = SimplenoteManager.get_note_from_path(view_filepath)
         if note:
             # Update with new content
             updated_note = copy.deepcopy(note)
@@ -361,6 +355,22 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
                 {"content": updated_note["content"], "old_file_path": view_filepath, "open_view": view},
             )
             OperationManager().add_operation(update_op)
+
+
+# from functools import cmp_to_key
+# import logging
+# import os
+# from venv import logger
+
+# import sublime_plugin
+
+# from config import CONFIG
+# from operations import NoteCreator, NoteDeleter, OperationManager
+# from simplenote import simplenote_manager
+# from utils.sublime import close_view, show_message
+
+
+# logger = logging.getLogger()
 
 
 class ShowNotesCommand(sublime_plugin.ApplicationCommand):
@@ -510,8 +520,8 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
     def merge_open(self, updated_notes, existing_notes, dirty=False):
         logger.info(("caller", sys._getframe(1).f_code.co_name))
         logger.info(("updated_notes", updated_notes, "existing_notes", existing_notes, "dirty", dirty))
-        auto_overwrite_on_conflict = simplenote_manager.SETTINGS.get("on_conflict_use_server")
-        do_nothing_on_conflict = simplenote_manager.SETTINGS.get("on_conflict_leave_alone")
+        auto_overwrite_on_conflict = SETTINGS.get("on_conflict_use_server")
+        do_nothing_on_conflict = SETTINGS.get("on_conflict_leave_alone")
         update = False
 
         # If it's not a conflict or it's a conflict we can resolve
@@ -528,8 +538,8 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
                     for updated_note in updated_notes:
                         # If we find the updated note
                         if note["key"] == updated_note["key"]:
-                            old_file_path = get_path_for_note(note)
-                            new_file_path = get_path_for_note(updated_note)
+                            old_file_path = SimplenoteManager.get_path_for_note(note)
+                            new_file_path = SimplenoteManager.get_path_for_note(updated_note)
                             # Update contents
                             write_note_to_path(updated_note, new_file_path)
                             # Handle filename change (note has the old filename value)
@@ -599,7 +609,7 @@ class DeleteNoteCommand(sublime_plugin.ApplicationCommand):
         simplenote_manager.save_notes()
         try:
             # TODO: FileNotFoundError: [Errno 2] No such file or directory: '/Users/nut/Library/Application Support/Sublime Text/Packages/Simplenote/temp/555 (2b6b91f48c4042548d8cbb78dc3afc7e)'
-            os.remove(get_path_for_note(self.note))
+            os.remove(SimplenoteManager.get_path_for_note(self.note))
         except OSError as err:
             logger.exception(err)
             pass
@@ -608,7 +618,7 @@ class DeleteNoteCommand(sublime_plugin.ApplicationCommand):
     def run(self):
 
         self.note_view = sublime.active_window().active_view()
-        self.note = get_note_from_path(self.note_view.file_name())
+        self.note = SimplenoteManager.get_note_from_path(self.note_view.file_name())
         if self.note:
             deletion_op = NoteDeleter(note=self.note, simplenote_instance=simplenote_manager.instance)
             deletion_op.set_callback(self.handle_deletion)
@@ -630,7 +640,7 @@ def sync():
     else:
         logger.info("Sync omited")
         # logger.info("Sync omited %s" % time.time())
-    sync_every = simplenote_manager.SETTINGS.get("sync_every", 0) or 0
+    sync_every = SETTINGS.get("sync_every", 0) or 0
     if sync_every > 0:
         sublime.set_timeout(sync, sync_every * 1000)
 
@@ -642,7 +652,7 @@ def start():
 
 
 def reload_if_needed():
-    logger.info(("Reloading", simplenote_manager.SETTINGS.get("autostart")))
+    logger.info(("Reloading", SETTINGS.get("autostart")))
     # RELOAD_CALLS = locals().get("RELOAD_CALLS", -1)
     RELOAD_CALLS = CONFIG.RELOAD_CALLS
     # Sublime calls this twice for some reason :(
@@ -651,7 +661,7 @@ def reload_if_needed():
         logger.info("Reload call %s" % RELOAD_CALLS)
         return
 
-    if simplenote_manager.SETTINGS.get("autostart"):
+    if SETTINGS.get("autostart"):
         sublime.set_timeout(start, 2000)  # I know...
         logger.info("Auto Starting")
 
@@ -667,10 +677,10 @@ def plugin_loaded():
         if f not in note_files:
             os.remove(os.path.join(TEMP_PATH, f))
 
-    logger.info(("SETTINGS.username: ", simplenote_manager.SETTINGS.get("username")))
-    simplenote_manager.SETTINGS.clear_on_change("username")
-    simplenote_manager.SETTINGS.clear_on_change("password")
-    simplenote_manager.SETTINGS.add_on_change("username", reload_if_needed)
-    simplenote_manager.SETTINGS.add_on_change("password", reload_if_needed)
+    logger.info(("SETTINGS.username: ", SETTINGS.get("username")))
+    SETTINGS.clear_on_change("username")
+    SETTINGS.clear_on_change("password")
+    SETTINGS.add_on_change("username", reload_if_needed)
+    SETTINGS.add_on_change("password", reload_if_needed)
 
     reload_if_needed()
