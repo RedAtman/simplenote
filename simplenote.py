@@ -2,7 +2,7 @@ import copy
 from datetime import datetime
 import functools
 import logging
-from os import listdir, makedirs, path, remove
+import os
 import pickle
 import sys
 from threading import Lock, Semaphore
@@ -30,13 +30,13 @@ from utils.sublime import show_message
 logger = logging.getLogger()
 
 
-PACKAGE_PATH = path.join(sublime.packages_path(), CONFIG.PROJECT_NAME)
-TEMP_PATH = path.join(PACKAGE_PATH, "temp")
+PACKAGE_PATH = os.path.join(sublime.packages_path(), CONFIG.PROJECT_NAME)
+TEMP_PATH = os.path.join(PACKAGE_PATH, "temp")
 
 
 class SimplenoteManager(Singleton):
     SETTINGS = sublime.load_settings(CONFIG.SETTINGS_FILE)
-    NOTE_CACHE_FILE_PATH = path.join(PACKAGE_PATH, CONFIG.NOTE_CACHE_FILE)
+    NOTE_CACHE_FILE_PATH = os.path.join(PACKAGE_PATH, CONFIG.NOTE_CACHE_FILE)
     notes: List[Any] = []
 
     def __init__(self):
@@ -173,14 +173,14 @@ def get_filename_for_note(note):
 
 
 def get_path_for_note(note):
-    return path.join(TEMP_PATH, get_filename_for_note(note))
+    return os.path.join(TEMP_PATH, get_filename_for_note(note))
 
 
 def get_note_from_path(view_filepath):
     note = None
     if view_filepath:
-        if path.dirname(view_filepath) == TEMP_PATH:
-            note_filename = path.split(view_filepath)[1]
+        if os.path.dirname(view_filepath) == TEMP_PATH:
+            note_filename = os.path.split(view_filepath)[1]
             note = [note for note in simplenote_manager.notes if get_filename_for_note(note) == note_filename]
             if not note:
                 import re
@@ -231,7 +231,7 @@ def handle_open_filename_change(old_file_path, updated_note):
             else:
                 sublime.active_window().focus_view(old_active_view)
         try:
-            remove(old_file_path)
+            os.remove(old_file_path)
         except OSError as err:
             logger.exception(err)
         return True
@@ -458,9 +458,9 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
                     continue
 
                 if view.is_dirty():
-                    open_files_dirty.append(path.split(view.file_name())[1])
+                    open_files_dirty.append(os.path.split(view.file_name())[1])
                 else:
-                    open_files_ok.append(path.split(view.file_name())[1])
+                    open_files_ok.append(os.path.split(view.file_name())[1])
 
         # Classify notes
         lu = []
@@ -599,7 +599,7 @@ class DeleteNoteCommand(sublime_plugin.ApplicationCommand):
         simplenote_manager.save_notes()
         try:
             # TODO: FileNotFoundError: [Errno 2] No such file or directory: '/Users/nut/Library/Application Support/Sublime Text/Packages/Simplenote/temp/555 (2b6b91f48c4042548d8cbb78dc3afc7e)'
-            remove(get_path_for_note(self.note))
+            os.remove(get_path_for_note(self.note))
         except OSError as err:
             logger.exception(err)
             pass
@@ -661,11 +661,11 @@ def plugin_loaded():
     if len(simplenote_manager.notes):
         logger.info(("Loaded notes: ", simplenote_manager.notes[0]))
     note_files = [note["filename"] for note in simplenote_manager.notes]
-    if not path.exists(TEMP_PATH):
-        makedirs(TEMP_PATH)
-    for f in listdir(TEMP_PATH):
+    if not os.path.exists(TEMP_PATH):
+        os.makedirs(TEMP_PATH)
+    for f in os.listdir(TEMP_PATH):
         if f not in note_files:
-            remove(path.join(TEMP_PATH, f))
+            os.remove(os.path.join(TEMP_PATH, f))
 
     logger.info(("SETTINGS.username: ", simplenote_manager.SETTINGS.get("username")))
     simplenote_manager.SETTINGS.clear_on_change("username")
