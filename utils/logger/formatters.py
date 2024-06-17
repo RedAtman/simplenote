@@ -1,6 +1,9 @@
+import functools
 import logging
 import os
 from typing import Any, Callable, Dict, List, Optional, Union
+
+from .output import output
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,43 +28,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 #         else:
 #             return log
 #         return prefix + " " + log
-
-
-# class RelativePathFilter(logging.Filter):
-#     def filter(self, record: logging.LogRecord):
-#         record.relpath = record.pathname.replace(f'{BASE_DIR}/', '', 1)
-#         return True
-
-
-class RelativePathFilter(logging.Filter):
-
-    def filter(self, record):
-        pathname = record.pathname
-        record.relativepath = None
-        abs_sys_paths = map(os.path.abspath, sys.path)
-        for path in sorted(abs_sys_paths, key=len, reverse=True):
-            if not path.endswith(os.sep):
-                path += os.sep
-            if pathname.startswith(path):
-                record.relativepath = os.path.relpath(pathname, path)
-                break
-        return super().filter(record)
-
-
-class RelPathFilter(logging.Filter):
-
-    def filter(self, record):
-        record.relpath = os.path.relpath(record.pathname)
-        return super().filter(record)
-
-
-class LevelColorFilter(logging.Filter):
-
-    def filter(self, record: logging.LogRecord):
-        super().filter(record)
-        if self.__class__.__name__.upper().startswith(record.levelname):
-            return True
-        return False
 
 
 class RelativePathFormatter(logging.Formatter):
@@ -141,59 +107,14 @@ class LevelColor(IntEnum):
     EXCEPTION = Color.RED
 
 
-import functools
-from pprint import pformat
-import sys
-
-from pygments import formatters, highlight, lexers
-
-
 class ColorFormatter(logging.Formatter):
     # TODO: Currently, configuration is only supported in one formatter.
 
-    FORMAT_PATTERN = (
-        f"[%(levelname)s]%(pathname)s:%(lineno)d: %(funcName)s: %(message)s"
-    )
+    FORMAT_PATTERN = f"[%(levelname)s]%(pathname)s:%(lineno)d: %(funcName)s: %(message)s"
 
     @staticmethod
     def format_msg(msg: Union[Dict[str, Any], List[Any]]):
-        return highlight(
-            pformat(msg, indent=1, width=80, depth=9),
-            lexers.JsonnetLexer(),
-            # lexers.JsonLexer(),
-            # lexers.PythonTracebackLexer(),
-            # formatters.TerminalTrueColorFormatter(
-            #     # style="algol",
-            #     # style="manni",
-            #     # style="material",
-            #     style="paraiso-dark",
-            #     # style="dracula",
-            #     # style="friendly",
-            #     # style="github-dark",
-            #     # style="gruvbox-dark",
-            #     # style="gruvbox-light",
-            #     # style="native",
-            #     # style="rrt",
-            #     # style="stata-light",
-            #     # style="tango",
-            #     # style="trac",
-            #     # style="xcode",
-            # ),
-            # formatters.TerminalFormatter(
-            #     bg="dark",
-            #     style="paraiso-dark",
-            # ),
-            formatters.Terminal256Formatter(
-                # style="colorful",
-                # style="lightbulb",
-                # style="material",
-                style="nord",
-                # style="staroffice",
-                # style="zenburn",
-            ),
-            # formatters.TerminalFormatter(bg="dark"),
-            # formatters.TerminalFormatter(bg="light"),
-        )
+        return output(msg)
 
     def format(self, record: logging.LogRecord) -> str:
         level_color_num = getattr(LevelColor, record.levelname, LevelColor.DEFAULT)
@@ -209,9 +130,7 @@ class ColorFormatter(logging.Formatter):
 def json_wrap(fuc: Callable[..., Any]):
     @functools.wraps(fuc)
     def inner(self: logging.Logger, msg, *args, **kwargs):
-        level_color: LevelColor = getattr(
-            LevelColor, fuc.__name__.upper(), LevelColor.DEFAULT
-        )
+        level_color: LevelColor = getattr(LevelColor, fuc.__name__.upper(), LevelColor.DEFAULT)
         filename, lineno, name, sinfo = self.findCaller(stack_info=True)
         prefix = f"[{Color(level_color).format('JSON')}]: {Color.GREY_OK.format(filename)}:{lineno}: {name}:"
         # Print the stack trace
@@ -220,9 +139,7 @@ def json_wrap(fuc: Callable[..., Any]):
             #     f"{prefix}\n{ColorFormatter.format_msg(msg)}",
             #     # end='',
             # )
-            self._log(
-                level_color, f"{prefix}\n{ColorFormatter.format_msg(msg)}", (), **kwargs
-            )
+            self._log(level_color, f"{prefix}\n{ColorFormatter.format_msg(msg)}", (), **kwargs)
             return
         msg = f"{prefix} {Color(level_color).format(msg)}"
         # print(msg)
@@ -234,7 +151,6 @@ def json_wrap(fuc: Callable[..., Any]):
 # Second method
 # for level in ("debug", "info", "warning", "error", "exception", "critical"):
 #     setattr(logging.Logger, level, json_wrap(getattr(logging.Logger, level)))
-
 
 if __name__ == "__main__":
     print(Color.RED.format("hello"))

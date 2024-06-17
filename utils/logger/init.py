@@ -1,15 +1,20 @@
 import logging
 import logging.config
 import os
+import sys
 
 
-ENV = os.getenv("ENV", "development")
-FORMATTER = "color" if ENV == "development" else "standard"
-LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "logs")
+BASE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ENV = os.getenv("ENV")
+LOG_FORMATTER = "color" if ENV == "development" else "standard"
+LOG_DIR = os.path.join(BASE_PATH, "logs")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
-BACKUP_COUNT = 9
+LOG_BACKUP_COUNT = os.getenv("LOG_BACKUP_COUNT", 5)
+if BASE_PATH not in sys.path:
+    print(BASE_PATH)
+    sys.path.insert(0, BASE_PATH)
 
-LOGGING_CONFIG = {
+LOG_CONFIG = {
     "version": 1,
     "disable_existing_loggers": True,
     "formatters": {
@@ -19,106 +24,134 @@ LOGGING_CONFIG = {
         "standard": {
             "format": "%(asctime)s:[%(levelname)s]:%(pathname)s:%(lineno)d:%(funcName)s: %(message)s",
         },
-        # "color": {
-        #     "class": "utils.logger.utils.ColorFormatter",
-        #     "format": "[%(levelname)s]%(relpath)s:%(lineno)d:%(funcName)s: %(message)s",
-        # },
+        "color": {
+            "class": "utils.logger.formatters.ColorFormatter",
+            "format": "[%(levelname)s]%(relpath)s:%(lineno)d:%(funcName)s: %(message)s",
+        },
     },
     "filters": {
-        # "default": {"()": logging.Filter},
-        # "relpath": {"()": "utils.logger.utils.RelPathFilter"},
+        "default": {"()": logging.Filter},
+        "relpath": {"()": "utils.logger.filters.RelPathFilter"},
+        "debug": {"()": "utils.logger.filters.LevelMatchFilter", "level": "debug", "operator": "eq"},
+        "info": {"()": "utils.logger.filters.LevelMatchFilter", "level": "info", "operator": "eq"},
+        "warning": {"()": "utils.logger.filters.LevelMatchFilter", "level": "warning", "operator": "eq"},
+        "error": {"()": "utils.logger.filters.LevelMatchFilter", "level": "error", "operator": "eq"},
+        "critical": {"()": "utils.logger.filters.LevelMatchFilter", "level": "critical", "operator": "eq"},
     },
     "handlers": {
         "default": {
-            "level": "DEBUG",
-            "formatter": "standard",
             # Default is stderr
             # 'stream': 'ext://sys.stdout',
             # 'class': 'logging.StreamHandler',
             "class": "logging.handlers.TimedRotatingFileHandler",
-            # "filename": f"{LOG_DIR}/default.log",
-            "filename": "%s/default.log" % LOG_DIR,
+            "filename": f"{LOG_DIR}/default.log",
             "when": "midnight",
-            "backupCount": BACKUP_COUNT,
+            # "interval": 1,
+            "backupCount": LOG_BACKUP_COUNT,
             "encoding": "utf8",
-            # "filters": ["default"],
+            # "delay": False,
+            # "utc": False,
+            # "atTime": None,
+            # "errors": None,
+            "level": "DEBUG",
+            "formatter": "standard",
+            "filters": ["default"],
         },
         "info": {
-            "level": "INFO",
-            "formatter": "standard",
-            # Default is stderr
-            # "stream": "ext://sys.stdout",
-            # "class": "logging.StreamHandler",
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "when": "midnight",
-            "backupCount": BACKUP_COUNT,
-            # 'maxBytes': 5*1024*1024,
-            # "filename": f"{LOG_DIR}/info.log",
-            "filename": "%s/info.log" % LOG_DIR,
-            "encoding": "utf8",
-            # 'filters': ['default'],
-        },
-        "warning": {
-            "level": "WARNING",
-            "formatter": "standard",
-            # Default is stderr
-            # "stream": "ext://sys.stdout",
-            # "class": "logging.StreamHandler",
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "when": "midnight",
-            "backupCount": BACKUP_COUNT,
-            # 'maxBytes': 5*1024*1024,
-            "encoding": "utf8",
-            # "filename": f"{LOG_DIR}/warning.log",
-            "filename": "%s/warning.log" % LOG_DIR,
-            # "filters": ["default"],
-        },
-        "error": {
-            "level": "ERROR",
-            "formatter": "standard",
             # Default is stderr
             # 'stream': 'ext://sys.stdout',
+            # 'class': 'logging.StreamHandler',
             "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": f"{LOG_DIR}/info.log",
             "when": "midnight",
-            "backupCount": BACKUP_COUNT,
-            # 'maxBytes': 5*1024*1024,
-            # "filename": f"{LOG_DIR}/error.log",
-            "filename": "%s/error.log" % LOG_DIR,
+            # "interval": 1,
+            "backupCount": LOG_BACKUP_COUNT,
             "encoding": "utf8",
-            # "filters": ["default"],
+            # "delay": False,
+            # "utc": False,
+            # "atTime": None,
+            # "errors": None,
+            "level": "INFO",
+            "formatter": "standard",
+            # 'maxBytes': 5*1024*1024,
+            "filters": ["info"],
+        },
+        "warning": {
+            # Default is stderr
+            # 'stream': 'ext://sys.stdout',
+            # 'class': 'logging.StreamHandler',
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": f"{LOG_DIR}/warning.log",
+            "when": "midnight",
+            # "interval": 1,
+            "backupCount": LOG_BACKUP_COUNT,
+            "encoding": "utf8",
+            # "delay": False,
+            # "utc": False,
+            # "atTime": None,
+            # "errors": None,
+            "level": "WARNING",
+            "formatter": "standard",
+            # 'maxBytes': 5*1024*1024,
+            "filters": ["warning"],
+        },
+        "error": {
+            # Default is stderr
+            # 'stream': 'ext://sys.stdout',
+            # 'class': 'logging.StreamHandler',
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": f"{LOG_DIR}/error.log",
+            "when": "midnight",
+            # "interval": 1,
+            "backupCount": LOG_BACKUP_COUNT,
+            "encoding": "utf8",
+            # "delay": False,
+            # "utc": False,
+            # "atTime": None,
+            # "errors": None,
+            "level": "ERROR",
+            "formatter": "standard",
+            # 'maxBytes': 5*1024*1024,
+            "filters": ["error"],
         },
         "critical": {
             "level": "CRITICAL",
-            "formatter": "standard",
             # Default is stderr
             # 'stream': 'ext://sys.stdout',
+            # 'class': 'logging.StreamHandler',
             "class": "logging.handlers.TimedRotatingFileHandler",
+            "filename": f"{LOG_DIR}/critical.log",
             "when": "midnight",
-            "backupCount": BACKUP_COUNT,
-            # 'maxBytes': 5*1024*1024,
-            # "filename": f"{LOG_DIR}/critical.log",
-            "filename": "%s/critical.log" % LOG_DIR,
+            # "interval": 1,
+            "backupCount": LOG_BACKUP_COUNT,
             "encoding": "utf8",
-            # "filters": ["default"],
-        },
-        "critical_mail": {
+            # "delay": False,
+            # "utc": False,
+            # "atTime": None,
+            # "errors": None,
             "level": "CRITICAL",
             "formatter": "standard",
+            # 'maxBytes': 5*1024*1024,
+            "filters": ["critical"],
+        },
+        "critical_mail": {
             "class": "logging.handlers.SMTPHandler",
+            "level": "CRITICAL",
+            "formatter": "standard",
             "mailhost": "localhost",
             "fromaddr": "xxx@domain.com",
             "toaddrs": ["xxx@domain.com", "xxx@domain.com"],
             "subject": "Critical error with application name",
-            # "filters": ["default"],
+            "filters": ["critical"],
         },
         "console": {
-            "level": "DEBUG",
-            # "formatter": FORMATTER,
-            "formatter": "standard",
             # Default is stderr
             # "stream": "ext://sys.stdout",
             "class": "logging.StreamHandler",
-            # "filters": ["relpath"],
+            "level": "DEBUG",
+            "formatter": LOG_FORMATTER,
+            # "formatter": "color",
+            "filters": ["relpath"],
         },
     },
     "loggers": {
@@ -155,7 +188,8 @@ LOGGING_CONFIG = {
 }
 
 
-logging.config.dictConfig(LOGGING_CONFIG)
+logging.config.dictConfig(LOG_CONFIG)
+logging.info(f"Logging is configured. ENV: {ENV}, FORMATTER: {LOG_FORMATTER}")
 
 
 if __name__ == "__main__":
