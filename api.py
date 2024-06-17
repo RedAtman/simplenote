@@ -3,13 +3,12 @@
 :doc: https://simperium.com/docs/reference/http/#auth
 """
 
-from dataclasses import dataclass, field
 import functools
 import logging
 import os
 import pickle
 import time
-from typing import List
+from typing import Dict
 import uuid
 
 from config import CONFIG
@@ -18,79 +17,6 @@ from utils.request import request
 
 
 logger = logging.getLogger()
-
-
-@dataclass
-class Note:
-    """Data class for a note object"""
-
-    # __keys_mapper = {
-    #     "key": "_key",
-    #     "version": "_version",
-    #     # "modify_date": "modificationDate",
-    #     # "create_date": "creationDate",
-    #     # "system_tags": "systemTags",
-    #     "modificationDate": "_modify_date",
-    #     "creationDate": "_create_date",
-    #     "systemTags": "_system_tags",
-    # }
-    # id: str
-    # v: int
-    tags: List[str] = field(default_factory=list)
-    deleted: bool = False
-    shareURL: str = ""
-    systemTags: List[str] = field(default_factory=list)
-    content: str = ""
-    publishURL: str = ""
-    modificationDate: float = 0
-    creationDate: float = 0
-
-    # _key: str = ""
-    # _version: int = 0
-
-    # systemTags: list
-    # local_modifydate: str
-    # filename: str
-    # createdate: str
-    # modifydate: str
-    # systemtags: list
-    # needs_update: bool
-
-    # @property
-    # def key(self):
-    #     if self._key:
-    #         return self._key
-    #     return self.id
-
-    # @key.setter
-    # def key(self, value):
-    #     # self._key = uuid.uuid4().hex
-    #     assert isinstance(value, str), "value is not a string: %s" % value
-    #     assert len(value) == 32, "value length is not 32: %s" % value
-    #     self._key = value
-
-    # @property
-    # def version(self):
-    #     if self._version:
-    #         return self._version
-    #     return self.v
-
-    # @version.setter
-    # def version(self, value: int):
-    #     self._version = value
-
-
-@dataclass
-class NoteWrapper:
-    id: str
-    v: int
-    d: Note
-
-    def __post_init__(self):
-        assert isinstance(self.d, dict), "self.d is not a dict: %s" % self.d
-        self.d = Note(**self.d)
-        # self.d.key = self.id
-        # self.d.version = self.v
 
 
 class SimplenoteLoginFailed(Exception):
@@ -113,8 +39,7 @@ class Simplenote(Singleton):
 
     def __init__(self, username: str, password: str):
         """object constructor"""
-        # logger.info("Initializing Simplenote object, username: %s, password: %s" % (username, password))
-        if any([username, password]):
+        if not any([username, password]):
             raise SimplenoteLoginFailed(
                 "username should not be None or password should not be None! but got username: %s, password: %s"
                 % (username, password)
@@ -124,10 +49,9 @@ class Simplenote(Singleton):
         self.header = "X-Simperium-Token"
         self.mark = "mark"
         self._token: str = ""
-        logger.info(f"Simplenote object initialized, {id(self)}")
 
-    @functools.lru_cache(maxsize=128)
-    def authenticate(self, username, password):
+    @classmethod
+    def authenticate(cls, username: str, password: str):
         """Method to get simplenote auth token
 
         Arguments:
@@ -136,22 +60,18 @@ class Simplenote(Singleton):
 
         Returns:
             Simplenote API token as string
-
         """
-        # logger.info("authenticate, username: %s, password: %s" % (username, password))
-
         headers = {"X-Simperium-API-Key": CONFIG.SIMPLENOTE_APP_KEY}
         request_data = {"username": username, "password": password}
-        response = request(CONFIG.SIMPLENOTE_AUTH_URL, method="POST", headers=headers, data=request_data)
-        # logger.debug(("Got response: ", response))
+        logger.info(("request_data:", request_data, "headers:", headers))
+        response = request(URL.auth(), method="POST", headers=headers, data=request_data, data_as_json=False)
+        assert response.status == 200, SimplenoteLoginFailed("response.status is not 200: %s" % response.status)
         result = response.json()
-        logger.info(("Got response.json(): ", type(result), result))
         assert isinstance(result, dict), "result is not a dict: %s" % result
         if "access_token" not in result.keys():
             raise SimplenoteLoginFailed("access_token not in result: %s" % result)
         assert "access_token" in result, "access_token not in result: %s" % result
         token = result["access_token"]
-        logger.debug(("Got token: ", token))
         if isinstance(token, bytes):
             try:
                 token = str(token, "utf-8")
@@ -160,7 +80,7 @@ class Simplenote(Singleton):
                 raise err
         assert isinstance(token, str), "token is not a string: %s" % token
         assert len(token) == 32, "token length is not 32: %s" % token
-        with open(self.TOKEN_FILE, "wb") as fh:
+        with open(cls.TOKEN_FILE, "wb") as fh:
             pickle.dump(token, fh)
         return token
 
@@ -173,20 +93,17 @@ class Simplenote(Singleton):
 
         Returns:
             Simplenote API token as string
-
         """
-        # return "e3120c16bc2b4f52b4b26cfb89a892d0"
         if not self._token:
             try:
                 with open(self.TOKEN_FILE, "rb") as fh:
                     token = pickle.load(fh, encoding="utf-8")
                     self._token = token
             except FileNotFoundError as err:
-                logger.exception(err)
-                open(self.TOKEN_FILE, "wb").close()
                 self._token = self.authenticate(self.username, self.password)
             except EOFError as err:
                 logger.exception(err)
+                raise err
         return self._token
 
     def get_note(self, note_id, version=None):
@@ -201,7 +118,6 @@ class Simplenote(Singleton):
 
             - note (dict): note object
             - status (int): 0 on sucesss and -1 otherwise
-
         """
         # url: "https://api.simperium.com/1/chalk-bump-f49/note/i/ba4f2735aab811e89fd89d5f0cfefda5"
         params_version = ""
@@ -221,7 +137,7 @@ class Simplenote(Singleton):
 
         return note, 0
 
-    def update_note(self, note):
+    def update_note(self, note: Dict[str, str]):
         """Method to update a specific note object, if the note object does not
         have a "key" field, a new note is created
 
