@@ -1,16 +1,18 @@
+print(__file__)
 from collections import deque
 import logging
+import re
 import sys
 from threading import Lock, Thread
 import time
-from typing import Callable, Optional
-
-import sublime
+from typing import Callable, List, Optional
 
 from api import Simplenote
+from models import Note
+import sublime
 from utils.patterns.singleton.base import Singleton
 from utils.sublime import remove_status, show_message
-
+from simplenote import SimplenoteManager
 
 __all__ = [
     "Operation",
@@ -38,15 +40,13 @@ class Operation(Thread):
     callback_kwargs: Optional[dict]
     exception_callback: Optional[Callable]
 
-    def __init__(self, *args, simplenote_instance: Optional[Simplenote] = None, **kwargs):
+    def __init__(self, *args, sm=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if not isinstance(sm, SimplenoteManager):
+            raise Exception(f"Invalid SimplenoteManager instance, expected SimplenoteManager got {type(sm)}, {sm}")
+        self.sm = sm
         self.callback = None
         self.exception_callback = None
-        if not isinstance(simplenote_instance, Simplenote):
-            raise Exception(
-                f"Invalid Simplenote instance, expected Simplenote got {type(simplenote_instance)}, {simplenote_instance}"
-            )
-        self.simplenote_instance: Simplenote = simplenote_instance
         self.result = None
 
     def set_callback(self, callback: Callable, kwargs={}):
@@ -62,8 +62,8 @@ class Operation(Thread):
         Thread.join(self)
         if not self.callback is None:
             result = self.get_result()
-            logger.info((self, self.callback, self.callback_kwargs, self.exception_callback))
-            logger.info(result)
+            logger.warning((self, self.callback, self.callback_kwargs, self.exception_callback))
+            logger.warning(result)
             if not isinstance(result, Exception):
                 self.callback(result, **self.callback_kwargs)
             elif self.exception_callback:
@@ -81,9 +81,26 @@ class NoteCreator(Operation):
 
     def run(self):
         logger.info("Simplenote: Creating note")
-        note, status = self.simplenote_instance.add_note("")
+        note, status = self.sm.remote.api.add_note("")
         if status == 0:
             self.result = note
+            """
+            {
+                "tags": [],
+                "deleted": False,
+                "shareURL": "",
+                "publishURL": "",
+                "content": "",
+                "systemTags": [],
+                "modificationDate": 1718908023.767616,
+                "creationDate": 1718908023.767616,
+                "key": "902e9249ea7b4896af633c610b8c67fa",
+                "version": 1,
+                "modifydate": 1718908023.767616,
+                "createdate": 1718908023.767616,
+                "systemtags": [],
+            }
+            """
         else:
             self.result = OperationError(note)
 
@@ -98,7 +115,7 @@ class NoteDownloader(Operation):
         logger.warning(("# STEP: 8"))
         self.semaphore.acquire()
         logger.info(("Simplenote: Downloading:", self.note_id))
-        result, status = self.simplenote_instance.get_note(self.note_id)
+        result, status = self.sm.remote.api.get_note(self.note_id)
         if status == 0:
             self.result = result
         else:
@@ -125,7 +142,9 @@ class MultipleNoteContentDownloader(Operation):
         threads = []
         for current_note in self.notes:
             new_thread = NoteDownloader(
-                current_note["key"], self.semaphore, simplenote_instance=self.simplenote_instance
+                current_note["key"],
+                self.semaphore,
+                sm=self.sm,
             )
             threads.append(new_thread)
             new_thread.start()
@@ -146,20 +165,28 @@ class GetNotesDelta(Operation):
     update_run_text = "Simplenote: Downloading note list"
     run_finished_text = "Simplenote: Done"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.note_resume = []
-
     def run(self):
         logger.warning(("# STEP: 2"))
         try:
-            note_resume, status = self.simplenote_instance.get_note_list()
-            logger.info("status: %s, note_resume length: %s" % (status, len(note_resume)))
-            if status == 0:
-                self.result = [note for note in note_resume if note["deleted"] == 0]
-            else:
-                raise Exception("Error getting notes")
+            # status, note_resume = self.sm.remote.api.index(data=True)
+            # assert status == 0, "Error getting notes"
+            # assert isinstance(note_resume, dict), "note_resume is not a dict"
+            # assert "index" in note_resume, "index not in note_resume"
+
+            # note_objects = []
+            # list__note_dict = []
+            # for note in note_resume["index"]:
+            #     obj = Note(**note)
+            #     note_objects.append(obj)
+            #     list__note_dict.append(obj.d.__dict__)
+            # # logger.info(list__note_dict)
+            # # logger.warning(note_objects)
+            # self.result = [note for note in list__note_dict if note["deleted"] == 0]
+            result: List[Note] = self.sm.remote.notes
+            self.result: List[Note] = result
         except Exception as err:
+            logger.exception(err)
+            raise err
             self.result = OperationError(err)
 
 
@@ -173,7 +200,7 @@ class NoteDeleter(Operation):
 
     def run(self):
         logger.info(("Simplenote: Deleting", self.note["key"]))
-        result, status = self.simplenote_instance.trash_note(self.note["key"])
+        result, status = self.sm.remote.api.trash_note(self.note["key"])
         if status == 0:
             self.result = True
         else:
@@ -193,7 +220,7 @@ class NoteUpdater(Operation):
         self.note["modifydate"] = time.time()
 
         try:
-            note_update, status = self.simplenote_instance.update_note(self.note)
+            note_update, status = self.sm.remote.api.update_note(self.note)
             logger.info((status, type(note_update), len(note_update), note_update))
             assert status == 0, "Error updating note"
             assert isinstance(note_update, dict)
