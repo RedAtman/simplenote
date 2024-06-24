@@ -1,13 +1,19 @@
 from dataclasses import dataclass, field
 import logging
 import time
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Dict, List, Optional, TypedDict
+import uuid
+
+from _config import CONFIG
+from api import Simplenote
 
 
 # from typing_extensions import Unpack
 
 
 logger = logging.getLogger()
+
+API = Simplenote()
 
 
 @dataclass
@@ -28,6 +34,9 @@ class _Note:
     modifydate: float = 0
     createdate: float = 0
     systemtags: List[str] = field(default_factory=list)
+    needs_update: Optional[bool] = None
+    local_modifydate: float = field(default_factory=time.time)
+    filename: Optional[str] = None
 
     def __post_init__(self):
         self._add_simplenote_api_fields()
@@ -90,6 +99,8 @@ class Note:
 
     def __post_init__(self):
         # print((type(self.d), self.d))
+        if self.id is None:
+            self.id = uuid.uuid4().hex
         if isinstance(self.d, dict):
             d = _Note(**self.d)
             # status, note = API.modify(self.d.__dict__)
@@ -111,27 +122,95 @@ class Note:
     #     print(f"__setattr__({name}, {value})")
     #     super().__setattr__(name, value)
 
-    def __getattribute__(self, name: str) -> Any:
-        value = None
-        try:
-            value = super().__getattribute__(name)
-        except AttributeError:
-            value = getattr(self.d, name)
-        # print(f"__getattribute__({name})", value)
-        return value
+    # def __getattribute__(self, name: str) -> Any:
+    #     value = None
+    #     try:
+    #         value = super().__getattribute__(name)
+    #     except AttributeError:
+    #         value = getattr(self.d, name)
+    #     # print(f"__getattribute__({name})", value)
+    #     return value
+
+    @staticmethod
+    def index(limit: int = CONFIG.NOTE_FETCH_LENGTH, data: bool = True) -> List["Note"]:
+        status, result = API.index(limit, data)
+        assert status == 0
+        assert isinstance(result, dict)
+        assert "index" in result
+        _notes = result.get("index", [])
+        assert status == 0, "Error retrieving notes"
+        assert isinstance(_notes, list)
+        logger.warning(_notes)
+        return [Note(**note) for note in _notes]
+
+    @staticmethod
+    def retrieve(note_id: str) -> "Note":
+        status, _note = API.retrieve(note_id)
+        assert status == 0, "Error retrieving note"
+        assert isinstance(_note, dict)
+        return Note(**_note)
+
+    def create(self) -> "Note":
+        self.d.creationDate = time.time()
+        status, _note = API.modify(self.d.__dict__, self.id)
+        assert status == 0, "Error creating note"
+        assert isinstance(_note, dict)
+        return self
 
     # def update(self, **kwargs: Unpack[NoteType]):
-    # def update(self, **kwargs):
-    #     note = _Note(**kwargs)
-    #     # TODO: maybe do not need to update the modificationDate here
-    #     note.modificationDate = time.time()
-    #     _note, status = API.update_note(note.__dict__)
-    #     assert status == 0, "Error updating note"
-    #     assert isinstance(_note, dict)
-    #     self.d = note
+    def modify(self, version: Optional[int] = None) -> "Note":
+        # note = _Note(**kwargs)
+        # TODO: maybe do not need to update the modificationDate here
+        self.d.modificationDate = time.time()
+        # self.d.content += "\n\n" + kwargs.get("content", "")
+        status, _note = API.modify(self.d.__dict__, self.id, version)
+        assert status == 0, "Error updating note"
+        assert isinstance(_note, dict)
+        self = Note(**_note)
+        return self
+
+    @classmethod
+    def _trash(cls, note_id: str) -> "Note":
+        status, _note = API.trash(note_id)
+        assert status == 0, "Error deleting note"
+        assert isinstance(_note, dict)
+        return Note(**_note)
+
+    def trash(self) -> "Note":
+        assert not self.id is None, "Note id is None"
+        return self._trash(self.id)
+        self.d.deleted = True
+        self.d.modificationDate = time.time()
+        status, _note = API.modify(self.d.__dict__, self.id)
+        assert status == 0, "Error deleting note"
+        assert isinstance(_note, dict)
+        self = Note(**_note)
+        return self
+
+    def restore(self) -> "Note":
+        self.d.deleted = False
+        self.d.modificationDate = time.time()
+        status, _note = API.modify(self.d.__dict__, self.id)
+        assert status == 0, "Error deleting note"
+        assert isinstance(_note, dict)
+        self = Note(**_note)
+        return self
+
+    def delete(self) -> "Note":
+        status, _note = API.delete(self.id)
+        assert status == 0, "Error deleting note"
+        assert isinstance(_note, dict)
+        self = Note(**_note)
+        return self
 
 
 if __name__ == "__main__":
+    _now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    note = Note(d={"content": _now})
+    print(note.create())
+    print(note.modify(content="new content"))
+    print(note._nest_dict())
+    print(Note.__dict__)
     empty_note = Note(v=1)
     print(empty_note)
     print(empty_note.__dict__)
@@ -161,6 +240,6 @@ if __name__ == "__main__":
     # print(note.d.__annotations__)
     # print(note.__annotations__)
     # print(note.d.__dataclass_fields__)
-    # print(note.__dataclass_fields__)
+    print(note.__dataclass_fields__)
     # print(note.d.__dataclass_params__)
     # note.d.tags = ["tag3", "tag4"]
