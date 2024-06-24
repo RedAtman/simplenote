@@ -36,7 +36,7 @@ class _BaseConfig:
     sys.path.insert(0, BASE_DIR)
     LOG_DIR: str = os.path.join(BASE_DIR, "logs")
     os.makedirs(LOG_DIR, exist_ok=True)
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "DEBUG")
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "WARNING")
 
     PROJECT_NAME: str = "Simplenote"
     PROJECT_VERSION: str = "0.0.1"
@@ -49,7 +49,7 @@ class _BaseConfig:
     # So please be kind and don't (ab)use it.
     # Simplenote/Simperium didn't have to provide us with this.
     # SIMPLENOTE_APP_KEY: bytes = base64.b64decode(__SIMPLENOTE_APP_KEY)
-    SIMPLENOTE_APP_KEY: str = base64.b64decode(__SIMPLENOTE_APP_KEY).decode("utf-8")
+    SIMPLENOTE_APP_KEY: str = base64.b64decode("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=").decode("utf-8")
     SIMPLENOTE_BUCKET: str = os.getenv("SIMPLENOTE_BUCKET", "note")
     SIMPLENOTE_AUTH_URL: str = f"https://auth.simperium.com/1/{SIMPLENOTE_APP_ID}/authorize/"
     SIMPLENOTE_DATA_URL: str = f"https://api.simperium.com/1/{SIMPLENOTE_APP_ID}/{SIMPLENOTE_BUCKET}"
@@ -57,8 +57,11 @@ class _BaseConfig:
     SIMPLENOTE_PASSWORD: str = os.getenv("SIMPLENOTE_PASSWORD", "")
     STARTED: bool = False
     RELOAD_CALLS: int = -1
-    NOTE_FETCH_LENGTH: int = 1000
+    NOTE_FETCH_LENGTH: int = 1
+    _NOTE_CACHE_FILE: str = "_note_cache.pkl"
     NOTE_CACHE_FILE: str = "note_cache.pkl"
+    os.remove(_NOTE_CACHE_FILE) if os.path.exists(_NOTE_CACHE_FILE) else None
+    os.remove(NOTE_CACHE_FILE) if os.path.exists(NOTE_CACHE_FILE) else None
     DEFAULT_NOTE_TITLE: str = "untitled"
 
 
