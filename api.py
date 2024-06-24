@@ -12,9 +12,10 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 import uuid
 
-from config import CONFIG
+from _config import CONFIG
 from utils.patterns.singleton.base import Singleton
 from utils.request import request
+from utils.tools import Settings
 
 
 logger = logging.getLogger()
@@ -57,7 +58,7 @@ class URL:
         _: str = cls.__modify % note_id
         params = "?response=%s" % response + urlencode(kwargs)
         if version is not None:
-            return _ + "/v/%s?" % version + params
+            return _ + "/v/%s" % version + params
         return _ + params
 
     @classmethod
@@ -89,15 +90,17 @@ class Simplenote(Singleton):
     assert os.access("pkl", os.R_OK), "pkl directory is not readable!"
     assert os.path.exists(TOKEN_FILE), "pkl/simplenote.pkl does not exist!"
 
-    def __init__(self, username: str, password: str):
+    def __init__(self, username: str = "", password: str = ""):
         """object constructor"""
-        if not any([username, password]):
-            raise SimplenoteLoginFailed(
-                "username should not be None or password should not be None! but got username: %s, password: %s"
-                % (username, password)
-            )
+        super().__init__()
         self.username = username
         self.password = password
+        if not all([self.username, self.password]):
+            SETTINGS = Settings(os.path.join(CONFIG.BASE_DIR, CONFIG.SETTINGS_FILE))
+            self.username = SETTINGS.get("username", "")
+            self.password = SETTINGS.get("password", "")
+        logger.info(("username:", self.username, "password:", self.password))
+        assert all(map(bool, [self.username, self.password])), "username and password must be set"
         self.header = "X-Simperium-Token"
         self.mark = "mark"
         self._token: str = ""
@@ -209,6 +212,7 @@ class Simplenote(Singleton):
         try:
             response = request(
                 URL.index(**params),
+                method="GET",
                 params=params,
                 headers={self.header: self.token},
             )
@@ -236,7 +240,10 @@ class Simplenote(Singleton):
                 method="GET",
                 headers={self.header: self.token},
             )
-            return 0, response.data
+            _version: str | None = response.headers.get("X-Simperium-Version")
+            assert isinstance(_version, str)
+            assert _version.isdigit()
+            return 0, {"id": note_id, "v": int(_version), "d": response.data}
         except IOError as err:
             logger.exception(err)
         return -1, {}
@@ -258,6 +265,7 @@ class Simplenote(Singleton):
         if not isinstance(note, dict):
             raise ValueError("note should be a string or a dict, but got %s" % note)
         if note_id is None:
+            raise ValueError("note_id should be a string, but got %s" % note_id)
             note_id = uuid.uuid4().hex
         try:
             response = request(
@@ -266,7 +274,11 @@ class Simplenote(Singleton):
                 headers={self.header: self.token},
                 data=note,
             )
-            return 0, response.data
+            logger.info(("response", response))
+            _version: str | None = response.headers.get("X-Simperium-Version")
+            assert isinstance(_version, str), "Version should be a string, but got %s" % _version
+            assert _version.isdigit(), "Version should be an integer, but got %s" % _version
+            return 0, {"id": note_id, "v": int(_version), "d": response.data}
         except IOError as err:
             logger.exception(err)
         return -1, {}
@@ -289,7 +301,10 @@ class Simplenote(Singleton):
                 method="DELETE",
                 headers={self.header: self.token},
             )
-            return 0, response.data
+            _version: str | None = response.headers.get("X-Simperium-Version")
+            assert isinstance(_version, str)
+            assert _version.isdigit()
+            return 0, {"id": note_id, "v": int(_version), "d": response.data}
         except IOError as err:
             logger.exception(err)
         return -1, {}
@@ -336,6 +351,7 @@ class Simplenote(Singleton):
         params = "/i/%s%s" % (str(note_id), params_version)
         response = request(url=CONFIG.SIMPLENOTE_DATA_URL + params, method="GET", headers={self.header: self.token})
         version = response.headers.get("X-Simperium-Version")
+        logger.warning((type(version), version))
         assert version is not None, "version is None: %s" % version
         assert isinstance(version, str), "version is not a string: %s" % version
         assert version.isdigit(), "version is not a digit: %s" % version
@@ -585,6 +601,10 @@ class Simplenote(Singleton):
             return {}, 0
         return response.data, 1
 
+    @classmethod
+    def _add_simplenote_api_fields(cls, note, noteid, version):
+        return cls._add_simplenote_api_fields(note, noteid, version)
+
     def __add_simplenote_api_fields(self, note, noteid, version: int):
         # Compatibility with original Simplenote API v2.1.5
         # key_mapper = {
@@ -629,6 +649,6 @@ class Simplenote(Singleton):
 
 
 if __name__ == "__main__":
-    simplenote = Simplenote(CONFIG.SIMPLENOTE_USERNAME, CONFIG.SIMPLENOTE_PASSWORD)
+    simplenote = Simplenote(username=CONFIG.SIMPLENOTE_USERNAME, password=CONFIG.SIMPLENOTE_PASSWORD)
     token = simplenote.token
     print("token: %s" % token)
