@@ -23,57 +23,11 @@ class _Note:
     tags: List[str] = field(default_factory=list)
     deleted: bool = False
     shareURL: str = ""
-    publishURL: str = ""
-    content: str = ""
     systemTags: List[str] = field(default_factory=list)
+    content: str = ""
+    publishURL: str = ""
     modificationDate: float = field(default_factory=time.time)
     creationDate: float = field(default_factory=time.time)
-
-    key: Optional[str] = ""
-    version: int = 0
-    modifydate: float = 0
-    createdate: float = 0
-    systemtags: List[str] = field(default_factory=list)
-    needs_update: Optional[bool] = None
-    local_modifydate: float = field(default_factory=time.time)
-    filename: Optional[str] = None
-
-    def __post_init__(self):
-        self._add_simplenote_api_fields()
-
-    def _add_simplenote_api_fields(self):
-        self.modifydate = self.modificationDate
-        self.createdate = self.creationDate
-        self.systemtags = self.systemTags
-
-    # def __setattr__(self, name: str, value: Any) -> None:
-    #     if name in ["content", "tags", "systemTags"]:
-    #         self.modificationDate = time.time()
-    #         API.modify(self.__dict__)
-    #     super().__setattr__(name, value)
-
-    # @property
-    # def key(self):
-    #     if self._key:
-    #         return self._key
-    #     return self.id
-
-    # @key.setter
-    # def key(self, value):
-    #     # self._key = uuid.uuid4().hex
-    #     assert isinstance(value, str), "value is not a string: %s" % value
-    #     assert len(value) == 32, "value length is not 32: %s" % value
-    #     self._key = value
-
-    # @property
-    # def version(self):
-    #     if self._version:
-    #         return self._version
-    #     return self.v
-
-    # @version.setter
-    # def version(self, value: int):
-    #     self._version = value
 
 
 class NoteType(TypedDict):
@@ -89,26 +43,27 @@ class NoteType(TypedDict):
 
 @dataclass
 class Note:
+    id: str = uuid.uuid4().hex
     v: int = 0
     d: _Note = field(default_factory=_Note)
-    id: Optional[str] = None
 
-    def _add_simplenote_api_fields(self):
-        self.d.key = self.id
-        self.d.version = self.v
+    modifydate: float = 0
+    createdate: float = 0
+    systemtags: List[str] = field(default_factory=list)
+    needs_update: Optional[bool] = None
+    local_modifydate: float = field(default_factory=time.time)
+    filename: Optional[str] = None
+
+    def _add_extra_fields(self):
+        self.modifydate = self.d.modificationDate
+        self.createdate = self.d.creationDate
+        self.systemtags = self.d.systemTags
 
     def __post_init__(self):
-        # print((type(self.d), self.d))
-        if self.id is None:
-            self.id = uuid.uuid4().hex
         if isinstance(self.d, dict):
             d = _Note(**self.d)
-            # status, note = API.modify(self.d.__dict__)
-            # logger.info((status, note))
-            # assert status == 0, "Error Create note"
-            # assert isinstance(note, dict)
             self.d = d
-        self._add_simplenote_api_fields()
+        self._add_extra_fields()
 
     def _nest_dict(self) -> Dict:
         result = self.__dict__
@@ -117,19 +72,6 @@ class Note:
 
     def __eq__(self, value: "Note") -> bool:
         return self.id == value.id and self.v == value.v
-
-    # def __setattr__(self, name: str, value: Any) -> None:
-    #     print(f"__setattr__({name}, {value})")
-    #     super().__setattr__(name, value)
-
-    # def __getattribute__(self, name: str) -> Any:
-    #     value = None
-    #     try:
-    #         value = super().__getattribute__(name)
-    #     except AttributeError:
-    #         value = getattr(self.d, name)
-    #     # print(f"__getattribute__({name})", value)
-    #     return value
 
     @staticmethod
     def index(limit: int = CONFIG.NOTE_FETCH_LENGTH, data: bool = True) -> List["Note"]:
@@ -155,14 +97,12 @@ class Note:
         status, _note = API.modify(self.d.__dict__, self.id)
         assert status == 0, "Error creating note"
         assert isinstance(_note, dict)
+        assert self.id == _note["id"]
         return self
 
-    # def update(self, **kwargs: Unpack[NoteType]):
     def modify(self, version: Optional[int] = None) -> "Note":
-        # note = _Note(**kwargs)
         # TODO: maybe do not need to update the modificationDate here
         self.d.modificationDate = time.time()
-        # self.d.content += "\n\n" + kwargs.get("content", "")
         status, _note = API.modify(self.d.__dict__, self.id, version)
         assert status == 0, "Error updating note"
         assert isinstance(_note, dict)

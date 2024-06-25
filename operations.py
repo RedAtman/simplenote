@@ -131,9 +131,9 @@ class MultipleNoteContentDownloader(Operation):
         threads: List[Thread] = []
         for current_note in self.notes:
             assert isinstance(current_note, Note)
-            assert isinstance(current_note.d.key, str)
+            assert isinstance(current_note.id, str)
             new_thread = NoteDownloader(
-                current_note.d.key,
+                current_note.id,
                 self.semaphore,
                 sm=self.sm,
             )

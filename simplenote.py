@@ -154,8 +154,8 @@ class Local(_BaseManager):
                 if re.search(pattern, note_name):
                     extension = "." + item["extension"]
                     break
-        # logger.info(("extension", extension, "base", base, "note_name", note_name, "note.d.key", note.d.key))
-        return base + " (" + note.d.key + ")" + extension
+        # logger.info(("extension", extension, "base", base, "note_name", note_name, "note.id", note.id))
+        return base + " (" + note.id + ")" + extension
 
     # @classmethod
     def _get_filename_for_note(cls, note: Note) -> str:
@@ -275,26 +275,14 @@ def cmp_to_key(mycmp):
     return K
 
 
-def sort_notes(a_note, b_note):
-    if isinstance(a_note, Note):
-        a_systemtags = a_note.d.systemtags
-        a_modifydate = a_note.d.modifydate
-    else:
-        a_systemtags = a_note["systemtags"]
-        a_modifydate = a_note["modifydate"]
-    if isinstance(b_note, Note):
-        b_systemtags = b_note.d.systemtags
-        b_modifydate = b_note.d.modifydate
-    else:
-        b_systemtags = b_note["systemtags"]
-        b_modifydate = b_note["modifydate"]
-    if "pinned" in a_systemtags:
+def sort_notes(a_note: Note, b_note: Note):
+    if "pinned" in a_note.systemtags:
         return 1
-    elif "pinned" in b_systemtags:
+    elif "pinned" in b_note.systemtags:
         return -1
     else:
-        date_a = datetime.fromtimestamp(float(a_modifydate))
-        date_b = datetime.fromtimestamp(float(b_modifydate))
+        date_a = datetime.fromtimestamp(float(a_note.modifydate))
+        date_b = datetime.fromtimestamp(float(b_note.modifydate))
         return (date_a > date_b) - (date_a < date_b)
 
 
@@ -380,9 +368,6 @@ def handle_open_filename_change(old_file_path, updated_note: Note):
 
 def synch_note_resume(existing_note_entry: Note, updated_note_resume: Note):
     for key in updated_note_resume.d.__dict__:
-        # TODO: remove this
-        if key == "filename":
-            continue
         # logger.info(("key", key, getattr(updated_note_resume.d, key)))
         setattr(existing_note_entry.d, key, getattr(updated_note_resume.d, key))
 
@@ -395,8 +380,8 @@ def update_note(existing_note: Note, updated_note: Note):
     # filename = sm.local._get_filename_for_note(existing_note)
     # logger.info(("Updating note", "filename", filename, "existing_note", existing_note))
     # existing_note["filename"] = filename
-    existing_note.d.local_modifydate = time.time()
-    existing_note.d.needs_update = False
+    existing_note.local_modifydate = time.time()
+    existing_note.needs_update = False
     filename = sm.local._get_filename_for_note(existing_note)
     # logger.info(("Updating note", "filename", filename, "existing_note", existing_note))
-    existing_note.d.filename = filename
+    existing_note.filename = filename

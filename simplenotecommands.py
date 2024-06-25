@@ -67,7 +67,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
                 return
 
             for entry in HandleNoteViewCommand.waiting_to_save:
-                if entry["note_key"] == note.d.key:
+                if entry["note_key"] == note.id:
 
                     with entry["lock"]:
                         entry["count"] = entry["count"] - 1
@@ -88,14 +88,14 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
 
             found = False
             for entry in HandleNoteViewCommand.waiting_to_save:
-                if entry["note_key"] == note.d.key:
+                if entry["note_key"] == note.id:
                     with entry["lock"]:
                         entry["count"] = entry["count"] + 1
                     found = True
                     break
             if not found:
                 new_entry = {}
-                new_entry["note_key"] = note.d.key
+                new_entry["note_key"] = note.id
                 new_entry["lock"] = Lock()
                 new_entry["count"] = 1
                 HandleNoteViewCommand.waiting_to_save.append(new_entry)
@@ -123,7 +123,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         # We get all the resume data back. We have to merge it
         # with our data (extended fields and content)
         for note in sm.local.objects:
-            if note.d.key == modified_note_resume.d.key:
+            if note.id == modified_note_resume.id:
                 # Set content to the updated one
                 # or to the view's content if we don't have any update
                 updated_from_server = False
@@ -216,7 +216,7 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
         for current_updated_note_resume in updated_note_resume:
             existing_note_entry = None
             for existing_note in existing_notes:
-                if existing_note.d.key == current_updated_note_resume.d.key:
+                if existing_note.id == current_updated_note_resume.id:
                     existing_note_entry: Note = existing_note
                     break
 
@@ -226,17 +226,17 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
                 # Mark for update if needed
                 try:
                     # Note with old content
-                    if existing_note_entry.d.local_modifydate < float(current_updated_note_resume.d.modifydate):
+                    if existing_note_entry.local_modifydate < float(current_updated_note_resume.modifydate):
                         synch_note_resume(existing_note_entry, current_updated_note_resume)
-                        existing_note_entry.d.needs_update = True
+                        existing_note_entry.needs_update = True
                         logger.info(("existing_note_entry", existing_note_entry))
                     else:
                         # Up to date note
-                        existing_note_entry.d.needs_update = False
+                        existing_note_entry.needs_update = False
                 except KeyError as err:
                     logger.exception(err)
                     # Note that never got the content downloaded:
-                    existing_note_entry.d.needs_update = True
+                    existing_note_entry.needs_update = True
 
                 logger.info(("existing_note_entry", existing_note_entry))
             # New note
@@ -244,13 +244,13 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
                 # new_note_entry = {"needs_update": True}
                 # synch_note_resume(new_note_entry, current_updated_note_resume)
                 # existing_notes.append(new_note_entry)
-                current_updated_note_resume.d.needs_update = True
+                current_updated_note_resume.needs_update = True
                 existing_notes.append(current_updated_note_resume)
 
         # Look at the existing notes to find deletions
-        updated_note_resume_keys = [note.d.key for note in updated_note_resume]
+        updated_note_resume_keys = [note.id for note in updated_note_resume]
         deleted_notes = [
-            deleted_note for deleted_note in existing_notes if deleted_note.d.key not in updated_note_resume_keys
+            deleted_note for deleted_note in existing_notes if deleted_note.id not in updated_note_resume_keys
         ]
         for deleted_note in deleted_notes:
             existing_notes.remove(deleted_note)
@@ -290,11 +290,11 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
         others: List[Note] = []
         for note in notes:
 
-            if not note.d.needs_update:
+            if not note.needs_update:
                 continue
 
             try:
-                filename = note.d.filename
+                filename = note.filename
             except KeyError as err:
                 logger.exception(err)
                 others.append(note)
@@ -349,7 +349,7 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
                 for note in existing_notes:
                     for updated_note in updated_notes:
                         # If we find the updated note
-                        if note.d.key == updated_note.d.key:
+                        if note.id == updated_note.id:
                             old_file_path = sm.local.get_path_for_note(note)
                             new_file_path = sm.local.get_path_for_note(updated_note)
                             # Update contents
@@ -371,12 +371,12 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
         # Merge
         for note in existing_notes:
 
-            if not note.d.needs_update:
+            if not note.needs_update:
                 continue
 
             for updated_note in updated_notes:
                 try:
-                    if note.d.key == updated_note.d.key:
+                    if note.id == updated_note.id:
                         update_note(note, updated_note)
                 except KeyError as err:
                     logger.exception(err)
@@ -491,7 +491,7 @@ def plugin_loaded():
     # sm.local.load_notes()
     if len(sm.local.objects):
         logger.info(("Loaded notes: ", sm.local.objects[0]))
-    note_files = [note.d.filename for note in sm.local.objects]
+    note_files = [note.filename for note in sm.local.objects]
     if not os.path.exists(TEMP_PATH):
         os.makedirs(TEMP_PATH)
     for f in os.listdir(TEMP_PATH):
