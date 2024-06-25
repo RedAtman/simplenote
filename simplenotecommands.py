@@ -11,8 +11,8 @@ from typing import Any, Dict, List
 from _config import CONFIG
 from models import Note
 from operations import (
-    GetNotesDelta,
-    MultipleNoteContentDownloader,
+    NotesIndicator,
+    MultipleNoteDownloader,
     NoteCreator,
     NoteDeleter,
     NoteUpdater,
@@ -163,12 +163,12 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
             updated_note.d.content = self.get_current_content(view)
             logger.info(("new content", updated_note.d.content))
             # Send update
-            update_op = NoteUpdater(note=updated_note, sm=sm)
-            update_op.set_callback(
+            note_updater = NoteUpdater(note=updated_note, sm=sm)
+            note_updater.set_callback(
                 self.handle_note_changed,
                 {"content": updated_note.d.content, "old_file_path": view_filepath, "open_view": view},
             )
-            OperationManager().add_operation(update_op)
+            OperationManager().add_operation(note_updater)
 
 
 class ShowNotesCommand(sublime_plugin.ApplicationCommand):
@@ -305,17 +305,17 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
         # Start updates
         show_message("Downloading content")
         if lu:
-            down_op = MultipleNoteContentDownloader(sm=sm, notes=lu)
-            down_op.set_callback(self.merge_open, {"existing_notes": notes, "dirty": True})
-            OperationManager().add_operation(down_op)
+            downloader = MultipleNoteDownloader(sm=sm, notes=lu)
+            downloader.set_callback(self.merge_open, {"existing_notes": notes, "dirty": True})
+            OperationManager().add_operation(downloader)
         if ls:
-            down_op = MultipleNoteContentDownloader(sm=sm, notes=ls)
-            down_op.set_callback(self.merge_open, {"existing_notes": notes})
-            OperationManager().add_operation(down_op)
+            downloader = MultipleNoteDownloader(sm=sm, notes=ls)
+            downloader.set_callback(self.merge_open, {"existing_notes": notes})
+            OperationManager().add_operation(downloader)
         if others:
-            down_op = MultipleNoteContentDownloader(sm=sm, notes=others)
-            down_op.set_callback(self.merge_notes, {"existing_notes": notes})
-            OperationManager().add_operation(down_op)
+            downloader = MultipleNoteDownloader(sm=sm, notes=others)
+            downloader.set_callback(self.merge_notes, {"existing_notes": notes})
+            OperationManager().add_operation(downloader)
 
     def merge_open(self, updated_notes: List[Note], existing_notes: List[Note], dirty=False):
         logger.debug(("caller", sys._getframe(1).f_code.co_name))
@@ -380,10 +380,10 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
     def run(self):
         logger.info(("# STEP: 1"))
         show_message("show_message: Synching")
-        get_delta_op = GetNotesDelta(sm=sm)
+        note_indicator = NotesIndicator(sm=sm)
         # logger.debug(("notes", sm.local.notes))
-        get_delta_op.set_callback(self.merge_delta, {"existing_notes": sm.local.objects})
-        OperationManager().add_operation(get_delta_op)
+        note_indicator.set_callback(self.merge_delta, {"existing_notes": sm.local.objects})
+        OperationManager().add_operation(note_indicator)
 
 
 class CreateNoteCommand(sublime_plugin.ApplicationCommand):
@@ -397,9 +397,9 @@ class CreateNoteCommand(sublime_plugin.ApplicationCommand):
         open_note(note)
 
     def run(self):
-        creation_op = NoteCreator(sm=sm)
-        creation_op.set_callback(self.handle_new_note)
-        OperationManager().add_operation(creation_op)
+        note_creator = NoteCreator(sm=sm)
+        note_creator.set_callback(self.handle_new_note)
+        OperationManager().add_operation(note_creator)
 
 
 class DeleteNoteCommand(sublime_plugin.ApplicationCommand):
@@ -425,9 +425,9 @@ class DeleteNoteCommand(sublime_plugin.ApplicationCommand):
         assert isinstance(note, Note), "note must be a Note"
         self.note = note
         assert isinstance(self.note, Note), "note must be a Note"
-        deletion_op = NoteDeleter(note=self.note, sm=sm)
-        deletion_op.set_callback(self.handle_deletion)
-        OperationManager().add_operation(deletion_op)
+        note_deleter = NoteDeleter(note=self.note, sm=sm)
+        note_deleter.set_callback(self.handle_deletion)
+        OperationManager().add_operation(note_deleter)
 
 
 def sync():

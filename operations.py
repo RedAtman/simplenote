@@ -14,8 +14,8 @@ from utils.sublime import remove_status, show_message
 __all__ = [
     "Operation",
     "NoteCreator",
-    "MultipleNoteContentDownloader",
-    "GetNotesDelta",
+    "MultipleNoteDownloader",
+    "NotesIndicator",
     "NoteDeleter",
     "NoteUpdater",
     "OperationManager",
@@ -84,7 +84,7 @@ class NoteCreator(Operation):
             self.result = OperationError(err)
 
 
-class MultipleNoteContentDownloader(Operation):
+class MultipleNoteDownloader(Operation):
     update_run_text = "Simplenote: Downloading contents"
     run_finished_text = "Simplenote: Done"
 
@@ -130,7 +130,7 @@ class MultipleNoteContentDownloader(Operation):
         self.result = results
 
 
-class GetNotesDelta(Operation):
+class NotesIndicator(Operation):
     update_run_text = "Simplenote: Downloading note list"
     run_finished_text = "Simplenote: Done"
 
