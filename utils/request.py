@@ -85,7 +85,7 @@ def request(
         data = None
 
     if params:
-        url += "?" + urllib.parse.urlencode(params, doseq=True, safe="/")
+        url += "?" + urllib.parse.urlencode(params, doseq=True, safe="/").lower()
 
     if data:
         if data_as_json:
@@ -104,13 +104,36 @@ def request(
                 body=httpresponse.read().decode(httpresponse.headers.get_content_charset("utf-8")),
             )
     except urllib.error.HTTPError as err:
+        logger.error((method, url, err))
+        logger.error(data)
+        logger.exception(err)
         response = Response(
             body=str(err.reason),
             headers=err.headers,
             status=err.code,
             error_count=error_count + 1,
         )
-
+    except urllib.error.URLError as err:
+        logger.error((method, url, err))
+        logger.error(data)
+        logger.exception(err)
+        response = Response(
+            body=str(err.reason),
+            headers=Message(),
+            status=500,
+            error_count=error_count + 1,
+        )
+    except Exception as err:
+        logger.error((method, url, err))
+        logger.error(data)
+        logger.exception(err)
+        response = Response(
+            body=str(err),
+            headers=Message(),
+            status=500,
+            error_count=error_count + 1,
+        )
+    logger.debug(response)
     return response
 
 
