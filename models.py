@@ -4,7 +4,6 @@ import time
 from typing import Dict, List, Optional, TypedDict
 import uuid
 
-from _config import CONFIG
 from api import Simplenote
 
 
@@ -74,7 +73,7 @@ class Note:
         return self.id == value.id and self.v == value.v
 
     @staticmethod
-    def index(limit: int = CONFIG.NOTE_FETCH_LENGTH, data: bool = True) -> List["Note"]:
+    def index(limit: int = 1000, data: bool = True) -> List["Note"]:
         status, result = API.index(limit, data)
         assert status == 0
         assert isinstance(result, dict)
@@ -82,7 +81,6 @@ class Note:
         _notes = result.get("index", [])
         assert status == 0, "Error retrieving notes"
         assert isinstance(_notes, list)
-        logger.warning(_notes)
         return [Note(**note) for note in _notes]
 
     @staticmethod

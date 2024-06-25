@@ -8,6 +8,7 @@ from threading import Lock, Semaphore
 import time
 from typing import Any, Dict, List
 
+from _config import CONFIG
 from models import Note
 from operations import (
     GetNotesDelta,
@@ -17,10 +18,10 @@ from operations import (
     NoteUpdater,
     OperationManager,
 )
-from simplenote import (  # cmp_to_key,
-    CONFIG,
+from simplenote import (
     SETTINGS,
-    TEMP_PATH,
+    SIMPLENOTE_SETTINGS_FILE,
+    SIMPLENOTE_TEMP_PATH,
     SimplenoteManager,
     get_note_name,
     handle_open_filename_change,
@@ -107,7 +108,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         note = sm.local.get_note_from_path(view_filepath)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         logger.info(("note", note))
-        SETTINGS = sublime.load_settings(CONFIG.SETTINGS_FILE)
+        SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
         note_syntax = SETTINGS.get("note_syntax")
         assert isinstance(note_syntax, str)
         logger.info(("note_syntax", note_syntax))
@@ -180,7 +181,7 @@ class ShowNotesCommand(sublime_plugin.ApplicationCommand):
         open_note(selected_note)
 
     def run(self):
-        if not CONFIG.STARTED:
+        if not CONFIG.SIMPLENOTE_STARTED:
             if not start():
                 return
 
@@ -468,14 +469,14 @@ def sync():
 
 def start():
     sync()
-    CONFIG.STARTED = True
-    return CONFIG.STARTED
+    CONFIG.SIMPLENOTE_STARTED = True
+    return CONFIG.SIMPLENOTE_STARTED
 
 
 def reload_if_needed():
     logger.info(("Reloading", SETTINGS.get("autostart")))
     # RELOAD_CALLS = locals().get("RELOAD_CALLS", -1)
-    RELOAD_CALLS = CONFIG.RELOAD_CALLS
+    RELOAD_CALLS = CONFIG.SIMPLENOTE_RELOAD_CALLS
     # Sublime calls this twice for some reason :(
     RELOAD_CALLS += 1
     if RELOAD_CALLS % 2 != 0:
@@ -492,11 +493,11 @@ def plugin_loaded():
     if len(sm.local.objects):
         logger.info(("Loaded notes: ", sm.local.objects[0]))
     note_files = [note.filename for note in sm.local.objects]
-    if not os.path.exists(TEMP_PATH):
-        os.makedirs(TEMP_PATH)
-    for f in os.listdir(TEMP_PATH):
+    if not os.path.exists(SIMPLENOTE_TEMP_PATH):
+        os.makedirs(SIMPLENOTE_TEMP_PATH)
+    for f in os.listdir(SIMPLENOTE_TEMP_PATH):
         if f not in note_files:
-            os.remove(os.path.join(TEMP_PATH, f))
+            os.remove(os.path.join(SIMPLENOTE_TEMP_PATH, f))
 
     logger.info(("SETTINGS.__dict__: ", SETTINGS.__dict__))
     logger.info(("SETTINGS.username: ", SETTINGS.get("username")))
@@ -508,4 +509,4 @@ def plugin_loaded():
     reload_if_needed()
 
 
-CONFIG.STARTED = False
+CONFIG.SIMPLENOTE_STARTED = False

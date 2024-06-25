@@ -7,7 +7,6 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-from _config import CONFIG
 from api import Simplenote
 from models import Note
 
@@ -21,11 +20,18 @@ from utils.tools import Settings
 logger = logging.getLogger()
 
 
-PACKAGE_PATH = os.path.join(sublime.packages_path(), CONFIG.PROJECT_NAME)
-TEMP_PATH = os.path.join(PACKAGE_PATH, "temp")
-# SETTINGS = sublime.load_settings(CONFIG.SETTINGS_FILE)
-SETTINGS: Settings = Settings(os.path.join(PACKAGE_PATH, CONFIG.SETTINGS_FILE))
-API = Simplenote()
+SIMPLENOTE_PROJECT_NAME = os.environ.get("SIMPLENOTE_PROJECT_NAME", "Simplenote")
+SIMPLENOTE_PACKAGE_PATH = os.path.join(sublime.packages_path(), SIMPLENOTE_PROJECT_NAME)
+SIMPLENOTE_DEFAULT_NOTE_TITLE = os.environ.get("SIMPLENOTE_DEFAULT_NOTE_TITLE", "Untitled")
+SIMPLENOTE_TEMP_PATH = os.path.join(SIMPLENOTE_PACKAGE_PATH, "temp")
+_SIMPLENOTE_NOTE_CACHE_FILE = os.environ.get("SIMPLENOTE_NOTE_CACHE_FILE", "note_cache.pkl")
+SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, _SIMPLENOTE_NOTE_CACHE_FILE)
+SIMPLENOTE_NOTE_FETCH_LENGTH = int(os.environ.get("SIMPLENOTE_NOTE_FETCH_LENGTH", 1000))
+_SIMPLENOTE_SETTINGS_FILE = os.environ.get("SIMPLENOTE_SETTINGS_FILE", "simplenote.sublime-settings")
+SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, _SIMPLENOTE_SETTINGS_FILE)
+# SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+SETTINGS: Settings = Settings(SIMPLENOTE_SETTINGS_FILE)
+API = Simplenote(SETTINGS.get("username", ""), SETTINGS.get("password", ""))
 
 
 class _BaseManager(Singleton):
@@ -33,8 +39,6 @@ class _BaseManager(Singleton):
 
 
 class Local(_BaseManager):
-    _NOTE_CACHE_FILE_PATH = os.path.join(PACKAGE_PATH, CONFIG._NOTE_CACHE_FILE)
-    NOTE_CACHE_FILE_PATH = os.path.join(PACKAGE_PATH, CONFIG.NOTE_CACHE_FILE)
 
     def __init__(self):
         super().__init__()
@@ -61,60 +65,24 @@ class Local(_BaseManager):
     # @classmethod
     def load_notes(self):
         try:
-            with open(self._NOTE_CACHE_FILE_PATH, "rb") as cache_file:
-                self.notes = pickle.load(cache_file, encoding="utf-8")
-        except (EOFError, IOError, FileNotFoundError) as err:
-            logger.exception(err)
-            with open(self._NOTE_CACHE_FILE_PATH, "w+b") as cache_file:
-                pickle.dump(self._notes, cache_file)
-                logger.info((f"Created new note cache file: {self._NOTE_CACHE_FILE_PATH}"))
-        # logger.info(("Loaded notes length: ", len(cls.notes)))
-        try:
-            with open(self.NOTE_CACHE_FILE_PATH, "rb") as cache_file:
+            with open(SIMPLENOTE_NOTE_CACHE_FILE, "rb") as cache_file:
                 self.objects = pickle.load(cache_file, encoding="utf-8")
         except (EOFError, IOError, FileNotFoundError) as err:
             logger.exception(err)
-            with open(self.NOTE_CACHE_FILE_PATH, "w+b") as cache_file:
+            with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
                 pickle.dump(self._objects, cache_file)
-                logger.info((f"Created new objects cache file: {self.NOTE_CACHE_FILE_PATH}"))
+                logger.info((f"Created new objects cache file: {SIMPLENOTE_NOTE_CACHE_FILE}"))
         # logger.info(("Loaded objects length: ", len(cls.objects)))
 
     @staticmethod
-    def _save_notes(_NOTE_CACHE_FILE_PATH: str, notes: List[Dict[str, Any]]):
-        with open(_NOTE_CACHE_FILE_PATH, "w+b") as cache_file:
-            pickle.dump(notes, cache_file)
-
-    # @classmethod
-    def save_notes(cls):
-        cls._save_notes(cls._NOTE_CACHE_FILE_PATH, cls._notes)
-        # objects: List[Note] = []
-        # for note in cls.notes:
-        #     d = {}
-        #     for key in Note.__annotations__["d"].__annotations__.keys():
-        #         if key in note:
-        #             d[key] = note[key]
-        #     kwargs = {
-        #         "id": note["key"],
-        #         "v": note["version"],
-        #         "d": note,
-        #     }
-        #     objects.append(Note(**kwargs))
-        # cls.objects = objects
-        # cls._save_objects(cls.NOTE_CACHE_FILE_PATH, cls.objects)
-
-    @staticmethod
-    def _save_objects(NOTE_CACHE_FILE_PATH: str, objects: List[Note]):
-        with open(NOTE_CACHE_FILE_PATH, "w+b") as cache_file:
+    def _save_objects(SIMPLENOTE_NOTE_CACHE_FILE: str, objects: List[Note]):
+        with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
             pickle.dump(objects, cache_file)
 
     # @classmethod
     def save_objects(cls):
         return
-        cls._save_objects(cls.NOTE_CACHE_FILE_PATH, cls._objects)
-
-    # @staticmethod
-    # def dicts_to_models(notes: List[Dict[str, Any]]) -> List[Note]:
-    #     return [Local.dict_to_model(note) for note in notes]
+        cls._save_objects(SIMPLENOTE_NOTE_CACHE_FILE, cls._objects)
 
     @staticmethod
     def dict_to_model(note: Dict[str, Any]) -> Note:
@@ -132,10 +100,6 @@ class Local(_BaseManager):
     # @staticmethod
     # def model_to_dict(note: Note) -> Dict[str, Any]:
     #     return note.d.__dict__
-
-    @classmethod
-    def save(cls):
-        cls.save_notes()
 
     @staticmethod
     def get_filename_for_note(title_extension_map: List[Dict], note: Note) -> str:
@@ -165,13 +129,13 @@ class Local(_BaseManager):
 
     # @classmethod
     def get_path_for_note(cls, note: Note):
-        return os.path.join(TEMP_PATH, cls._get_filename_for_note(note))
+        return os.path.join(SIMPLENOTE_TEMP_PATH, cls._get_filename_for_note(note))
 
     # @classmethod
     def get_note_from_path(cls, view_filepath: str):
         note = None
         if view_filepath:
-            if os.path.dirname(view_filepath) == TEMP_PATH:
+            if os.path.dirname(view_filepath) == SIMPLENOTE_TEMP_PATH:
                 view_note_filename = os.path.split(view_filepath)[1]
                 list__note_filename = [
                     note for note in cls._objects if cls._get_filename_for_note(note) == view_note_filename
@@ -192,20 +156,16 @@ class Local(_BaseManager):
 
 
 class Remote(_BaseManager):
-    def __init__(self):
-        # self._api: Simplenote = Simplenote(SETTINGS.get("username", ""), SETTINGS.get("password", ""))
-        # self._api: Simplenote = Simplenote(CONFIG.SIMPLENOTE_USERNAME, CONFIG.SIMPLENOTE_PASSWORD)
-        self._api: Optional[Simplenote] = None
+    _api: Simplenote
 
     @functools.cached_property
     def api(self) -> Simplenote:
-        # logger.info(("instance", self._api))
-        if not isinstance(self._api, Simplenote):
-            SETTINGS = sublime.load_settings(CONFIG.SETTINGS_FILE)
+        if not isinstance(getattr(self, "_api"), Simplenote):
+            # SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+            SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
             self._api: Simplenote = Simplenote(
                 username=SETTINGS.get("username", ""), password=SETTINGS.get("password", "")
             )
-            # self._instance = Simplenote(CONFIG.SIMPLENOTE_USERNAME, CONFIG.SIMPLENOTE_PASSWORD)
         assert isinstance(self._api, Simplenote), f"Invalid Simplenote instance: {self._api}"
         return self._api
 
@@ -311,7 +271,7 @@ def get_note_name(note: Note):
     try:
         content = note.d.content
     except Exception as err:
-        return CONFIG.DEFAULT_NOTE_TITLE
+        return SIMPLENOTE_DEFAULT_NOTE_TITLE
     index = content.find("\n")
     if index > -1:
         title = content[:index]
@@ -319,7 +279,7 @@ def get_note_name(note: Note):
         if content:
             title = content
         else:
-            title = CONFIG.DEFAULT_NOTE_TITLE
+            title = SIMPLENOTE_DEFAULT_NOTE_TITLE
     return title
 
 

@@ -42,6 +42,7 @@ class _BaseConfig:
     PROJECT_VERSION: str = "0.0.1"
     PROJECT_DESCRIPTION: str = "Simplenote"
 
+    SIMPLENOTE_DIR: str = BASE_DIR
     SETTINGS_FILE: str = "simplenote.sublime-settings"
     SIMPLENOTE_APP_ID: str = os.getenv("SIMPLENOTE_APP_ID", "chalk-bump-f49")
     __SIMPLENOTE_APP_KEY: str = os.getenv("SIMPLENOTE_APP_KEY", "YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=")
@@ -51,18 +52,14 @@ class _BaseConfig:
     # SIMPLENOTE_APP_KEY: bytes = base64.b64decode(__SIMPLENOTE_APP_KEY)
     SIMPLENOTE_APP_KEY: str = base64.b64decode("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=").decode("utf-8")
     SIMPLENOTE_BUCKET: str = os.getenv("SIMPLENOTE_BUCKET", "note")
-    SIMPLENOTE_AUTH_URL: str = f"https://auth.simperium.com/1/{SIMPLENOTE_APP_ID}/authorize/"
-    SIMPLENOTE_DATA_URL: str = f"https://api.simperium.com/1/{SIMPLENOTE_APP_ID}/{SIMPLENOTE_BUCKET}"
     SIMPLENOTE_USERNAME: str = os.getenv("SIMPLENOTE_USERNAME", "")
     SIMPLENOTE_PASSWORD: str = os.getenv("SIMPLENOTE_PASSWORD", "")
-    STARTED: bool = False
-    RELOAD_CALLS: int = -1
-    NOTE_FETCH_LENGTH: int = 1
-    _NOTE_CACHE_FILE: str = "_note_cache.pkl"
-    NOTE_CACHE_FILE: str = "note_cache.pkl"
-    os.remove(_NOTE_CACHE_FILE) if os.path.exists(_NOTE_CACHE_FILE) else None
-    os.remove(NOTE_CACHE_FILE) if os.path.exists(NOTE_CACHE_FILE) else None
-    DEFAULT_NOTE_TITLE: str = "untitled"
+    SIMPLENOTE_TOKEN_FILE: str = os.getenv("SIMPLENOTE_TOKEN_FILE", "simplenote_token.pkl")
+    SIMPLENOTE_STARTED: bool = False
+    SIMPLENOTE_RELOAD_CALLS: int = -1
+    SIMPLENOTE_NOTE_FETCH_LENGTH: int = 1
+    SIMPLENOTE_NOTE_CACHE_FILE: str = "note_cache.pkl"
+    SIMPLENOTE_DEFAULT_NOTE_TITLE: str = "untitled"
 
 
 class Development(_BaseConfig):
@@ -87,6 +84,13 @@ env = os.getenv("ENV", "development")
 CONFIG: typing.Type[_BaseConfig] = _BaseConfig.mapping.get(env, Development)
 
 
+# for key, value in vars(CONFIG).items():
+for attr in dir(CONFIG):
+    if attr.startswith("_"):
+        continue
+    print(attr, getattr(CONFIG, attr))
+    os.environ[attr] = str(getattr(CONFIG, attr))
+print("os.environ", os.environ)
 from importlib import import_module
 
 

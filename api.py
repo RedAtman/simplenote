@@ -12,19 +12,29 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 import uuid
 
-from _config import CONFIG
 from utils.patterns.singleton.base import Singleton
 from utils.request import request
-from utils.tools import Settings
 
 
 logger = logging.getLogger()
 
+__all__ = ["Simplenote"]
+
+SIMPLENOTE_DIR = os.environ.get("SIMPLENOTE_DIR", "")
+SIMPLENOTE_APP_ID: str = os.environ.get("SIMPLENOTE_APP_ID", "")
+SIMPLENOTE_APP_KEY: str = os.environ.get("SIMPLENOTE_APP_KEY", "")
+SIMPLENOTE_BUCKET: str = os.environ.get("SIMPLENOTE_BUCKET", "")
+_SIMPLENOTE_TOKEN_FILE = os.environ.get("SIMPLENOTE_TOKEN_FILE", "simplenote_token.pkl")
+SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_DIR, _SIMPLENOTE_TOKEN_FILE)
+simplenote_variables = [SIMPLENOTE_DIR, SIMPLENOTE_APP_ID, SIMPLENOTE_APP_KEY, SIMPLENOTE_BUCKET, SIMPLENOTE_TOKEN_FILE]
+if not all(simplenote_variables):
+    raise Exception("Simplenote variables %s must be set in environment variables" % simplenote_variables)
+
 
 class URL:
     BASE: str = "https://api.simperium.com/1"
-    DATA = f"{BASE}/{CONFIG.SIMPLENOTE_APP_ID}/{CONFIG.SIMPLENOTE_BUCKET}"
-    __auth = f"{BASE}/{CONFIG.SIMPLENOTE_APP_ID}/authorize/"
+    DATA = f"{BASE}/{SIMPLENOTE_APP_ID}/{SIMPLENOTE_BUCKET}"
+    __auth = f"{BASE}/{SIMPLENOTE_APP_ID}/authorize/"
     __index = DATA + "/index"
     __retrieve = DATA + "/i/%s"
     __modify = __retrieve
@@ -79,27 +89,11 @@ class SimplenoteLoginFailed(Exception):
 class Simplenote(Singleton):
     """Class for interacting with the simplenote web service"""
 
-    # TODO: This should be a relative path, not an absolute one
-    TOKEN_FILE = "/Users/nut/Library/Application Support/Sublime Text/Packages/Simplenote/pkl/simplenote.pkl"
-
-    if not os.path.exists("pkl"):
-        os.makedirs("pkl")
-    assert os.path.exists("pkl"), "pkl directory does not exist!"
-    assert os.path.isdir("pkl"), "pkl is not a directory!"
-    assert os.access("pkl", os.W_OK), "pkl directory is not writable!"
-    assert os.access("pkl", os.R_OK), "pkl directory is not readable!"
-    assert os.path.exists(TOKEN_FILE), "pkl/simplenote.pkl does not exist!"
-
     def __init__(self, username: str = "", password: str = ""):
         """object constructor"""
         super().__init__()
         self.username = username
         self.password = password
-        if not all([self.username, self.password]):
-            SETTINGS = Settings(os.path.join(CONFIG.BASE_DIR, CONFIG.SETTINGS_FILE))
-            self.username = SETTINGS.get("username", "")
-            self.password = SETTINGS.get("password", "")
-        logger.info(("username:", self.username, "password:", self.password))
         assert all(map(bool, [self.username, self.password])), "username and password must be set"
         self.header = "X-Simperium-Token"
         self.mark = "mark"
@@ -116,7 +110,7 @@ class Simplenote(Singleton):
         Returns:
             Simplenote API token as string
         """
-        headers = {"X-Simperium-API-Key": CONFIG.SIMPLENOTE_APP_KEY}
+        headers = {"X-Simperium-API-Key": SIMPLENOTE_APP_KEY}
         request_data = {"username": username, "password": password}
         logger.info(("request_data:", request_data, "headers:", headers))
         response = request(URL.auth(), method="POST", headers=headers, data=request_data, data_as_json=False)
@@ -135,7 +129,7 @@ class Simplenote(Singleton):
                 raise err
         assert isinstance(token, str), "token is not a string: %s" % token
         assert len(token) == 32, "token length is not 32: %s" % token
-        with open(cls.TOKEN_FILE, "wb") as fh:
+        with open(SIMPLENOTE_TOKEN_FILE, "wb") as fh:
             pickle.dump(token, fh)
         return token
 
@@ -151,7 +145,7 @@ class Simplenote(Singleton):
         """
         if not self._token:
             try:
-                with open(self.TOKEN_FILE, "rb") as fh:
+                with open(SIMPLENOTE_TOKEN_FILE, "rb") as fh:
                     token = pickle.load(fh, encoding="utf-8")
                     self._token = token
             except FileNotFoundError as err:
@@ -163,7 +157,7 @@ class Simplenote(Singleton):
 
     def index(
         self,
-        limit: int = CONFIG.NOTE_FETCH_LENGTH,
+        limit: int = 1000,
         data: bool = False,
     ):
         """Method to get the note list
@@ -333,6 +327,8 @@ class Simplenote(Singleton):
 
 
 if __name__ == "__main__":
+    from _config import CONFIG
+
     simplenote = Simplenote(username=CONFIG.SIMPLENOTE_USERNAME, password=CONFIG.SIMPLENOTE_PASSWORD)
     token = simplenote.token
     print("token: %s" % token)
