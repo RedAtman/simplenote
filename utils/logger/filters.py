@@ -1,13 +1,17 @@
 import logging
 import operator as _operator
 import os
+from pprint import pformat
 import sys
+from typing import Any, Callable
+
+from .formatters import Color, LevelColor
 
 
-# class RelativePathFilter(logging.Filter):
-#     def filter(self, record: logging.LogRecord):
-#         record.relpath = record.pathname.replace(f'{BASE_DIR}/', '', 1)
-#         return True
+__all__ = ["RelativePathFilter", "RelPathFilter", "JsonFilter", "ColorFilter", "LevelMatchFilter"]
+
+
+logger = logging.getLogger(__name__)
 
 
 class RelativePathFilter(logging.Filter):
@@ -22,14 +26,47 @@ class RelativePathFilter(logging.Filter):
             if pathname.startswith(path):
                 record.relativepath = os.path.relpath(pathname, path)
                 break
-        return super().filter(record)
+        return True
 
 
 class RelPathFilter(logging.Filter):
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord):
+        # record.relpath = record.pathname.replace(f'{BASE_DIR}/', '', 1)
         record.relpath = os.path.relpath(record.pathname)
-        return super().filter(record)
+        return True
+
+
+class JsonFilter(logging.Filter):
+    def __init__(self, *args, lexer: Callable[..., Any] = pformat, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lexer: Callable[..., Any] = lexer
+
+    def filter(self, record: logging.LogRecord):
+        if record.msg and isinstance(record.msg, (dict, list)):
+            record.msg = self.lexer(record.msg)
+        return True
+
+
+class ColorFilter(logging.Filter):
+    # TODO: Currently, configuration is only supported in one formatter.
+
+    FORMAT_PATTERN = f"[%(levelname)s]%(pathname)s:%(lineno)d: %(funcName)s: %(message)s"
+
+    def __init__(self, *args, lexer: Callable[..., Any] = pformat, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lexer: Callable[..., Any] = lexer
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        level_color_num = getattr(LevelColor, record.levelname, LevelColor.DEFAULT)
+        record.levelname = Color(level_color_num).format(record.levelname, bold=True)
+        record.pathname = Color.GREY_OK.format(record.pathname)
+        # if record.msg and isinstance(record.msg, (dict, list)):
+        #     record.msg = "\n" + self.lexer(record.msg)
+        # else:
+        #     record.msg = Color(level_color_num).format(record.msg)
+        record.msg = Color(level_color_num).format(record.msg)
+        return True
 
 
 class LevelMatchFilter(logging.Filter):

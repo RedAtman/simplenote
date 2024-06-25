@@ -1,12 +1,10 @@
 import functools
 import logging
 import os
-from typing import Any, Callable, Dict, List, Optional, Union
-
-from .output import output
+from typing import Any, Callable, Optional
 
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 # class _ColorfulFormatter(logging.Formatter):
@@ -38,6 +36,11 @@ class RelativePathFormatter(logging.Formatter):
 
 
 from enum import IntEnum
+
+
+_PREFIX = "\033["
+_SUFFIX = "\033[0m"
+# NC = "\x1b[0m"  # No Color
 
 
 class Color(IntEnum):
@@ -72,9 +75,6 @@ class Color(IntEnum):
     BOLD = 1
     ITALIC = 3
     UNDERLINE = 4
-    __PREFIX = "\033["
-    __SUFFIX = "\033[0m"
-    # NC = "\x1b[0m"  # No Color
 
     def format(
         self,
@@ -93,7 +93,7 @@ class Color(IntEnum):
             c = f"4;{c}"
         if bg:
             c = f"{c};{bg}"
-        return f"{self.__PREFIX}{c}m{text}{self.__SUFFIX}"
+        return f"{_PREFIX}{c}m{text}{_SUFFIX}"
 
 
 class LevelColor(IntEnum):
@@ -107,23 +107,27 @@ class LevelColor(IntEnum):
     EXCEPTION = Color.RED
 
 
+from pprint import pformat
+
+
 class ColorFormatter(logging.Formatter):
     # TODO: Currently, configuration is only supported in one formatter.
 
     FORMAT_PATTERN = f"[%(levelname)s]%(pathname)s:%(lineno)d: %(funcName)s: %(message)s"
 
-    @staticmethod
-    def format_msg(msg: Union[Dict[str, Any], List[Any]]):
-        return output(msg)
+    def __init__(self, *args, lexer: Callable[..., Any] = pformat, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lexer: Callable[..., Any] = lexer
 
     def format(self, record: logging.LogRecord) -> str:
         level_color_num = getattr(LevelColor, record.levelname, LevelColor.DEFAULT)
         record.levelname = Color(level_color_num).format(record.levelname, bold=True)
         record.pathname = Color.GREY_OK.format(record.pathname)
-        if record.msg and isinstance(record.msg, (dict, list)):
-            record.msg = "\n" + self.format_msg(record.msg)
-        else:
-            record.msg = Color(level_color_num).format(record.msg)
+        # if record.msg and isinstance(record.msg, (dict, list)):
+        #     record.msg = "\n" + self.lexer(record.msg)
+        # else:
+        #     record.msg = Color(level_color_num).format(record.msg)
+        record.msg = Color(level_color_num).format(record.msg)
         return super().format(record)
 
 

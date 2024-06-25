@@ -1,19 +1,21 @@
 from logging import LogRecord, StreamHandler
+from pprint import pformat
+from typing import Any, Callable, Dict, Tuple
 
-from .output import output
+
+__all__ = ["JsonHandler"]
 
 
 class JsonHandler(StreamHandler):
 
+    def __init__(self, *args: Tuple[Any, ...], lexer: Callable[..., Any] = pformat, **kwargs: Dict[str, Any]):
+        super().__init__(*args, **kwargs)
+        self.lexer: Callable[..., Any] = lexer
+
     def emit(self, record: LogRecord) -> None:
-        msg = output(record.msg)
-        print(msg)
-        # msg = self.format(record)
-        # output(msg)
-        # stream = self.stream
-        # print('stream', stream)
-        # pprint(record.__dict__)
-        # output(record.__dict__)
+        if record.msg and isinstance(record.msg, (dict, list)):
+            record.msg = self.lexer(record.msg)
+        super().emit(record)
         # _dict = {}
         # for attr in filter(lambda attr: not attr.endswith("__"), dir(record)):
         #     _dict[attr] = record.__getattribute__(attr)

@@ -3,16 +3,26 @@ import logging.config
 import os
 import sys
 
+from . import lexers
 
-BASE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 ENV = os.getenv("ENV")
-LOG_FORMATTER = "color" if ENV == "development" else "standard"
-LOG_DIR = os.path.join(BASE_PATH, "logs")
-LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
-LOG_BACKUP_COUNT = os.getenv("LOG_BACKUP_COUNT", 5)
-if BASE_PATH not in sys.path:
-    print(BASE_PATH)
-    sys.path.insert(0, BASE_PATH)
+BASE_DIR: str = os.getenv("BASE_DIR", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+LOG_DIR: str = os.path.join(BASE_DIR, "logs")
+LOG_LEVEL: str = os.getenv("LOG_LEVEL", "WARNING")
+LOG_BACKUP_COUNT: int = int(os.getenv("LOG_BACKUP_COUNT", 5))
+LOG_FORMATTER = "standard"
+LOG_FILTERS = []
+if ENV == "development":
+    LOG_FORMATTER = "relpath"
+    LOG_FILTERS = [
+        "relpath",
+        "json",
+        "color",
+    ]
+
 
 LOG_CONFIG = {
     "version": 1,
@@ -24,14 +34,18 @@ LOG_CONFIG = {
         "standard": {
             "format": "%(asctime)s:[%(levelname)s]:%(pathname)s:%(lineno)d:%(funcName)s: %(message)s",
         },
-        "color": {
-            "class": "utils.logger.formatters.ColorFormatter",
+        "relpath": {
             "format": "[%(levelname)s]%(relpath)s:%(lineno)d:%(funcName)s: %(message)s",
         },
     },
     "filters": {
         "default": {"()": logging.Filter},
         "relpath": {"()": "utils.logger.filters.RelPathFilter"},
+        "json": {
+            "()": "utils.logger.filters.JsonFilter",
+            "lexer": lexers.json,
+        },
+        "color": {"()": "utils.logger.filters.ColorFilter"},
         "debug": {"()": "utils.logger.filters.LevelMatchFilter", "level": "debug", "operator": "eq"},
         "info": {"()": "utils.logger.filters.LevelMatchFilter", "level": "info", "operator": "eq"},
         "warning": {"()": "utils.logger.filters.LevelMatchFilter", "level": "warning", "operator": "eq"},
@@ -150,8 +164,7 @@ LOG_CONFIG = {
             "class": "logging.StreamHandler",
             "level": "DEBUG",
             "formatter": LOG_FORMATTER,
-            # "formatter": "color",
-            "filters": ["relpath"],
+            "filters": LOG_FILTERS,
         },
     },
     "loggers": {
@@ -189,7 +202,7 @@ LOG_CONFIG = {
 
 
 logging.config.dictConfig(LOG_CONFIG)
-logging.info(f"Logging is configured. ENV: {ENV}, FORMATTER: {LOG_FORMATTER}")
+logging.info(f"Logging is configured. ENV: {ENV}, FORMATTER: {LOG_FORMATTER}, LOG_FILTERS: {LOG_FILTERS}")
 
 
 if __name__ == "__main__":
