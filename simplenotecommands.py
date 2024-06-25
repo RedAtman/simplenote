@@ -4,7 +4,7 @@ from functools import cmp_to_key
 import logging
 import os
 import sys
-from threading import Lock, Semaphore
+from threading import Lock
 import time
 from typing import Any, Dict, List
 
@@ -197,11 +197,6 @@ class ShowNotesCommand(sublime_plugin.ApplicationCommand):
 
 class StartSyncCommand(sublime_plugin.ApplicationCommand):
 
-    # TODO:  Maybe need to remove this
-    # def set_result(self, new_notes):
-    #     sm.local.notes = new_notes
-    #     sm.local.notes.sort(key=cmp_to_key(sort_notes), reverse=True)
-
     def merge_delta(self, updated_note_resume: List[Note], existing_notes: List[Note]):
         logger.warning(("# STEP: 5"))
         logger.info(("caller", sys._getframe(1).f_code.co_name))
@@ -242,9 +237,6 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
                 logger.info(("existing_note_entry", existing_note_entry))
             # New note
             else:
-                # new_note_entry = {"needs_update": True}
-                # synch_note_resume(new_note_entry, current_updated_note_resume)
-                # existing_notes.append(new_note_entry)
                 current_updated_note_resume.needs_update = True
                 existing_notes.append(current_updated_note_resume)
 
@@ -256,12 +248,8 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
         for deleted_note in deleted_notes:
             existing_notes.remove(deleted_note)
 
-        # sm.local.notes = [note.d.__dict__ for note in existing_notes]
-        # sm.local.save_notes()
-        # self.notes_synch(sm.local.notes)
         sm.local.objects = existing_notes
         sm.local.save_objects()
-        # self.notes_synch([note.d.__dict__ for note in existing_notes])
         self.notes_synch(existing_notes)
 
     def notes_synch(self, notes: List[Note]):
@@ -315,18 +303,17 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
         logger.info(("lu", lu, "ls", ls, "others", others))
 
         # Start updates
-        sem = Semaphore(3)
         show_message("Downloading content")
         if lu:
-            down_op = MultipleNoteContentDownloader(sem, sm=sm, notes=lu)
+            down_op = MultipleNoteContentDownloader(sm=sm, notes=lu)
             down_op.set_callback(self.merge_open, {"existing_notes": notes, "dirty": True})
             OperationManager().add_operation(down_op)
         if ls:
-            down_op = MultipleNoteContentDownloader(sem, sm=sm, notes=ls)
+            down_op = MultipleNoteContentDownloader(sm=sm, notes=ls)
             down_op.set_callback(self.merge_open, {"existing_notes": notes})
             OperationManager().add_operation(down_op)
         if others:
-            down_op = MultipleNoteContentDownloader(sem, sm=sm, notes=others)
+            down_op = MultipleNoteContentDownloader(sm=sm, notes=others)
             down_op.set_callback(self.merge_notes, {"existing_notes": notes})
             OperationManager().add_operation(down_op)
 
@@ -384,10 +371,6 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
                     logger.info(("caller", sys._getframe(1).f_code.co_name))
                     logger.warning(("note", note, "updated_note", updated_note))
 
-        # sm.local.notes = existing_notes
-        # sm.local.save_notes()
-        # self.set_result(existing_notes)
-        # existing_objects = [sm.local.dict_to_model(note) for note in existing_notes]
         sm.local.objects = existing_notes
         logger.info(("existing_objects", sm.local.objects))
         # TODO: maybe first sort and then save

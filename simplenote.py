@@ -328,20 +328,13 @@ def handle_open_filename_change(old_file_path, updated_note: Note):
 
 def synch_note_resume(existing_note_entry: Note, updated_note_resume: Note):
     for key in updated_note_resume.d.__dict__:
-        # logger.info(("key", key, getattr(updated_note_resume.d, key)))
         setattr(existing_note_entry.d, key, getattr(updated_note_resume.d, key))
 
 
 def update_note(existing_note: Note, updated_note: Note):
-    logger.info(("existing_note", existing_note, "updated_note", updated_note))
+    logger.debug(("existing_note", existing_note, "updated_note", updated_note))
     synch_note_resume(existing_note, updated_note)
-    # existing_note["local_modifydate"] = time.time()
-    # existing_note["needs_update"] = False
-    # filename = sm.local._get_filename_for_note(existing_note)
-    # logger.info(("Updating note", "filename", filename, "existing_note", existing_note))
-    # existing_note["filename"] = filename
     existing_note.local_modifydate = time.time()
     existing_note.needs_update = False
     filename = sm.local._get_filename_for_note(existing_note)
-    # logger.info(("Updating note", "filename", filename, "existing_note", existing_note))
     existing_note.filename = filename

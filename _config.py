@@ -38,12 +38,11 @@ class _BaseConfig:
     os.makedirs(LOG_DIR, exist_ok=True)
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "WARNING")
 
-    PROJECT_NAME: str = "Simplenote"
-    PROJECT_VERSION: str = "0.0.1"
-    PROJECT_DESCRIPTION: str = "Simplenote"
+    SIMPLENOTE_PROJECT_NAME: str = "Simplenote"
+    SIMPLENOTE_PROJECT_VERSION: str = "0.0.1"
+    SIMPLENOTE_PROJECT_DESCRIPTION: str = "Sublime Text 3/4 plugin for Simplenote."
 
     SIMPLENOTE_DIR: str = BASE_DIR
-    SETTINGS_FILE: str = "simplenote.sublime-settings"
     SIMPLENOTE_APP_ID: str = os.getenv("SIMPLENOTE_APP_ID", "chalk-bump-f49")
     __SIMPLENOTE_APP_KEY: str = os.getenv("SIMPLENOTE_APP_KEY", "YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=")
     # There is no way for us to hide this key, only obfuscate it.
@@ -54,6 +53,7 @@ class _BaseConfig:
     SIMPLENOTE_BUCKET: str = os.getenv("SIMPLENOTE_BUCKET", "note")
     SIMPLENOTE_USERNAME: str = os.getenv("SIMPLENOTE_USERNAME", "")
     SIMPLENOTE_PASSWORD: str = os.getenv("SIMPLENOTE_PASSWORD", "")
+    SIMPLENOTE_SETTINGS_FILE: str = "simplenote.sublime-settings"
     SIMPLENOTE_TOKEN_FILE: str = os.getenv("SIMPLENOTE_TOKEN_FILE", "simplenote_token.pkl")
     SIMPLENOTE_STARTED: bool = False
     SIMPLENOTE_RELOAD_CALLS: int = -1
@@ -83,14 +83,13 @@ class Production(_BaseConfig):
 env = os.getenv("ENV", "development")
 CONFIG: typing.Type[_BaseConfig] = _BaseConfig.mapping.get(env, Development)
 
-
-# for key, value in vars(CONFIG).items():
+# Set environment variables
 for attr in dir(CONFIG):
     if attr.startswith("_"):
         continue
-    print(attr, getattr(CONFIG, attr))
     os.environ[attr] = str(getattr(CONFIG, attr))
-print("os.environ", os.environ)
+
+
 from importlib import import_module
 
 

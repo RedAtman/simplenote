@@ -1,10 +1,9 @@
 from collections import deque
 import logging
 import sys
-from threading import Lock, Semaphore, Thread
+from threading import Event, Lock, Semaphore, Thread
 from typing import Any, Callable, Dict, List, Optional
 
-from api import Simplenote
 from models import Note
 from simplenote import SimplenoteManager
 import sublime
@@ -15,7 +14,6 @@ from utils.sublime import remove_status, show_message
 __all__ = [
     "Operation",
     "NoteCreator",
-    "NoteDownloader",
     "MultipleNoteContentDownloader",
     "GetNotesDelta",
     "NoteDeleter",
@@ -33,7 +31,7 @@ class OperationError(Exception):
 class Operation(Thread):
     update_run_text: str = ""
     run_finished_text: str = ""
-    simplenote_instance: Simplenote
+    sm: SimplenoteManager
     callback: Optional[Callable[..., Any]]
     callback_kwargs: Dict[str, Any]
     exception_callback: Optional[Callable[..., Any]]
@@ -61,18 +59,14 @@ class Operation(Thread):
         logger.info(("caller", sys._getframe(1).f_code.co_name))
         Thread.join(self)
         if not self.callback is None:
-            result = self.get_result()
-            logger.warning((self, self.callback, self.callback_kwargs, self.exception_callback))
-            # logger.warning(result)
-            if not isinstance(result, Exception):
-                self.callback(result, **self.callback_kwargs)
+            logger.debug((self, self.callback, self.callback_kwargs, self.exception_callback))
+            logger.debug(self.result)
+            if not isinstance(self.result, Exception):
+                self.callback(self.result, **self.callback_kwargs)
             elif self.exception_callback:
-                self.exception_callback(result)
+                self.exception_callback(self.result)
             else:
-                logger.info(str(result))
-
-    def get_result(self):
-        return self.result
+                logger.info(str(self.result))
 
 
 class NoteCreator(Operation):
@@ -90,37 +84,11 @@ class NoteCreator(Operation):
             self.result = OperationError(err)
 
 
-class NoteDownloader(Operation):
-
-    def __init__(self, note_id: str, semaphore: Semaphore, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.note_id = note_id
-        self.semaphore = semaphore
-
-    def run(self):
-        logger.warning(("# STEP: 8"))
-        self.semaphore.acquire()
-        logger.info(("Simplenote: Downloading:", self.note_id))
-        # result, status = self.sm.remote.api.get_note(self.note_id)
-        # if status == 0:
-        #     self.result = result
-        # else:
-        #     self.result = OperationError(result)
-        note: Note = Note.retrieve(self.note_id)
-        self.result = note
-        self.semaphore.release()
-
-    def join(self):
-        # logger.info(("caller", sys._getframe(1).f_code.co_name))
-        Thread.join(self)
-        return self.result
-
-
 class MultipleNoteContentDownloader(Operation):
     update_run_text = "Simplenote: Downloading contents"
     run_finished_text = "Simplenote: Done"
 
-    def __init__(self, semaphore: Semaphore, notes: List[Note], *args, **kwargs):
+    def __init__(self, notes: List[Note], *args, semaphore: int = 9, **kwargs):
         super().__init__(*args, **kwargs)
         self.semaphore = semaphore
         logger.info(("notes", notes))
@@ -128,30 +96,38 @@ class MultipleNoteContentDownloader(Operation):
 
     def run(self):
         logger.warning(("# STEP: 7"))
+        sem = Semaphore(self.semaphore)
+        done_event = Event()
+
+        def note_retriever(note_id: str, results: List[Note]):
+            with sem:
+                note = Note.retrieve(note_id)
+                results.append(note)
+                done_event.set()
+
         threads: List[Thread] = []
-        for current_note in self.notes:
-            assert isinstance(current_note, Note)
-            assert isinstance(current_note.id, str)
-            new_thread = NoteDownloader(
-                current_note.id,
-                self.semaphore,
-                sm=self.sm,
+        results: List[Note] = []
+        for note in self.notes:
+            assert isinstance(note, Note)
+            assert isinstance(note.id, str)
+            new_thread = Thread(
+                target=note_retriever,
+                args=(
+                    note.id,
+                    results,
+                ),
             )
             threads.append(new_thread)
             new_thread.start()
 
-        operation_result = [thread.join() for thread in threads]
+        _ = [th.join() for th in threads]
+        logger.warning((self.__class__, "results", results))
 
-        logger.info(("operation_result", operation_result))
-
-        error = False
-        for an_object in operation_result:
-            if isinstance(an_object, Exception):
-                error = True
-        if not error:
-            self.result = operation_result
-        else:
-            self.result = OperationError("MultipleNoteContentDownloader")
+        for result in results:
+            if isinstance(result, Exception):
+                self.result = result
+                return
+        self.result = results
 
 
 class GetNotesDelta(Operation):
@@ -161,26 +137,12 @@ class GetNotesDelta(Operation):
     def run(self):
         logger.warning(("# STEP: 2"))
         try:
-            # status, note_resume = self.sm.remote.api.index(data=True)
-            # assert status == 0, "Error getting notes"
-            # assert isinstance(note_resume, dict), "note_resume is not a dict"
-            # assert "index" in note_resume, "index not in note_resume"
-
-            # note_objects = []
-            # list__note_dict = []
-            # for note in note_resume["index"]:
-            #     obj = Note(**note)
-            #     note_objects.append(obj)
-            #     list__note_dict.append(obj.d.__dict__)
-            # # logger.info(list__note_dict)
-            # # logger.warning(note_objects)
-            # self.result = [note for note in list__note_dict if note["deleted"] == 0]
             result: List[Note] = Note.index()
             self.result: List[Note] = result
         except Exception as err:
             logger.exception(err)
+            self.result = OperationError(str(err))
             raise err
-            self.result = OperationError(err)
 
 
 class NoteDeleter(Operation):
@@ -194,8 +156,6 @@ class NoteDeleter(Operation):
         self.note: Note = note
 
     def run(self):
-        # logger.info(("Simplenote: Deleting", self.note["key"]))
-        # result, status = self.sm.remote.api.trash_note(self.note["key"])
         logger.info(("Simplenote: Deleting", self.note))
         note: Note = self.note.trash()
         if isinstance(note, Note):
@@ -245,8 +205,7 @@ class OperationManager(Singleton):
 
     @running.setter
     def running(self, value: bool):
-        if not isinstance(value, bool):
-            raise Exception(f"Invalid value for running, expected bool got {type(value)}")
+        assert isinstance(value, bool), "Invalid value for running, expected bool got %s" % type(value)
         self._running = value
 
     def add_operation(self, operation: Operation):
