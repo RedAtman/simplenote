@@ -55,8 +55,8 @@ class Operation(Thread):
         self.exception_callback = callback
 
     def join(self):
-        logger.warning(("# STEP: 4"))
-        logger.info(("caller", sys._getframe(1).f_code.co_name))
+        logger.info(("# STEP: 4"))
+        logger.debug(("caller", sys._getframe(1).f_code.co_name))
         Thread.join(self)
         if not self.callback is None:
             logger.debug((self, self.callback, self.callback_kwargs, self.exception_callback))
@@ -66,7 +66,7 @@ class Operation(Thread):
             elif self.exception_callback:
                 self.exception_callback(self.result)
             else:
-                logger.info(str(self.result))
+                logger.debug(str(self.result))
 
 
 class NoteCreator(Operation):
@@ -74,7 +74,7 @@ class NoteCreator(Operation):
     run_finished_text = "Simplenote: Done"
 
     def run(self):
-        logger.info("Simplenote: Creating note")
+        logger.debug("Simplenote: Creating note")
         try:
             note = Note()
             saved_note = note.create()
@@ -91,11 +91,11 @@ class MultipleNoteContentDownloader(Operation):
     def __init__(self, notes: List[Note], *args, semaphore: int = 9, **kwargs):
         super().__init__(*args, **kwargs)
         self.semaphore = semaphore
-        logger.info(("notes", notes))
+        logger.debug(("notes", notes))
         self.notes: List[Note] = notes
 
     def run(self):
-        logger.warning(("# STEP: 7"))
+        logger.info(("# STEP: 7"))
         sem = Semaphore(self.semaphore)
         done_event = Event()
 
@@ -121,7 +121,7 @@ class MultipleNoteContentDownloader(Operation):
             new_thread.start()
 
         _ = [th.join() for th in threads]
-        logger.warning((self.__class__, "results", results))
+        logger.info((self.__class__, "results", results))
 
         for result in results:
             if isinstance(result, Exception):
@@ -135,7 +135,7 @@ class GetNotesDelta(Operation):
     run_finished_text = "Simplenote: Done"
 
     def run(self):
-        logger.warning(("# STEP: 2"))
+        logger.info(("# STEP: 2"))
         try:
             result: List[Note] = Note.index()
             self.result: List[Note] = result
@@ -152,11 +152,11 @@ class NoteDeleter(Operation):
     def __init__(self, *args, note: Optional[Note] = None, **kwargs):
         super().__init__(*args, **kwargs)
         assert isinstance(note, Note), "note is not a Note object"
-        logger.info(("Simplenote: Deleting", note))
+        logger.debug(("Simplenote: Deleting", note))
         self.note: Note = note
 
     def run(self):
-        logger.info(("Simplenote: Deleting", self.note))
+        logger.debug(("Simplenote: Deleting", self.note))
         note: Note = self.note.trash()
         if isinstance(note, Note):
             self.result = True
@@ -174,7 +174,7 @@ class NoteUpdater(Operation):
         self.note: Note = note
 
     def run(self):
-        logger.info((self.update_run_text, self.note))
+        logger.debug((self.update_run_text, self.note))
 
         try:
             note: Note = self.note.modify()
@@ -191,7 +191,7 @@ class OperationManager(Singleton):
     #     with cls.__lock:
     #         if not cls.__instance:
     #             cls.__instance = super().__new__(cls, *args, **kwargs)
-    #     # logger.info((Thread.ident, cls.__instance))
+    #     # logger.debug((Thread.ident, cls.__instance))
     #     return cls.__instance
 
     def __init__(self):
@@ -209,7 +209,7 @@ class OperationManager(Singleton):
         self._running = value
 
     def add_operation(self, operation: Operation):
-        logger.warning(("# STEP: 3", operation))
+        logger.info(("# STEP: 3", operation))
         self.operations.append(operation)
         if not self.running:
             self.run()
@@ -242,7 +242,7 @@ class OperationManager(Singleton):
         self.running = True
 
     def start_next_operation(self):
-        # logger.info(("self.operations", self.operations))
+        # logger.debug(("self.operations", self.operations))
         self.current_operation = self.operations.popleft()
-        # logger.info(("Starting operation", self.current_operation))
+        # logger.debug(("Starting operation", self.current_operation))
         self.current_operation.start()

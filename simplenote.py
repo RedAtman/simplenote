@@ -71,8 +71,7 @@ class Local(_BaseManager):
             logger.exception(err)
             with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
                 pickle.dump(self._objects, cache_file)
-                logger.info((f"Created new objects cache file: {SIMPLENOTE_NOTE_CACHE_FILE}"))
-        # logger.info(("Loaded objects length: ", len(cls.objects)))
+                logger.debug((f"Created new objects cache file: {SIMPLENOTE_NOTE_CACHE_FILE}"))
 
     @staticmethod
     def _save_objects(SIMPLENOTE_NOTE_CACHE_FILE: str, objects: List[Note]):
@@ -114,11 +113,9 @@ class Local(_BaseManager):
         if title_extension_map:
             for item in title_extension_map:
                 pattern = re.compile(item["title_regex"], re.UNICODE)
-                # logger.info(("pattern", pattern, "note_name", note_name, re.search(pattern, note_name)))
                 if re.search(pattern, note_name):
                     extension = "." + item["extension"]
                     break
-        # logger.info(("extension", extension, "base", base, "note_name", note_name, "note.id", note.id))
         return base + " (" + note.id + ")" + extension
 
     # @classmethod
@@ -140,18 +137,16 @@ class Local(_BaseManager):
                 list__note_filename = [
                     note for note in cls._objects if cls._get_filename_for_note(note) == view_note_filename
                 ]
-                # logger.info((("cls._objects", cls._objects)))
-                # logger.info(("view_note_filename", view_note_filename, "list__note_filename", list__note_filename))
+
                 if not list__note_filename:
                     pattern = re.compile(r"\((.*?)\)")
                     results = re.findall(pattern, view_note_filename)
                     if results:
                         noteKey = results[len(results) - 1]
                         note = [note for note in cls._objects if note.id == noteKey]
-                        logger.info(("noteKey", noteKey, "note", note))
+                        logger.debug(("noteKey", noteKey, "note", note))
                 if list__note_filename:
                     note = list__note_filename[0]
-        # logger.info(("note", note))
         return note
 
 
@@ -214,7 +209,7 @@ def cmp_to_key(mycmp):
             self.obj = obj
 
         def __lt__(self, other):
-            logger.info((mycmp, mycmp(self.obj, other.obj), self.obj, other.obj))
+            logger.debug((mycmp, mycmp(self.obj, other.obj), self.obj, other.obj))
             return mycmp(self.obj, other.obj) < 0
 
         def __gt__(self, other):

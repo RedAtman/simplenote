@@ -112,7 +112,7 @@ class Simplenote(Singleton):
         """
         headers = {"X-Simperium-API-Key": SIMPLENOTE_APP_KEY}
         request_data = {"username": username, "password": password}
-        logger.info(("request_data:", request_data, "headers:", headers))
+        logger.debug(("request_data:", request_data, "headers:", headers))
         response = request(URL.auth(), method="POST", headers=headers, data=request_data, data_as_json=False)
         assert response.status == 200, SimplenoteLoginFailed("response.status is not 200: %s" % response.status)
         result = response.json()
@@ -268,7 +268,7 @@ class Simplenote(Singleton):
                 headers={self.header: self.token},
                 data=note,
             )
-            logger.info(("response", response))
+            logger.debug(("response", response))
             _version: str | None = response.headers.get("X-Simperium-Version")
             assert isinstance(_version, str), "Version should be a string, but got %s" % _version
             assert _version.isdigit(), "Version should be an integer, but got %s" % _version
