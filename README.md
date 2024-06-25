@@ -65,6 +65,18 @@ You need to set up your Simplenote credentials before using the plugin. You can 
 }
 ```
 
+## Usage
+
+---------
+
+### Keyboard shortcut
+
+| Feature             | macOS(OS X)                        | Linux                              | Windows                            |
+| ------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- |
+| Show Note List      | ["super+shift+s", "super+shift+l"] | ["super+shift+s", "super+shift+l"] | ["super+shift+s", "super+shift+l"] |
+| Create Note         | ["super+shift+s", "super+shift+c"] | ["super+shift+s", "super+shift+c"] | ["super+shift+s", "super+shift+c"] |
+| Delete Current Note | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] |
+
 ## Overview
 
 ---------
