@@ -10,14 +10,7 @@ from typing import Any, Dict, List
 
 from _config import CONFIG
 from models import Note
-from operations import (
-    NotesIndicator,
-    MultipleNoteDownloader,
-    NoteCreator,
-    NoteDeleter,
-    NoteUpdater,
-    OperationManager,
-)
+from operations import MultipleNoteDownloader, NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from simplenote import (
     SETTINGS,
     SIMPLENOTE_SETTINGS_FILE,
@@ -38,10 +31,10 @@ from utils.sublime import close_view, show_message
 
 __all__ = [
     "HandleNoteViewCommand",
-    "ShowNotesCommand",
-    "StartSyncCommand",
-    "CreateNoteCommand",
-    "DeleteNoteCommand",
+    "NoteListCommand",
+    "NoteSyncCommand",
+    "NoteCreateCommand",
+    "NoteDeleteCommand",
     "sync",
     "start",
     "reload_if_needed",
@@ -171,7 +164,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
             OperationManager().add_operation(note_updater)
 
 
-class ShowNotesCommand(sublime_plugin.ApplicationCommand):
+class NoteListCommand(sublime_plugin.ApplicationCommand):
 
     def handle_selected(self, selected_index):
         if not selected_index > -1:
@@ -191,11 +184,11 @@ class ShowNotesCommand(sublime_plugin.ApplicationCommand):
             i += 1
             title = get_note_name(note)
             list__title.append(title)
-        logger.debug("ShowNotesCommand: notes len: %s" % len(list__title))
+        logger.debug("notes len: %s" % len(list__title))
         sublime.active_window().show_quick_panel(list__title, self.handle_selected)
 
 
-class StartSyncCommand(sublime_plugin.ApplicationCommand):
+class NoteSyncCommand(sublime_plugin.ApplicationCommand):
 
     def merge_delta(self, updated_note_resume: List[Note], existing_notes: List[Note]):
         logger.info(("# STEP: 5"))
@@ -386,7 +379,7 @@ class StartSyncCommand(sublime_plugin.ApplicationCommand):
         OperationManager().add_operation(note_indicator)
 
 
-class CreateNoteCommand(sublime_plugin.ApplicationCommand):
+class NoteCreateCommand(sublime_plugin.ApplicationCommand):
 
     def handle_new_note(self, note: Note):
         assert isinstance(note, Note), "note must be a Note"
@@ -402,7 +395,7 @@ class CreateNoteCommand(sublime_plugin.ApplicationCommand):
         OperationManager().add_operation(note_creator)
 
 
-class DeleteNoteCommand(sublime_plugin.ApplicationCommand):
+class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
 
     def handle_deletion(self, result):
         logger.debug((sm.local.objects, self.note))
@@ -441,7 +434,7 @@ def sync():
         raise TypeError("Invalid OperationManager instance: %s" % type(manager))
     if not manager.running:
         logger.debug(("Syncing", time.time()))
-        sublime.run_command("start_sync")
+        sublime.run_command("note_sync")
     else:
         logger.debug("Sync omited")
         # logger.debug("Sync omited %s" % time.time())
