@@ -14,7 +14,7 @@ from models import Note
 import sublime
 from utils.patterns.singleton.base import Singleton
 from utils.sublime import close_view
-from utils.tools import Settings
+from utils.tools import Json2Obj as Settings
 
 
 logger = logging.getLogger()

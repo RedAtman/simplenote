@@ -8,6 +8,7 @@ import time
 # import mimetypes
 from typing import Any, Dict
 
+
 try:
     from typing import TypeVar
 except ImportError:
@@ -18,7 +19,7 @@ from .patterns.singleton.base import Singleton
 
 __all__ = [
     "Dict2Obj",
-    "Settings",
+    "Json2Obj",
     # "is_media",
     "loading_bar",
     "progressbar",
@@ -64,26 +65,26 @@ class Dict2Obj(dict):
         return super().get(key, default)
 
 
-class Settings(Singleton, Dict2Obj):
-    """Load and resolve json file to a Settings object."""
+class Json2Obj(Singleton, Dict2Obj):
+    """Load and resolve json file to a Dict2Obj object."""
 
-    def __init__(self: Dict[str, _VT], settings_file: str = "settings.json") -> None:
+    def __init__(self: Dict[str, _VT], file: str) -> None:
 
-        assert os.path.exists(settings_file), "Settings file(%s) does not exist!" % settings_file
-        assert os.path.isfile(settings_file), "Settings file(%s) is not a file!" % settings_file
+        assert os.path.exists(file), "File(%s) does not exist!" % file
+        assert os.path.isfile(file), "File(%s) is not a file!" % file
 
-        def __load(settings_file: str) -> Dict[str, Any]:
-            SETTINGS: Dict[str, Any] = {}
-            with open(settings_file, "r") as fd:
+        def __load(file: str) -> Dict[str, Any]:
+            dict_obj: Dict[str, Any] = {}
+            with open(file, "r") as fd:
                 content = fd.read()
-                assert content, "Settings file(%s) is empty!" % settings_file
+                assert content, "File(%s) is empty!" % file
                 # remove comments and empty lines, then load json
-                SETTINGS: Dict[str, Any] = json.loads(re.sub("\\s//.*", "", content, flags=re.MULTILINE))
-                assert isinstance(SETTINGS, dict), "Settings file(%s) is not a dict!" % settings_file
-            return SETTINGS
+                dict_obj: Dict[str, Any] = json.loads(re.sub("\\s//.*", "", content, flags=re.MULTILINE))
+                assert isinstance(dict_obj, dict), "File(%s) is not a dict!" % file
+            return dict_obj
 
-        settings = __load(settings_file)
-        super().__init__(**settings)
+        dict_obj = __load(file)
+        super().__init__(**dict_obj)
 
 
 # mimetypes.init()
