@@ -13,20 +13,26 @@ from urllib.parse import urlencode
 import uuid
 
 from utils.patterns.singleton.base import Singleton
-from utils.request import request
+from utils.request import request, Response
 
 
 logger = logging.getLogger()
 
 __all__ = ["Simplenote"]
 
-SIMPLENOTE_DIR = os.environ.get("SIMPLENOTE_DIR", "")
+SIMPLENOTE_BASE_DIR = os.environ.get("SIMPLENOTE_BASE_DIR", os.path.abspath(os.path.dirname(__file__)))
 SIMPLENOTE_APP_ID: str = os.environ.get("SIMPLENOTE_APP_ID", "")
 SIMPLENOTE_APP_KEY: str = os.environ.get("SIMPLENOTE_APP_KEY", "")
 SIMPLENOTE_BUCKET: str = os.environ.get("SIMPLENOTE_BUCKET", "")
 _SIMPLENOTE_TOKEN_FILE = os.environ.get("SIMPLENOTE_TOKEN_FILE", "simplenote_token.pkl")
-SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_DIR, _SIMPLENOTE_TOKEN_FILE)
-simplenote_variables = [SIMPLENOTE_DIR, SIMPLENOTE_APP_ID, SIMPLENOTE_APP_KEY, SIMPLENOTE_BUCKET, SIMPLENOTE_TOKEN_FILE]
+SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_TOKEN_FILE)
+simplenote_variables = [
+    SIMPLENOTE_BASE_DIR,
+    SIMPLENOTE_APP_ID,
+    SIMPLENOTE_APP_KEY,
+    SIMPLENOTE_BUCKET,
+    SIMPLENOTE_TOKEN_FILE,
+]
 if not all(simplenote_variables):
     raise Exception("Simplenote variables %s must be set in environment variables" % simplenote_variables)
 
@@ -150,10 +156,33 @@ class Simplenote(Singleton):
                     self._token = token
             except FileNotFoundError as err:
                 self._token = self.authenticate(self.username, self.password)
-            except EOFError as err:
+            except (EOFError, Exception) as err:
                 logger.exception(err)
                 raise err
         return self._token
+
+    def _parse_response(self, note_id: str, response: Response):
+        msg = "OK"
+        try:
+            assert isinstance(response, Response), "response is not a Response: %s" % response
+            assert response.status == 200, "response.status is not 200: %s" % response.status
+            _version: str | None = response.headers.get("X-Simperium-Version")
+            logger.info(("version:", _version))
+            assert isinstance(_version, str), "version is not a string: %s" % _version
+            assert _version.isdigit(), "version is not a number: %s" % _version
+            return 0, msg, {"id": note_id, "v": int(_version), "d": response.data}
+            # result = response.json()
+            # assert isinstance(result, dict), "result is not a dict: %s" % result
+            # return result
+        except AssertionError as err:
+            logger.exception(err)
+            logger.error(response)
+            msg = err
+        except TypeError as err:
+            logger.exception(err)
+            logger.error(response)
+            msg = err
+        return -1, msg, {}
 
     def index(
         self,
@@ -174,6 +203,7 @@ class Simplenote(Singleton):
             A tuple `(status, notes)`
 
             - status (int): 0 on success and -1 otherwise
+            - msg (string): "OK" or an error message
             - notes (list): A list of note objects with all properties set except `content`.
             {
                 'current': '666e8b00a5cc2b14e5c85722',
@@ -210,10 +240,10 @@ class Simplenote(Singleton):
                 params=params,
                 headers={self.header: self.token},
             )
-            return 0, response.data
+            return 0, "OK", response.data
         except IOError as err:
             logger.exception(err)
-        return -1, {}
+            return -1, err, {}
 
     def retrieve(self, note_id: str, version: Optional[int] = None):
         """Method to get a specific note
@@ -226,6 +256,7 @@ class Simplenote(Singleton):
             A tuple `(status, note)`
 
             - status (int): 0 on success and -1 otherwise
+            - msg (string): "OK" or an error message
             - note (dict): note object
         """
         try:
@@ -234,13 +265,10 @@ class Simplenote(Singleton):
                 method="GET",
                 headers={self.header: self.token},
             )
-            _version: str | None = response.headers.get("X-Simperium-Version")
-            assert isinstance(_version, str)
-            assert _version.isdigit()
-            return 0, {"id": note_id, "v": int(_version), "d": response.data}
+            return self._parse_response(note_id, response)
         except IOError as err:
             logger.exception(err)
-        return -1, {}
+            return -1, err, {}
 
     def modify(self, note: Dict[str, Any], note_id: Optional[str] = None, version: Optional[int] = None):
         """Method to modify or create a note
@@ -254,6 +282,7 @@ class Simplenote(Singleton):
             A tuple `(status, note)`
 
             - status (int): 0 on success and -1 otherwise
+            - msg (string): "OK" or an error message
             - note (dict): note object
         """
         if not isinstance(note, dict):
@@ -268,14 +297,10 @@ class Simplenote(Singleton):
                 headers={self.header: self.token},
                 data=note,
             )
-            logger.debug(("response", response))
-            _version: str | None = response.headers.get("X-Simperium-Version")
-            assert isinstance(_version, str), "Version should be a string, but got %s" % _version
-            assert _version.isdigit(), "Version should be an integer, but got %s" % _version
-            return 0, {"id": note_id, "v": int(_version), "d": response.data}
+            return self._parse_response(note_id, response)
         except IOError as err:
             logger.exception(err)
-        return -1, {}
+            return -1, err, {}
 
     def delete(self, note_id: str, version: Optional[int] = None):
         """Method to permanently delete a note
@@ -287,6 +312,7 @@ class Simplenote(Singleton):
             A tuple `(status, note)`
 
             - status (int): 0 on success and -1 otherwise
+            - msg (string): "OK" or an error message
             - note (dict): an empty dict or an error message
         """
         try:
@@ -295,13 +321,10 @@ class Simplenote(Singleton):
                 method="DELETE",
                 headers={self.header: self.token},
             )
-            _version: str | None = response.headers.get("X-Simperium-Version")
-            assert isinstance(_version, str)
-            assert _version.isdigit()
-            return 0, {"id": note_id, "v": int(_version), "d": response.data}
+            return self._parse_response(note_id, response)
         except IOError as err:
             logger.exception(err)
-        return -1, {}
+            return -1, err, {}
 
     def trash(self, note_id: str, version: Optional[int] = None):
         """Method to move a note to the trash
@@ -313,11 +336,12 @@ class Simplenote(Singleton):
             A tuple `(status, note)`
 
             - status (int): 0 on success and -1 otherwise
+            - msg (string): "OK" or an error message
             - note (dict): the newly created note or an error message
         """
-        status, note = self.retrieve(note_id, version)
+        status, msg, note = self.retrieve(note_id, version)
         if status == -1:
-            return status, note
+            return status, msg, note
         assert isinstance(note, dict), "note is not a dict: %s" % note
         assert "deleted" in note, "deleted not in note: %s" % note
         assert isinstance(note["deleted"], bool), "note['deleted'] is not a bool: %s" % note["deleted"]

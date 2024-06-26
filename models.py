@@ -70,30 +70,29 @@ class Note:
         return result
 
     def __eq__(self, value: "Note") -> bool:
-        return self.id == value.id and self.v == value.v
+        return self.id == value.id
 
     @staticmethod
     def index(limit: int = 1000, data: bool = True) -> List["Note"]:
-        status, result = API.index(limit, data)
-        assert status == 0
+        status, msg, result = API.index(limit, data)
+        assert status == 0, msg
         assert isinstance(result, dict)
         assert "index" in result
         _notes = result.get("index", [])
-        assert status == 0, "Error retrieving notes"
         assert isinstance(_notes, list)
         return [Note(**note) for note in _notes]
 
     @staticmethod
     def retrieve(note_id: str) -> "Note":
-        status, _note = API.retrieve(note_id)
-        assert status == 0, "Error retrieving note"
+        status, msg, _note = API.retrieve(note_id)
+        assert status == 0, msg
         assert isinstance(_note, dict)
         return Note(**_note)
 
     def create(self) -> "Note":
         self.d.creationDate = time.time()
-        status, _note = API.modify(self.d.__dict__, self.id)
-        assert status == 0, "Error creating note"
+        status, msg, _note = API.modify(self.d.__dict__, self.id)
+        assert status == 0, msg
         assert isinstance(_note, dict)
         assert self.id == _note["id"]
         return self
@@ -101,16 +100,16 @@ class Note:
     def modify(self, version: Optional[int] = None) -> "Note":
         # TODO: maybe do not need to update the modificationDate here
         self.d.modificationDate = time.time()
-        status, _note = API.modify(self.d.__dict__, self.id, version)
-        assert status == 0, "Error updating note"
+        status, msg, _note = API.modify(self.d.__dict__, self.id, version)
+        assert status == 0, msg
         assert isinstance(_note, dict)
         self = Note(**_note)
         return self
 
     @classmethod
     def _trash(cls, note_id: str) -> "Note":
-        status, _note = API.trash(note_id)
-        assert status == 0, "Error deleting note"
+        status, msg, _note = API.trash(note_id)
+        assert status == 0, msg
         assert isinstance(_note, dict)
         return Note(**_note)
 
@@ -128,14 +127,14 @@ class Note:
     def restore(self) -> "Note":
         self.d.deleted = False
         self.d.modificationDate = time.time()
-        status, _note = API.modify(self.d.__dict__, self.id)
+        status, msg, _note = API.modify(self.d.__dict__, self.id)
         assert status == 0, "Error deleting note"
         assert isinstance(_note, dict)
         self = Note(**_note)
         return self
 
     def delete(self) -> "Note":
-        status, _note = API.delete(self.id)
+        status, msg, _note = API.delete(self.id)
         assert status == 0, "Error deleting note"
         assert isinstance(_note, dict)
         self = Note(**_note)
