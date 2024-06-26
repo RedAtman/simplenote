@@ -5,7 +5,6 @@ import logging
 import os
 import sys
 from threading import Lock
-import time
 from typing import Any, Dict, List
 
 from _config import CONFIG
@@ -54,7 +53,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
     def on_modified(self, view: sublime.View):
 
         def flush_saves():
-            logger.info((note))
+            logger.debug(note)
             assert isinstance(note, Note), "note is not a Note: %s" % type(note)
             if OperationManager().running:
                 sublime.set_timeout(flush_saves, 1000)
@@ -136,8 +135,6 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
                     write_note_to_path(note, filepath)
                     sublime.set_timeout(functools.partial(open_view.run_command, "revert"), 0)
                 break
-        # sm.local.notes.sort(key=cmp_to_key(sort_notes), reverse=True)
-        # sm.local.save_notes()
         sm.local.objects.sort(key=cmp_to_key(sort_notes), reverse=True)
         sm.local.save_objects()
 
@@ -154,7 +151,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
             if getattr(updated_note.d, "content") and updated_note.d.content == self.get_current_content(view):
                 return
             updated_note.d.content = self.get_current_content(view)
-            logger.info(("new content", updated_note.d.content))
+            logger.debug(("new content", updated_note.d.content))
             # Send update
             note_updater = NoteUpdater(note=updated_note, sm=sm)
             note_updater.set_callback(
@@ -166,7 +163,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
 
 class NoteListCommand(sublime_plugin.ApplicationCommand):
 
-    def handle_selected(self, selected_index):
+    def handle_selected(self, selected_index: int):
         if not selected_index > -1:
             return
 
@@ -174,6 +171,7 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
         open_note(selected_note)
 
     def run(self):
+        logger.info(self.__class__.__name__)
         if not CONFIG.SIMPLENOTE_STARTED:
             if not start():
                 return
@@ -191,7 +189,6 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
 class NoteSyncCommand(sublime_plugin.ApplicationCommand):
 
     def merge_delta(self, updated_note_resume: List[Note], existing_notes: List[Note]):
-        logger.info(("# STEP: 5"))
         logger.debug(("caller", sys._getframe(1).f_code.co_name))
         logger.debug(("updated_note_resume", updated_note_resume, "existing_notes", existing_notes))
         # updated_note_resume = [note.d.__dict__ for note in _updated_note_resume if note.d.deleted == 0]
@@ -243,10 +240,9 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
 
         sm.local.objects = existing_notes
         sm.local.save_objects()
-        self.notes_synch(existing_notes)
+        self.notes_synch(sm.local.objects)
 
     def notes_synch(self, notes: List[Note]):
-        logger.info(("# STEP: 6"))
         # Here we synch updated notes in order of priority.
         # Open notes:
         #   Locally unsaved
@@ -293,10 +289,10 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
         lu.sort(key=cmp_to_key(sort_notes), reverse=True)
         ls.sort(key=cmp_to_key(sort_notes), reverse=True)
         others.sort(key=cmp_to_key(sort_notes), reverse=True)
-        logger.debug(("lu", lu, "ls", ls, "others", others))
+        logger.info(("lu", lu, "ls", ls, "others", others))
 
         # Start updates
-        show_message("Downloading content")
+        show_message("%s starting" % self.__class__.__name__)
         if lu:
             downloader = MultipleNoteDownloader(sm=sm, notes=lu)
             downloader.set_callback(self.merge_open, {"existing_notes": notes, "dirty": True})
@@ -317,14 +313,19 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
         do_nothing_on_conflict = SETTINGS.get("on_conflict_leave_alone")
         update = False
 
+        logger.info(
+            (not dirty, dirty and not do_nothing_on_conflict, (not dirty) or (dirty and not do_nothing_on_conflict))
+        )
         # If it's not a conflict or it's a conflict we can resolve
         if (not dirty) or (dirty and not do_nothing_on_conflict):
 
+            logger.info((not auto_overwrite_on_conflict) and dirty and len(updated_notes))
             # If we don't have an overwrite policy, ask the user
             if (not auto_overwrite_on_conflict) and dirty and len(updated_notes) > 0:
                 note_names = "\n".join([get_note_name(updated_note) for updated_note in updated_notes])
                 update = sublime.ok_cancel_dialog("Note(s):\n%s\nAre in conflict. Overwrite?" % note_names, "Overwrite")
 
+            logger.info((not dirty) or update or auto_overwrite_on_conflict)
             if (not dirty) or update or auto_overwrite_on_conflict:
                 # Update notes if the change is clean, or we were asked to update
                 for note in existing_notes:
@@ -339,6 +340,8 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
                             handle_open_filename_change(old_file_path, updated_note)
                             # Reload view of the note if it's selected
                             for view in [window.active_view() for window in sublime.windows()]:
+                                if not isinstance(view, sublime.View):
+                                    continue
                                 if view.file_name() == new_file_path:
                                     sublime.set_timeout(functools.partial(view.run_command, "revert"), 0)
                             break
@@ -362,7 +365,7 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
                 except KeyError as err:
                     logger.exception(err)
                     logger.debug(("caller", sys._getframe(1).f_code.co_name))
-                    logger.info(("note", note, "updated_note", updated_note))
+                    logger.debug(("note", note, "updated_note", updated_note))
 
         sm.local.objects = existing_notes
         logger.debug(("existing_objects", sm.local.objects))
@@ -371,10 +374,9 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
         sm.local.objects.sort(key=cmp_to_key(sort_notes), reverse=True)
 
     def run(self):
-        logger.info(("# STEP: 1"))
-        show_message("show_message: Synching")
+        logger.info(self.__class__.__name__)
+        show_message(self.__class__.__name__)
         note_indicator = NotesIndicator(sm=sm)
-        # logger.debug(("notes", sm.local.notes))
         note_indicator.set_callback(self.merge_delta, {"existing_notes": sm.local.objects})
         OperationManager().add_operation(note_indicator)
 
@@ -390,6 +392,7 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
         open_note(note)
 
     def run(self):
+        logger.info(self.__class__.__name__)
         note_creator = NoteCreator(sm=sm)
         note_creator.set_callback(self.handle_new_note)
         OperationManager().add_operation(note_creator)
@@ -397,29 +400,29 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
 
 class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
 
-    def handle_deletion(self, result):
-        logger.debug((sm.local.objects, self.note))
-        sm.local.objects.remove(self.note)
+    def handle_deletion(self, note: Note, note_view: sublime.View):
+        filename = sm.local.get_path_for_note(note)
+        logger.info((note, note_view, filename))
+        filename = sm.local.get_path_for_note(note)
+        sm.local.objects.remove(note)
         sm.local.save_objects()
         try:
-            # TODO: FileNotFoundError: [Errno 2] No such file or directory: '/Users/nut/Library/Application Support/Sublime Text/Packages/Simplenote/temp/555 (2b6b91f48c4042548d8cbb78dc3afc7e)'
-            os.remove(sm.local.get_path_for_note(self.note))
+            os.remove(filename)
         except OSError as err:
             logger.exception(err)
             raise err
-        close_view(self.note_view)
+        close_view(note_view)
 
     def run(self):
-        self.note_view: sublime.View | None = sublime.active_window().active_view()
-        assert isinstance(self.note_view, sublime.View), "self.note_view must be a sublime.View"
-        view_name: str | None = self.note_view.file_name()
+        logger.info(self.__class__.__name__)
+        note_view: sublime.View | None = sublime.active_window().active_view()
+        assert isinstance(note_view, sublime.View), "note_view must be a sublime.View"
+        view_name: str | None = note_view.file_name()
         assert isinstance(view_name, str), "view_name must be a str"
         note = sm.local.get_note_from_path(view_name)
         assert isinstance(note, Note), "note must be a Note"
-        self.note = note
-        assert isinstance(self.note, Note), "note must be a Note"
-        note_deleter = NoteDeleter(note=self.note, sm=sm)
-        note_deleter.set_callback(self.handle_deletion)
+        note_deleter = NoteDeleter(note=note, sm=sm)
+        note_deleter.set_callback(self.handle_deletion, {"note_view": note_view})
         OperationManager().add_operation(note_deleter)
 
 
@@ -433,12 +436,11 @@ def sync():
     if not isinstance(manager, OperationManager):
         raise TypeError("Invalid OperationManager instance: %s" % type(manager))
     if not manager.running:
-        logger.debug(("Syncing", time.time()))
         sublime.run_command("note_sync")
     else:
         logger.debug("Sync omited")
-        # logger.debug("Sync omited %s" % time.time())
-    sync_every = SETTINGS.get("sync_every", 0) or 0
+    sync_every = SETTINGS.get("sync_every", 0)
+
     if sync_every > 0:
         sublime.set_timeout(sync, sync_every * 1000)
 

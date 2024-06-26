@@ -24,13 +24,7 @@ __all__ = [
 logger = logging.getLogger()
 
 
-class OperationError(Exception):
-    pass
-
-
 class Operation(Thread):
-    update_run_text: str = ""
-    run_finished_text: str = ""
     sm: SimplenoteManager
     callback: Optional[Callable[..., Any]]
     callback_kwargs: Dict[str, Any]
@@ -55,7 +49,6 @@ class Operation(Thread):
         self.exception_callback = callback
 
     def join(self):
-        logger.info(("# STEP: 4"))
         logger.debug(("caller", sys._getframe(1).f_code.co_name))
         Thread.join(self)
         if not self.callback is None:
@@ -70,23 +63,18 @@ class Operation(Thread):
 
 
 class NoteCreator(Operation):
-    update_run_text = "Simplenote: Creating note"
-    run_finished_text = "Simplenote: Done"
 
     def run(self):
-        logger.debug("Simplenote: Creating note")
         try:
             note = Note()
             saved_note = note.create()
             assert isinstance(saved_note, Note), "Expected Note got %s" % type(saved_note)
             self.result = note
         except Exception as err:
-            self.result = OperationError(err)
+            self.result = err
 
 
 class MultipleNoteDownloader(Operation):
-    update_run_text = "Simplenote: Downloading contents"
-    run_finished_text = "Simplenote: Done"
 
     def __init__(self, notes: List[Note], *args, semaphore: int = 9, **kwargs):
         super().__init__(*args, **kwargs)
@@ -95,7 +83,6 @@ class MultipleNoteDownloader(Operation):
         self.notes: List[Note] = notes
 
     def run(self):
-        logger.info(("# STEP: 7"))
         sem = Semaphore(self.semaphore)
         done_event = Event()
 
@@ -110,6 +97,7 @@ class MultipleNoteDownloader(Operation):
         for note in self.notes:
             assert isinstance(note, Note)
             assert isinstance(note.id, str)
+            logger.info((note_retriever.__name__, note.id, note.d.deleted, note.d.content))
             new_thread = Thread(
                 target=note_retriever,
                 args=(
@@ -121,7 +109,7 @@ class MultipleNoteDownloader(Operation):
             new_thread.start()
 
         _ = [th.join() for th in threads]
-        logger.info((self.__class__, "results", results))
+        logger.debug(("results", results))
 
         for result in results:
             if isinstance(result, Exception):
@@ -131,42 +119,34 @@ class MultipleNoteDownloader(Operation):
 
 
 class NotesIndicator(Operation):
-    update_run_text = "Simplenote: Downloading note list"
-    run_finished_text = "Simplenote: Done"
 
     def run(self):
-        logger.info(("# STEP: 2"))
         try:
             result: List[Note] = Note.index()
-            self.result: List[Note] = result
+            self.result = result
         except Exception as err:
             logger.exception(err)
-            self.result = OperationError(str(err))
-            raise err
+            self.result = err
 
 
 class NoteDeleter(Operation):
-    update_run_text = "Simplenote: Deleting note"
-    run_finished_text = None
 
     def __init__(self, *args, note: Optional[Note] = None, **kwargs):
         super().__init__(*args, **kwargs)
         assert isinstance(note, Note), "note is not a Note object"
-        logger.debug(("Simplenote: Deleting", note))
         self.note: Note = note
 
     def run(self):
-        logger.debug(("Simplenote: Deleting", self.note))
-        note: Note = self.note.trash()
-        if isinstance(note, Note):
-            self.result = True
-        else:
-            self.result = OperationError(note)
+        try:
+            note: Note = self.note.trash()
+            # self.result = True
+            self.result = note
+        except Exception as err:
+            self.result = err
+        logger.info(self.result)
 
 
 class NoteUpdater(Operation):
-    update_run_text = "Simplenote: Updating note"
-    run_finished_text = "Simplenote: Done"
 
     def __init__(self, *args, note: Optional[Note] = None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -174,8 +154,6 @@ class NoteUpdater(Operation):
         self.note: Note = note
 
     def run(self):
-        logger.debug((self.update_run_text, self.note))
-
         try:
             note: Note = self.note.modify()
             self.result = note
@@ -209,7 +187,6 @@ class OperationManager(Singleton):
         self._running = value
 
     def add_operation(self, operation: Operation):
-        logger.info(("# STEP: 3", operation))
         self.operations.append(operation)
         if not self.running:
             self.run()
@@ -221,10 +198,10 @@ class OperationManager(Singleton):
 
         # If it's still running, update the status
         if self.current_operation.is_alive():
-            text = self.current_operation.update_run_text
+            text = "Simplenote: %s staring" % self.current_operation.__class__.__name__
         else:
             # If not running, show finished text call callback with result and do the next operation
-            text = self.current_operation.run_finished_text
+            text = "Simplenote: %s finished" % self.current_operation.__class__.__name__
             self.current_operation.join()
             if len(self.operations) > 0:
                 self.start_next_operation()
@@ -242,7 +219,6 @@ class OperationManager(Singleton):
         self.running = True
 
     def start_next_operation(self):
-        # logger.debug(("self.operations", self.operations))
         self.current_operation = self.operations.popleft()
-        # logger.debug(("Starting operation", self.current_operation))
+        logger.info(self.current_operation.__class__.__name__)
         self.current_operation.start()
