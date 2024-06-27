@@ -1,10 +1,13 @@
 from dataclasses import dataclass, field
+from importlib import import_module
 import logging
+import os
 import time
 from typing import Dict, List, Optional, TypedDict
 import uuid
 
-from api import Simplenote
+# from api import Simplenote
+from utils.tools import Json2Obj as Settings
 
 
 # from typing_extensions import Unpack
@@ -12,7 +15,14 @@ from api import Simplenote
 
 logger = logging.getLogger()
 
-API = Simplenote()
+SIMPLENOTE_DEFAULT_NOTE_TITLE = os.environ.get("SIMPLENOTE_DEFAULT_NOTE_TITLE", "untitled")
+SIMPLENOTE_BASE_DIR = os.environ.get("SIMPLENOTE_BASE_DIR", os.path.abspath(os.path.dirname(__file__)))
+_SIMPLENOTE_SETTINGS_FILE = os.environ.get("SIMPLENOTE_SETTINGS_FILE", "simplenote.sublime-settings")
+SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_SETTINGS_FILE)
+SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
+api = import_module("api")
+API = api.Simplenote(SETTINGS.username, SETTINGS.password)
+logger.warning((API, API.token))
 
 
 @dataclass
