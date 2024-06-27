@@ -3,8 +3,9 @@ from importlib import import_module
 import logging
 import os
 import time
-from typing import Dict, List, Optional, TypedDict
-import uuid
+from typing import Any, ClassVar, Dict, List, Optional, TypedDict
+from uuid import uuid4
+from weakref import WeakValueDictionary
 
 # from api import Simplenote
 from utils.tools import Json2Obj as Settings
@@ -20,8 +21,11 @@ SIMPLENOTE_BASE_DIR = os.environ.get("SIMPLENOTE_BASE_DIR", os.path.abspath(os.p
 _SIMPLENOTE_SETTINGS_FILE = os.environ.get("SIMPLENOTE_SETTINGS_FILE", "simplenote.sublime-settings")
 SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_SETTINGS_FILE)
 SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
-api = import_module("api")
-API = api.Simplenote(SETTINGS.username, SETTINGS.password)
+# api = import_module("api")
+from api import Simplenote
+
+
+API = Simplenote(SETTINGS.username, SETTINGS.password)
 logger.warning((API, API.token))
 
 
@@ -52,7 +56,9 @@ class NoteType(TypedDict):
 
 @dataclass
 class Note:
-    id: str = uuid.uuid4().hex
+    mapper_id_note: ClassVar[WeakValueDictionary[str, "Note"]] = WeakValueDictionary()
+
+    id: str = field(default_factory=lambda: uuid4().hex)
     v: int = 0
     d: _Note = field(default_factory=_Note)
 
@@ -62,6 +68,15 @@ class Note:
     needs_update: Optional[bool] = None
     local_modifydate: float = field(default_factory=time.time)
     filename: Optional[str] = None
+
+    def __new__(cls, id: str = "", **kwargs):
+        if not id:
+            id = uuid4().hex
+
+        if id not in Note.mapper_id_note:
+            instance = super().__new__(cls)
+            Note.mapper_id_note[id] = instance
+        return Note.mapper_id_note[id]
 
     def _add_extra_fields(self):
         self.modifydate = self.d.modificationDate
@@ -74,7 +89,7 @@ class Note:
             self.d = d
         self._add_extra_fields()
 
-    def _nest_dict(self) -> Dict:
+    def _nest_dict(self) -> Dict[str, Any]:
         result = self.__dict__
         result["d"] = self.d.__dict__
         return result
@@ -152,16 +167,33 @@ class Note:
 
 
 if __name__ == "__main__":
-    _now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    note = Note(d={"content": _now})
-    print(note.create())
-    print(note.modify(content="new content"))
-    print(note._nest_dict())
-    print(Note.__dict__)
+    from pprint import pprint
+
+    import_module("_config")
+    kwargs = {
+        "id": uuid4().hex,
+        "v": 1,
+        "d": {
+            "tags": [],
+            "deleted": False,
+            "shareURL": "",
+            "systemTags": [],
+            "content": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            "publishURL": "",
+            # "modificationDate": 0,
+            # "creationDate": 0,
+        },
+    }
+    note = Note(**kwargs)
+    pprint(note.create())
+    note.d.content = "new content"
+    pprint(note.modify())
+    pprint(note._nest_dict())
+    pprint(Note.__dict__)
     empty_note = Note(v=1)
-    print(empty_note)
-    print(empty_note.__dict__)
-    print(empty_note._nest_dict())
+    pprint(empty_note)
+    pprint(empty_note.__dict__)
+    pprint(empty_note._nest_dict())
     note = {
         # "id": "1",
         "v": 1,
