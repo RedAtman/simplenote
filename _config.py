@@ -36,13 +36,13 @@ class _BaseConfig:
     sys.path.insert(0, BASE_DIR)
     LOG_DIR: str = os.path.join(BASE_DIR, "logs")
     os.makedirs(LOG_DIR, exist_ok=True)
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "WARNING")
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
     SIMPLENOTE_PROJECT_NAME: str = "Simplenote"
     SIMPLENOTE_PROJECT_VERSION: str = "0.0.1"
     SIMPLENOTE_PROJECT_DESCRIPTION: str = "Sublime Text 3/4 plugin for Simplenote."
 
-    SIMPLENOTE_DIR: str = BASE_DIR
+    SIMPLENOTE_BASE_DIR: str = BASE_DIR
     SIMPLENOTE_APP_ID: str = os.getenv("SIMPLENOTE_APP_ID", "chalk-bump-f49")
     __SIMPLENOTE_APP_KEY: str = os.getenv("SIMPLENOTE_APP_KEY", "YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=")
     # There is no way for us to hide this key, only obfuscate it.
@@ -87,7 +87,9 @@ CONFIG: typing.Type[_BaseConfig] = _BaseConfig.mapping.get(env, Development)
 for attr in dir(CONFIG):
     if attr.startswith("_"):
         continue
-    os.environ[attr] = str(getattr(CONFIG, attr))
+    if attr.startswith(("SIMPLENOTE", "LOG_LEVEL")):
+        os.environ[attr] = str(getattr(CONFIG, attr))
+        # print("set %s: %s" % (attr, getattr(CONFIG, attr)))
 
 
 from importlib import import_module
