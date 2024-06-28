@@ -22,7 +22,7 @@ from simplenote import (
 )
 import sublime
 import sublime_plugin
-from utils.sublime import close_view, show_message
+from utils.sublime import close_view, open_view, show_message
 
 
 __all__ = [
@@ -168,7 +168,7 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
             return
 
         selected_note = sm.local.objects[selected_index]
-        selected_note.open()
+        open_view(selected_note)
 
     def run(self):
         logger.info(self.__class__.__name__)
@@ -391,7 +391,7 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
         sm.local.objects.append(note)
         sm.local.objects.sort(key=cmp_to_key(sort_notes), reverse=True)
         sm.local.save_objects()
-        note.open()
+        open_view(note)
 
     def run(self):
         logger.info(self.__class__.__name__)

@@ -1,4 +1,11 @@
+import logging
+from typing import Optional
+
+from models import Note
 import sublime
+
+
+logger = logging.getLogger()
 
 
 __all__ = [
@@ -20,10 +27,23 @@ def remove_status():
     show_message(None)
 
 
+def get_view_window(view: Optional[sublime.View] = None) -> sublime.Window:
+    window = None
+    if isinstance(view, sublime.View):
+        window = view.window()
+    if window is None:
+        window = sublime.active_window()
+    return window
+
+
+def open_view(note: Note, view: Optional[sublime.View] = None):
+    filepath = note.open()
+    window = get_view_window(view)
+    return window.open_file(filepath)
+
+
 def close_view(view: sublime.View):
     view.set_scratch(True)
-    view_window = view.window()
-    if not view_window:
-        view_window = sublime.active_window()
-    view_window.focus_view(view)
-    view_window.run_command("close_file")
+    window = get_view_window(view)
+    window.focus_view(view)
+    window.run_command("close_file")

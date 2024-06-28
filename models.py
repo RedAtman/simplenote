@@ -12,7 +12,6 @@ from uuid import uuid4
 from weakref import WeakValueDictionary
 
 from settings import Settings
-import sublime
 
 
 # from typing_extensions import Unpack
@@ -65,6 +64,7 @@ class NoteType(TypedDict):
 @dataclass
 class Note:
     mapper_id_note: ClassVar[WeakValueDictionary[str, "Note"]] = WeakValueDictionary()
+    mapper_path_note: ClassVar[WeakValueDictionary[str, "Note"]] = WeakValueDictionary()
 
     id: str = field(default_factory=lambda: uuid4().hex)
     v: int = 0
@@ -76,6 +76,7 @@ class Note:
     needs_update: Optional[bool] = None
     local_modifydate: float = field(default_factory=time.time)
     filename: Optional[str] = None
+    filepath: Optional[str] = None
 
     def __new__(cls, id: str = "", **kwargs):
         if not id:
@@ -219,14 +220,22 @@ class Note:
                 logger.exception(err)
                 raise err
 
-    def open(self, window: Optional[sublime.Window] = None):
-        if not isinstance(window, sublime.Window):
-            window: sublime.Window = sublime.active_window()
+    def open(self):
         filepath = self.get_filepath()
         assert isinstance(filepath, str)
+        self.filepath = filepath
         self.write_content_to_path(filepath)
-        # Note.mapper_path_note[filepath] = self
-        return window.open_file(filepath)
+        Note.mapper_path_note[filepath] = self
+        return filepath
+
+    def close(self):
+        if not self.filepath:
+            return
+        del Note.mapper_path_note[self.filepath]
+        try:
+            os.remove(self.filepath)
+        except OSError as err:
+            logger.exception(err)
 
 
 if __name__ == "__main__":

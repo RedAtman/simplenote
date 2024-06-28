@@ -12,7 +12,7 @@ from settings import Settings
 # https://www.sublimetext.com/docs/api_reference.html
 import sublime
 from utils.patterns.singleton.base import Singleton
-from utils.sublime import close_view
+from utils.sublime import close_view, open_view
 
 
 logger = logging.getLogger()
@@ -158,7 +158,7 @@ def sort_notes(a_note: Note, b_note: Note):
         return (date_a > date_b) - (date_a < date_b)
 
 
-def handle_open_filename_change(old_file_path, updated_note: Note):
+def handle_open_filename_change(old_file_path: str, updated_note: Note):
     new_file_path = updated_note.get_filepath()
     old_note_view = None
     new_view = None
@@ -176,7 +176,7 @@ def handle_open_filename_change(old_file_path, updated_note: Note):
         # If found
         if old_note_view:
             # Open the note in a new view
-            new_view = updated_note.open(old_note_view.window())
+            new_view = open_view(updated_note, old_note_view)
             # Close the old dirty note
             old_note_view_id = old_note_view.id()
             old_active_view_id = old_active_view.id()
