@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import re
 import sys
 import time
@@ -13,8 +12,6 @@ try:
     from typing import TypeVar
 except ImportError:
     from typing_extensions import TypeVar
-
-from .patterns.singleton.base import Singleton
 
 
 __all__ = [
@@ -65,13 +62,10 @@ class Dict2Obj(dict):
         return super().get(key, default)
 
 
-class Json2Obj(Singleton, Dict2Obj):
+class Json2Obj(Dict2Obj):
     """Load and resolve json file to a Dict2Obj object."""
 
     def __init__(self: Dict[str, _VT], file: str) -> None:
-
-        assert os.path.exists(file), "File(%s) does not exist!" % file
-        assert os.path.isfile(file), "File(%s) is not a file!" % file
 
         def __load(file: str) -> Dict[str, Any]:
             dict_obj: Dict[str, Any] = {}

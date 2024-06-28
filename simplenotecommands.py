@@ -10,8 +10,8 @@ from typing import Any, Dict, List
 from _config import CONFIG
 from models import Note
 from operations import MultipleNoteDownloader, NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
+from settings import Settings
 from simplenote import (
-    SETTINGS,
     SIMPLENOTE_SETTINGS_FILE,
     SIMPLENOTE_TEMP_PATH,
     SimplenoteManager,
@@ -39,6 +39,9 @@ __all__ = [
 
 
 logger = logging.getLogger()
+
+
+SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
 
 sm = SimplenoteManager()
 

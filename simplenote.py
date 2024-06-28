@@ -7,12 +7,12 @@ import time
 from typing import Any, Dict, List
 
 from models import Note
+from settings import Settings
 
 # https://www.sublimetext.com/docs/api_reference.html
 import sublime
 from utils.patterns.singleton.base import Singleton
 from utils.sublime import close_view
-from utils.tools import Json2Obj as Settings
 
 
 logger = logging.getLogger()

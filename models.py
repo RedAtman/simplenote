@@ -11,10 +11,8 @@ from typing import Any, ClassVar, Dict, List, Optional, TypedDict
 from uuid import uuid4
 from weakref import WeakValueDictionary
 
+from settings import Settings
 import sublime
-
-# from api import Simplenote
-from utils.tools import Json2Obj as Settings
 
 
 # from typing_extensions import Unpack
