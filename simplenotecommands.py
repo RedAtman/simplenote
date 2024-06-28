@@ -15,13 +15,10 @@ from simplenote import (
     SIMPLENOTE_SETTINGS_FILE,
     SIMPLENOTE_TEMP_PATH,
     SimplenoteManager,
-    get_note_name,
     handle_open_filename_change,
-    open_note,
     sort_notes,
     synch_note_resume,
     update_note,
-    write_note_to_path,
 )
 import sublime
 import sublime_plugin
@@ -131,8 +128,8 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
                 # If we didn't reopen the view with the name changed, but the content has changed
                 # we have to update the view anyway
                 if updated_from_server and not name_changed:
-                    filepath = sm.local.get_path_for_note(note)
-                    write_note_to_path(note, filepath)
+                    filepath = note.get_filepath()
+                    note.write_content_to_path(filepath)
                     sublime.set_timeout(functools.partial(open_view.run_command, "revert"), 0)
                 break
         sm.local.objects.sort(key=cmp_to_key(sort_notes), reverse=True)
@@ -168,7 +165,7 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
             return
 
         selected_note = sm.local.objects[selected_index]
-        open_note(selected_note)
+        selected_note.open()
 
     def run(self):
         logger.info(self.__class__.__name__)
@@ -179,9 +176,11 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
         i = 0
         list__title: List[str] = []
         for note in sm.local.objects:
+            logger.info(("note", note))
+            if note.d.deleted == True:
+                continue
             i += 1
-            title = get_note_name(note)
-            list__title.append(title)
+            list__title.append(note.title)
         logger.debug("notes len: %s" % len(list__title))
         sublime.active_window().show_quick_panel(list__title, self.handle_selected)
 
@@ -322,7 +321,7 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
             logger.info((not auto_overwrite_on_conflict) and dirty and len(updated_notes))
             # If we don't have an overwrite policy, ask the user
             if (not auto_overwrite_on_conflict) and dirty and len(updated_notes) > 0:
-                note_names = "\n".join([get_note_name(updated_note) for updated_note in updated_notes])
+                note_names = "\n".join([updated_note.title for updated_note in updated_notes])
                 update = sublime.ok_cancel_dialog("Note(s):\n%s\nAre in conflict. Overwrite?" % note_names, "Overwrite")
 
             logger.info((not dirty) or update or auto_overwrite_on_conflict)
@@ -332,10 +331,10 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
                     for updated_note in updated_notes:
                         # If we find the updated note
                         if note.id == updated_note.id:
-                            old_file_path = sm.local.get_path_for_note(note)
-                            new_file_path = sm.local.get_path_for_note(updated_note)
+                            old_file_path = note.get_filepath()
+                            new_file_path = updated_note.get_filepath()
                             # Update contents
-                            write_note_to_path(updated_note, new_file_path)
+                            updated_note.write_content_to_path(new_file_path)
                             # Handle filename change (note has the old filename value)
                             handle_open_filename_change(old_file_path, updated_note)
                             # Reload view of the note if it's selected
@@ -389,7 +388,7 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
         sm.local.objects.append(note)
         sm.local.objects.sort(key=cmp_to_key(sort_notes), reverse=True)
         sm.local.save_objects()
-        open_note(note)
+        note.open()
 
     def run(self):
         logger.info(self.__class__.__name__)
@@ -401,13 +400,12 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
 class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
 
     def handle_deletion(self, note: Note, note_view: sublime.View):
-        filename = sm.local.get_path_for_note(note)
-        logger.info((note, note_view, filename))
-        filename = sm.local.get_path_for_note(note)
+        filepath = note.get_filepath()
+        logger.info((note, note_view, filepath))
         sm.local.objects.remove(note)
         sm.local.save_objects()
         try:
-            os.remove(filename)
+            os.remove(filepath)
         except OSError as err:
             logger.exception(err)
             raise err

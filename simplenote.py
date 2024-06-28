@@ -1,13 +1,11 @@
 from datetime import datetime
-import functools
 import logging
 import os
 import pickle
 import re
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from api import Simplenote
 from models import Note
 
 # https://www.sublimetext.com/docs/api_reference.html
@@ -22,7 +20,7 @@ logger = logging.getLogger()
 
 SIMPLENOTE_PROJECT_NAME = os.environ.get("SIMPLENOTE_PROJECT_NAME", "Simplenote")
 SIMPLENOTE_PACKAGE_PATH = os.path.join(sublime.packages_path(), SIMPLENOTE_PROJECT_NAME)
-SIMPLENOTE_DEFAULT_NOTE_TITLE = os.environ.get("SIMPLENOTE_DEFAULT_NOTE_TITLE", "Untitled")
+SIMPLENOTE_DEFAULT_NOTE_TITLE = os.environ.get("SIMPLENOTE_DEFAULT_NOTE_TITLE", "untitled")
 SIMPLENOTE_TEMP_PATH = os.path.join(SIMPLENOTE_PACKAGE_PATH, "temp")
 _SIMPLENOTE_NOTE_CACHE_FILE = os.environ.get("SIMPLENOTE_NOTE_CACHE_FILE", "note_cache.pkl")
 SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, _SIMPLENOTE_NOTE_CACHE_FILE)
@@ -31,7 +29,6 @@ _SIMPLENOTE_SETTINGS_FILE = os.environ.get("SIMPLENOTE_SETTINGS_FILE", "simpleno
 SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, _SIMPLENOTE_SETTINGS_FILE)
 # SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
 SETTINGS: Settings = Settings(SIMPLENOTE_SETTINGS_FILE)
-API = Simplenote(SETTINGS.get("username", ""), SETTINGS.get("password", ""))
 
 
 class _BaseManager(Singleton):
@@ -100,43 +97,13 @@ class Local(_BaseManager):
     # def model_to_dict(note: Note) -> Dict[str, Any]:
     #     return note.d.__dict__
 
-    @staticmethod
-    def get_filename_for_note(title_extension_map: List[Dict], note: Note) -> str:
-        # Take out invalid characters from title and use that as base for the name
-        import string
-
-        valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
-        note_name = get_note_name(note)
-        base = "".join(c for c in note_name if c in valid_chars)
-        # Determine extension based on title
-        extension = ""
-        if title_extension_map:
-            for item in title_extension_map:
-                pattern = re.compile(item["title_regex"], re.UNICODE)
-                if re.search(pattern, note_name):
-                    extension = "." + item["extension"]
-                    break
-        return base + " (" + note.id + ")" + extension
-
-    # @classmethod
-    def _get_filename_for_note(cls, note: Note) -> str:
-        title_extension_map = SETTINGS.get("title_extension_map")
-        assert isinstance(title_extension_map, list), f"Invalid title_extension_map: {title_extension_map}"
-        return cls.get_filename_for_note(title_extension_map, note)
-
-    # @classmethod
-    def get_path_for_note(cls, note: Note):
-        return os.path.join(SIMPLENOTE_TEMP_PATH, cls._get_filename_for_note(note))
-
     # @classmethod
     def get_note_from_path(cls, view_filepath: str):
         note = None
         if view_filepath:
             if os.path.dirname(view_filepath) == SIMPLENOTE_TEMP_PATH:
                 view_note_filename = os.path.split(view_filepath)[1]
-                list__note_filename = [
-                    note for note in cls._objects if cls._get_filename_for_note(note) == view_note_filename
-                ]
+                list__note_filename = [note for note in cls._objects if note.get_filename() == view_note_filename]
 
                 if not list__note_filename:
                     pattern = re.compile(r"\((.*?)\)")
@@ -151,32 +118,11 @@ class Local(_BaseManager):
 
 
 class Remote(_BaseManager):
-    _api: Simplenote
-
-    @functools.cached_property
-    def api(self) -> Simplenote:
-        if not isinstance(getattr(self, "_api"), Simplenote):
-            # SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
-            SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
-            self._api: Simplenote = Simplenote(
-                username=SETTINGS.get("username", ""), password=SETTINGS.get("password", "")
-            )
-        assert isinstance(self._api, Simplenote), f"Invalid Simplenote instance: {self._api}"
-        return self._api
 
     @property
     def notes(self) -> List[Note]:
         try:
-            status, note_resume = self.api.index(data=True)
-            assert status == 0, "Error getting notes"
-            assert isinstance(note_resume, dict), "note_resume is not a dict"
-            assert "index" in note_resume, "index not in note_resume"
-
-            note_objects = []
-            for note in note_resume["index"]:
-                obj = Note(**note)
-                note_objects.append(obj)
-            return note_objects
+            return Note.index()
         except Exception as err:
             logger.exception(err)
             raise err
@@ -201,35 +147,6 @@ class SimplenoteManager(Singleton):
 sm = SimplenoteManager()
 
 
-def cmp_to_key(mycmp):
-    "Convert a cmp= function into a key= function"
-
-    class K(object):
-        def __init__(self, obj, *args):
-            self.obj = obj
-
-        def __lt__(self, other):
-            logger.debug((mycmp, mycmp(self.obj, other.obj), self.obj, other.obj))
-            return mycmp(self.obj, other.obj) < 0
-
-        def __gt__(self, other):
-            return mycmp(self.obj, other.obj) > 0
-
-        def __eq__(self, other):
-            return mycmp(self.obj, other.obj) == 0
-
-        def __le__(self, other):
-            return mycmp(self.obj, other.obj) <= 0
-
-        def __ge__(self, other):
-            return mycmp(self.obj, other.obj) >= 0
-
-        def __ne__(self, other):
-            return mycmp(self.obj, other.obj) != 0
-
-    return K
-
-
 def sort_notes(a_note: Note, b_note: Note):
     if "pinned" in a_note.systemtags:
         return 1
@@ -241,45 +158,8 @@ def sort_notes(a_note: Note, b_note: Note):
         return (date_a > date_b) - (date_a < date_b)
 
 
-def write_note_to_path(note: Note, filepath):
-    f = open(filepath, "wb")
-    try:
-        content = note.d.content
-        f.write(content.encode("utf-8"))
-    except KeyError as err:
-        logger.exception(err)
-        pass
-    f.close()
-
-
-def open_note(note: Note, window: Optional[sublime.Window] = None):
-    # if isinstance(note, dict):
-    #     note = sm.local.dict_to_model(note)
-    if window is None:
-        window: sublime.Window = sublime.active_window()
-    filepath = sm.local.get_path_for_note(note)
-    write_note_to_path(note, filepath)
-    return window.open_file(filepath)
-
-
-def get_note_name(note: Note):
-    try:
-        content = note.d.content
-    except Exception as err:
-        return SIMPLENOTE_DEFAULT_NOTE_TITLE
-    index = content.find("\n")
-    if index > -1:
-        title = content[:index]
-    else:
-        if content:
-            title = content
-        else:
-            title = SIMPLENOTE_DEFAULT_NOTE_TITLE
-    return title
-
-
 def handle_open_filename_change(old_file_path, updated_note: Note):
-    new_file_path = sm.local.get_path_for_note(updated_note)
+    new_file_path = updated_note.get_filepath()
     old_note_view = None
     new_view = None
     # If name changed
@@ -296,7 +176,7 @@ def handle_open_filename_change(old_file_path, updated_note: Note):
         # If found
         if old_note_view:
             # Open the note in a new view
-            new_view = open_note(updated_note, old_note_view.window())
+            new_view = updated_note.open(old_note_view.window())
             # Close the old dirty note
             old_note_view_id = old_note_view.id()
             old_active_view_id = old_active_view.id()
@@ -331,5 +211,5 @@ def update_note(existing_note: Note, updated_note: Note):
     synch_note_resume(existing_note, updated_note)
     existing_note.local_modifydate = time.time()
     existing_note.needs_update = False
-    filename = sm.local._get_filename_for_note(existing_note)
+    filename = existing_note.get_filename()
     existing_note.filename = filename

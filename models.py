@@ -1,11 +1,17 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from importlib import import_module
 import logging
 import os
+import re
+import string
 import time
 from typing import Any, ClassVar, Dict, List, Optional, TypedDict
 from uuid import uuid4
 from weakref import WeakValueDictionary
+
+import sublime
 
 # from api import Simplenote
 from utils.tools import Json2Obj as Settings
@@ -16,8 +22,10 @@ from utils.tools import Json2Obj as Settings
 
 logger = logging.getLogger()
 
+
 SIMPLENOTE_DEFAULT_NOTE_TITLE = os.environ.get("SIMPLENOTE_DEFAULT_NOTE_TITLE", "untitled")
 SIMPLENOTE_BASE_DIR = os.environ.get("SIMPLENOTE_BASE_DIR", os.path.abspath(os.path.dirname(__file__)))
+SIMPLENOTE_TEMP_PATH = os.path.join(SIMPLENOTE_BASE_DIR, "temp")
 _SIMPLENOTE_SETTINGS_FILE = os.environ.get("SIMPLENOTE_SETTINGS_FILE", "simplenote.sublime-settings")
 SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_SETTINGS_FILE)
 SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
@@ -25,6 +33,8 @@ SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
 from api import Simplenote
 
 
+# Take out invalid characters from title and use that as base for the name
+VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 API = Simplenote(SETTINGS.username, SETTINGS.password)
 logger.warning((API, API.token))
 
@@ -164,6 +174,61 @@ class Note:
         assert isinstance(_note, dict)
         self = Note(**_note)
         return self
+
+    @property
+    def title(self):
+        try:
+            content = self.d.content
+        except Exception:
+            return SIMPLENOTE_DEFAULT_NOTE_TITLE
+        index = content.find("\n")
+        if index > -1:
+            title = content[:index]
+        else:
+            if content:
+                title = content
+            else:
+                title = SIMPLENOTE_DEFAULT_NOTE_TITLE
+        return title
+
+    def _get_filename(self, title_extension_map: List[Dict[str, str]]) -> str:
+        note_title = self.title
+        base = "".join(c for c in note_title if c in VALID_CHARS)
+        # Determine extension based on title
+        extension = ""
+        if title_extension_map:
+            for item in title_extension_map:
+                pattern = re.compile(item["title_regex"], re.UNICODE)
+                if re.search(pattern, note_title):
+                    extension = "." + item["extension"]
+                    break
+        return base + " (" + self.id + ")" + extension
+
+    def get_filename(self):
+        title_extension_map = SETTINGS.get("title_extension_map")
+        assert isinstance(title_extension_map, list), f"Invalid title_extension_map: {title_extension_map}"
+        filename = self._get_filename(title_extension_map)
+        return filename
+
+    def get_filepath(self):
+        return os.path.join(SIMPLENOTE_TEMP_PATH, self.get_filename())
+
+    def write_content_to_path(self, filepath: str):
+        with open(filepath, "wb") as f:
+            try:
+                f.write(self.d.content.encode("utf-8"))
+            except Exception as err:
+                logger.exception(err)
+                raise err
+
+    def open(self, window: Optional[sublime.Window] = None):
+        if not isinstance(window, sublime.Window):
+            window: sublime.Window = sublime.active_window()
+        filepath = self.get_filepath()
+        assert isinstance(filepath, str)
+        self.write_content_to_path(filepath)
+        # Note.mapper_path_note[filepath] = self
+        return window.open_file(filepath)
 
 
 if __name__ == "__main__":
