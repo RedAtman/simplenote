@@ -13,11 +13,11 @@ from utils.sublime import remove_status, show_message
 
 __all__ = [
     "Operation",
-    "NoteCreator",
-    "MultipleNoteDownloader",
     "NotesIndicator",
-    "NoteDeleter",
+    "NoteCreator",
     "NoteUpdater",
+    "NoteDeleter",
+    "MultipleNoteDownloader",
     "OperationManager",
 ]
 
@@ -62,6 +62,17 @@ class Operation(Thread):
                 logger.debug(str(self.result))
 
 
+class NotesIndicator(Operation):
+
+    def run(self):
+        try:
+            result: List[Note] = Note.index()
+            self.result = result
+        except Exception as err:
+            logger.exception(err)
+            self.result = err
+
+
 class NoteCreator(Operation):
 
     def run(self):
@@ -72,6 +83,39 @@ class NoteCreator(Operation):
             self.result = note
         except Exception as err:
             self.result = err
+
+
+class NoteUpdater(Operation):
+
+    def __init__(self, *args, note: Optional[Note] = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        assert isinstance(note, Note)
+        self.note: Note = note
+
+    def run(self):
+        try:
+            note: Note = self.note.modify()
+            self.result = note
+        except Exception as err:
+            logger.exception(err)
+            self.result = err
+
+
+class NoteDeleter(Operation):
+
+    def __init__(self, *args, note: Optional[Note] = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        assert isinstance(note, Note), "note is not a Note object"
+        self.note: Note = note
+
+    def run(self):
+        try:
+            note: Note = self.note.trash()
+            # self.result = True
+            self.result = note
+        except Exception as err:
+            self.result = err
+        logger.info(self.result)
 
 
 class MultipleNoteDownloader(Operation):
@@ -116,50 +160,6 @@ class MultipleNoteDownloader(Operation):
                 self.result = result
                 return
         self.result = results
-
-
-class NotesIndicator(Operation):
-
-    def run(self):
-        try:
-            result: List[Note] = Note.index()
-            self.result = result
-        except Exception as err:
-            logger.exception(err)
-            self.result = err
-
-
-class NoteDeleter(Operation):
-
-    def __init__(self, *args, note: Optional[Note] = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        assert isinstance(note, Note), "note is not a Note object"
-        self.note: Note = note
-
-    def run(self):
-        try:
-            note: Note = self.note.trash()
-            # self.result = True
-            self.result = note
-        except Exception as err:
-            self.result = err
-        logger.info(self.result)
-
-
-class NoteUpdater(Operation):
-
-    def __init__(self, *args, note: Optional[Note] = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        assert isinstance(note, Note)
-        self.note: Note = note
-
-    def run(self):
-        try:
-            note: Note = self.note.modify()
-            self.result = note
-        except Exception as err:
-            logger.exception(err)
-            self.result = err
 
 
 class OperationManager(Singleton):
