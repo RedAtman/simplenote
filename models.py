@@ -74,7 +74,6 @@ class Note:
     systemtags: List[str] = field(default_factory=list)
 
     _content: str = field(default_factory=str)
-    _view: Any = field(default_factory=str)
 
     def __new__(cls, id: str = "", **kwargs):
         if not id:
@@ -86,9 +85,7 @@ class Note:
             instance.__dict__["__kwargs"] = kwargs
             return instance
         instance = Note.mapper_id_note[id]
-        # kwargs["_content"] = getattr(instance, "_content", "")
         kwargs["_content"] = getattr(instance, "_content", "")
-        kwargs["_view"] = getattr(instance, "_view", "")
         # logger.info((getattr(instance, "_content", "")))
         # logger.info(instance)
         # logger.info(kwargs)
@@ -111,7 +108,6 @@ class Note:
         self.modifydate = self.d.modificationDate
         self.systemtags = self.d.systemTags
         self._content = self.__dict__["__kwargs"].get("_content", "")
-        self._view = self.__dict__["__kwargs"].get("_view", "")
         # logger.info((id(self), self))
 
     def _nest_dict(self) -> Dict[str, Any]:

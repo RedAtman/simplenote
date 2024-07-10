@@ -48,13 +48,9 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         # logger.info(view)
-        # logger.info(getattr(view, "note", None))
-        # note = getattr(view, "note", None)
         logger.info(note)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         # note.close()
-        setattr(note, "_view", "")
-        # delattr(view, "note")
         # logger.info(note)
 
     def on_modified(self, view: sublime.View):
@@ -103,11 +99,9 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
 
     def on_load(self, view: sublime.View):
         logger.info(view)
-        logger.info(getattr(view, "note", None))
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
         note = Note.get_note_from_filepath(view_filepath)
-        # note = getattr(view, "note", None)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         logger.info(("note", note))
         SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
@@ -118,11 +112,10 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
             view.set_syntax_file(note_syntax)
 
     def on_post_save(self, view: sublime.View):
-        logger.info(("view", id(view), view, getattr(view, "note", None)))
+        logger.info(("view", id(view), view))
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
         local_note = Note.get_note_from_filepath(view_filepath)
-        # local_note = getattr(view, "note", None)
         assert isinstance(local_note, Note), "note is not a Note: %s" % type(local_note)
         # get the current content of the view
         view_content = view.substr(sublime.Region(0, view.size()))
@@ -145,11 +138,8 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
         selected_note = Note.mapper_id_note[note_id]
         filepath = selected_note.open()
         view = open_view(filepath)
-        setattr(view, "note", selected_note)
-        # setattr(selected_note, "_view", view)
-        selected_note._view = view
         logger.info(("selected_note", selected_note))
-        logger.info(("view", id(view), view, getattr(view, "note", None)))
+        logger.info(("view", id(view), view))
 
     def run(self):
         logger.info(self.__class__.__name__)
@@ -179,7 +169,7 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
         logger.info(updated_notes)
         for note in updated_notes:
             if note.need_flush:
-                view = getattr(note, "_view", None)
+                view = sublime.active_window().find_open_file(note._filepath)
                 if isinstance(view, sublime.View):
                     on_note_changed(note, view)
                     continue
@@ -198,9 +188,6 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
     def handle_new_note(self, note: Note):
         assert isinstance(note, Note), "note must be a Note"
         view = open_view(note.filepath)
-        setattr(view, "note", note)
-        setattr(note, "view", view)
-        logger.info((view, note, getattr(view, "note"), getattr(note, "view")))
 
     def run(self):
         logger.info(self.__class__.__name__)
@@ -214,8 +201,6 @@ class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
     def handle_deletion(self, note: Note, view: sublime.View):
         close_view(view)
         note.close()
-        delattr(view, "note")
-        delattr(note, "_view")
 
     def run(self):
         logger.info(self.__class__.__name__)

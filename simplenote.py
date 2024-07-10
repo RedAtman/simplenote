@@ -157,9 +157,6 @@ def on_note_changed(note: Note, view: sublime.View):
     old_active_view = sublime.active_window().active_view()
     assert isinstance(old_active_view, sublime.View), "old_active_view is not a sublime.View"
 
-    # note = getattr(old_view, "note", None)
-    # assert isinstance(note, Note), "note is not a Note: %s" % type(note)
-
     note.close()
     note.flush()
     close_view(old_view)
