@@ -155,19 +155,20 @@ class Simplenote(Singleton):
                     token = pickle.load(fh, encoding="utf-8")
                     self._token = token
             except FileNotFoundError as err:
-                self._token = self.authenticate(self.username, self.password)
-            except (EOFError, Exception) as err:
                 logger.exception(err)
-                raise err
+                self._token = self.authenticate(self.username, self.password)
+            # except (EOFError, Exception) as err:
+            #     logger.exception(err)
+            #     raise err
         return self._token
 
     def _parse_response(self, note_id: str, response: Response):
         msg = "OK"
         try:
             assert isinstance(response, Response), "response is not a Response: %s" % response
-            assert response.status == 200, "response.status is not 200: %s" % response.status
+            assert response.status == 200, "response.status is not 200: %s" % response
             _version: str | None = response.headers.get("X-Simperium-Version")
-            logger.info(("version:", _version))
+            logger.info(("status:", response.status, "version:", _version))
             assert isinstance(_version, str), "version is not a string: %s" % _version
             assert _version.isdigit(), "version is not a number: %s" % _version
             return 0, msg, {"id": note_id, "v": int(_version), "d": response.data}
