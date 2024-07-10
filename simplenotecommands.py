@@ -201,18 +201,11 @@ class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
 
 
 def sync():
-    try:
-        logger.debug("Sync OperationManager: %s" % OperationManager)
-        manager = OperationManager()
-    except (ImportError, Exception) as err:
-        logger.exception(err)
-        return
-    if not isinstance(manager, OperationManager):
-        raise TypeError("Invalid OperationManager instance: %s" % type(manager))
+    manager = OperationManager()
     if not manager.running:
         sublime.run_command("note_sync")
     else:
-        logger.debug("Sync omited")
+        logger.info("Sync omitted")
     sync_every = SETTINGS.get("sync_every", 0)
 
     if sync_every > 0:
@@ -226,7 +219,7 @@ def start():
 
 
 def reload_if_needed():
-    logger.debug(("Reloading", SETTINGS.get("autostart")))
+    logger.info(("Reloading", SETTINGS.get("autostart")))
     # RELOAD_CALLS = locals().get("RELOAD_CALLS", -1)
     RELOAD_CALLS = CONFIG.SIMPLENOTE_RELOAD_CALLS
     # Sublime calls this twice for some reason :(
@@ -243,7 +236,7 @@ def reload_if_needed():
 def plugin_loaded():
     # sm.local.load_notes()
     if len(sm.local.objects):
-        logger.debug(("Loaded notes: ", sm.local.objects[0]))
+        logger.info(("Loaded notes: ", sm.local.objects[0]))
     note_files = [note.filename for note in sm.local.objects]
     if not os.path.exists(SIMPLENOTE_TEMP_PATH):
         os.makedirs(SIMPLENOTE_TEMP_PATH)
