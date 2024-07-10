@@ -71,12 +71,10 @@ class Note:
     d: _Note = field(default_factory=_Note)
 
     modifydate: float = 0
-    createdate: float = 0
     systemtags: List[str] = field(default_factory=list)
-    needs_update: Optional[bool] = None
-    local_modifydate: float = field(default_factory=time.time)
-    filename: Optional[str] = None
-    filepath: Optional[str] = None
+
+    _content: str = field(default_factory=str)
+    _view: Any = field(default_factory=str)
 
     def __new__(cls, id: str = "", **kwargs):
         if not id:
@@ -85,18 +83,36 @@ class Note:
         if id not in Note.mapper_id_note:
             instance = super().__new__(cls)
             Note.mapper_id_note[id] = instance
-        return Note.mapper_id_note[id]
+            instance.__dict__["__kwargs"] = kwargs
+            return instance
+        instance = Note.mapper_id_note[id]
+        # kwargs["_content"] = getattr(instance, "_content", "")
+        kwargs["_content"] = getattr(instance, "_content", "")
+        kwargs["_view"] = getattr(instance, "_view", "")
+        # logger.info((getattr(instance, "_content", "")))
+        # logger.info(instance)
+        # logger.info(kwargs)
+        instance.__dict__.update(kwargs)
+        # kwargs["id"] = id
+        # logger.info(instance.__dict__.keys())
+        logger.info(instance)
+        logger.info(kwargs)
+        instance.__dict__["__kwargs"] = kwargs
+        return instance
 
-    def _add_extra_fields(self):
-        self.modifydate = self.d.modificationDate
-        self.createdate = self.d.creationDate
-        self.systemtags = self.d.systemTags
-
-    def __post_init__(self):
+    def __post_init__(self, **kwargs):
         if isinstance(self.d, dict):
             d = _Note(**self.d)
             self.d = d
         self._add_extra_fields()
+
+    def _add_extra_fields(self):
+        logger.info((id(self), self))
+        self.modifydate = self.d.modificationDate
+        self.systemtags = self.d.systemTags
+        self._content = self.__dict__["__kwargs"].get("_content", "")
+        self._view = self.__dict__["__kwargs"].get("_view", "")
+        # logger.info((id(self), self))
 
     def _nest_dict(self) -> Dict[str, Any]:
         result = self.__dict__
@@ -175,11 +191,43 @@ class Note:
         return self
 
     @property
-    def title(self):
+    def need_flush(self) -> bool:
+        # if not self._content:
+        #     self._content = self.d.content
+        return self._content != self.d.content
+
+    def flush(self):
+        self._content = self.d.content
+
+    @property
+    def content(self) -> str:
+        return self._content
+
+    @content.setter
+    def content(self, value: str):
+        # self._content = value
+        self.d.content = value
+
+    @property
+    def _title(self):
+        # if self._content is None:
+        #     self._content = self.d.content
         try:
-            content = self.d.content
+            content = self._content
         except Exception:
             return SIMPLENOTE_DEFAULT_NOTE_TITLE
+        return self.get_title(content)
+
+    @property
+    def title(self):
+        try:
+            content = self.content
+        except Exception:
+            return SIMPLENOTE_DEFAULT_NOTE_TITLE
+        return self.get_title(content)
+
+    @staticmethod
+    def get_title(content: str) -> str:
         index = content.find("\n")
         if index > -1:
             title = content[:index]
@@ -190,52 +238,98 @@ class Note:
                 title = SIMPLENOTE_DEFAULT_NOTE_TITLE
         return title
 
-    def _get_filename(self, title_extension_map: List[Dict[str, str]]) -> str:
-        note_title = self.title
-        base = "".join(c for c in note_title if c in VALID_CHARS)
+    @property
+    def _filename(self) -> str:
+        return self.get_filename(self.id, self._title)
+
+    @property
+    def filename(self) -> str:
+        filename = self.get_filename(self.id, self.title)
+        # logger.info((filename, self._filename))
+        # logger.info((id(self), self))
+        return filename
+        # if self._filename is None:
+        #     self._filename = filename
+        #     # TODO: self.open()
+        #     return self._filename
+        if self._filename != filename:
+            # self.on_open_filename_change()
+            self._close(self._filename)
+            self._filename = filename
+            self.write_content_to_path(filename, self.d.content)
+            Note.mapper_path_note[filename] = self
+        return self._filename
+
+    # @filename.setter
+    # def filename(self, value: str):
+    #     self._filename = value
+
+    @staticmethod
+    def get_filename(id: str, title: str) -> str:
+        title_extension_map: List[Dict[str, str]] = SETTINGS.get("title_extension_map")
+        assert isinstance(title_extension_map, list), f"Invalid title_extension_map: {title_extension_map}"
+        base = "".join(c for c in title if c in VALID_CHARS)
         # Determine extension based on title
         extension = ""
         if title_extension_map:
             for item in title_extension_map:
                 pattern = re.compile(item["title_regex"], re.UNICODE)
-                if re.search(pattern, note_title):
+                if re.search(pattern, title):
                     extension = "." + item["extension"]
                     break
-        return base + " (" + self.id + ")" + extension
+        return base + " (" + id + ")" + extension
 
-    def get_filename(self):
-        title_extension_map = SETTINGS.get("title_extension_map")
-        assert isinstance(title_extension_map, list), f"Invalid title_extension_map: {title_extension_map}"
-        filename = self._get_filename(title_extension_map)
-        return filename
+    @property
+    def _filepath(self) -> str:
+        return self.get_filepath(self._filename)
 
-    def get_filepath(self):
-        return os.path.join(SIMPLENOTE_TEMP_PATH, self.get_filename())
+    @property
+    def filepath(self) -> str:
+        return self.get_filepath(self.filename)
+        filename = self._filename
+        if not filename:
+            filename = self.filename
+        return self.get_filepath(filename)
 
-    def write_content_to_path(self, filepath: str):
+    @staticmethod
+    def get_filepath(filename: str):
+        return os.path.join(SIMPLENOTE_TEMP_PATH, filename)
+
+    @staticmethod
+    def write_content_to_path(filepath: str, content: str = ""):
         with open(filepath, "wb") as f:
             try:
-                f.write(self.d.content.encode("utf-8"))
+                f.write(content.encode("utf-8"))
             except Exception as err:
                 logger.exception(err)
                 raise err
 
+    # @classmethod
+    # def _open(cls, filepath: str):
+    #     # cls.write_content_to_path(
+    #     #     filepath,
+    #     # )
+    #     Note.mapper_path_note[filepath] = self
+    #     return filepath
+
     def open(self):
-        filepath = self.get_filepath()
-        assert isinstance(filepath, str)
-        self.filepath = filepath
-        self.write_content_to_path(filepath)
-        Note.mapper_path_note[filepath] = self
+        filepath = self.filepath
+        self.write_content_to_path(filepath, self.content)
+        # Note.mapper_path_note[filepath] = self
         return filepath
 
-    def close(self):
-        if not self.filepath:
+    @staticmethod
+    def _close(filepath: str):
+        if not filepath:
             return
-        del Note.mapper_path_note[self.filepath]
+        # del Note.mapper_path_note[filepath]
         try:
-            os.remove(self.filepath)
+            os.remove(filepath)
         except OSError as err:
             logger.exception(err)
+
+    def close(self):
+        self._close(self.filepath)
 
 
 if __name__ == "__main__":
