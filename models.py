@@ -343,6 +343,7 @@ class Note:
             if note.filename == view_note_filename:
                 return note
 
+        # TODO: maybe results include more than one
         results = re.findall(pattern, view_note_filename)
         # logger.info(("results", results))
         if results:
