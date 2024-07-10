@@ -140,7 +140,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
 
 class NoteListCommand(sublime_plugin.ApplicationCommand):
 
-    def handle_selected(self, selected_index: int):
+    def on_select(self, selected_index: int):
         note_id = self.list__id[selected_index]
         selected_note = Note.mapper_id_note[note_id]
         filepath = selected_note.open()
@@ -164,7 +164,13 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
                 continue
             self.list__id.append(id)
             self.list__title.append(note.title)
-        sublime.active_window().show_quick_panel(self.list__title, self.handle_selected)
+        sublime.active_window().show_quick_panel(
+            self.list__title,
+            self.on_select,
+            # flags=sublime.KEEP_OPEN_ON_FOCUS_LOST,
+            # on_highlight=self.on_select,
+            placeholder="Select Note press key 'enter' to open",
+        )
 
 
 class NoteSyncCommand(sublime_plugin.ApplicationCommand):
