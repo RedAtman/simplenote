@@ -39,14 +39,14 @@ API = Simplenote(SETTINGS.username, SETTINGS.password)
 class _Note:
     """Data class for a note object"""
 
-    tags: List[str] = field(default_factory=list)
-    deleted: bool = False
-    shareURL: str = ""
-    systemTags: List[str] = field(default_factory=list)
-    content: str = ""
-    publishURL: str = ""
-    modificationDate: float = field(default_factory=time.time)
-    creationDate: float = field(default_factory=time.time)
+    tags: List[str] = field(default_factory=list, repr=False)
+    deleted: bool = field(default_factory=bool, repr=False)
+    shareURL: str = field(default_factory=str, repr=False)
+    systemTags: List[str] = field(default_factory=list, repr=False)
+    content: str = field(default_factory=str)
+    publishURL: str = field(default_factory=str, repr=False)
+    modificationDate: float = field(default_factory=time.time, repr=False)
+    creationDate: float = field(default_factory=time.time, repr=False)
 
 
 class NoteType(TypedDict):
@@ -62,15 +62,15 @@ class NoteType(TypedDict):
 
 @dataclass
 class Note:
-    mapper_id_note: ClassVar[WeakValueDictionary[str, "Note"]] = WeakValueDictionary()
-    mapper_path_note: ClassVar[WeakValueDictionary[str, "Note"]] = WeakValueDictionary()
+    mapper_id_note: ClassVar[Dict[str, "Note"]] = {}
+    # mapper_id_note: ClassVar[WeakValueDictionary[str, "Note"]] = WeakValueDictionary()
 
     id: str = field(default_factory=lambda: uuid4().hex)
     v: int = 0
     d: _Note = field(default_factory=_Note)
 
-    modifydate: float = 0
-    systemtags: List[str] = field(default_factory=list)
+    modifydate: float = field(default_factory=float, repr=False)
+    systemtags: List[str] = field(default_factory=list, repr=False)
 
     _content: str = field(default_factory=str)
 
@@ -245,7 +245,6 @@ class Note:
             self._close(self._filename)
             self._filename = filename
             self.write_content_to_path(filename, self.d.content)
-            Note.mapper_path_note[filename] = self
         return self._filename
 
     # @filename.setter
@@ -297,20 +296,17 @@ class Note:
     #     # cls.write_content_to_path(
     #     #     filepath,
     #     # )
-    #     Note.mapper_path_note[filepath] = self
     #     return filepath
 
     def open(self):
         filepath = self.filepath
         self.write_content_to_path(filepath, self.content)
-        # Note.mapper_path_note[filepath] = self
         return filepath
 
     @staticmethod
     def _close(filepath: str):
         if not filepath:
             return
-        # del Note.mapper_path_note[filepath]
         try:
             os.remove(filepath)
         except OSError as err:
