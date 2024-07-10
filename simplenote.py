@@ -146,28 +146,35 @@ def sort_notes(a_note: Note, b_note: Note):
         return (date_a > date_b) - (date_a < date_b)
 
 
-def on_note_changed(note: Note, view: sublime.View):
-    logger.info((view))
-    old_view = view
-    assert isinstance(old_view, sublime.View), "view is not a sublime.View"
-    old_filepath = old_view.file_name()
-    assert isinstance(old_filepath, str), "old_filepath is not a string: %s" % type(old_filepath)
-    old_window = old_view.window() or sublime.active_window()
+def on_note_changed(note: Note):
+    old_window = sublime.active_window()
+    old_view = old_window.find_open_file(note._filepath)
+    # if note is not open in the current window
+    if not isinstance(old_view, sublime.View):
+        logger.info((note._content, note.d.content))
+        note.flush()
+        return
 
-    old_active_view = sublime.active_window().active_view()
-    assert isinstance(old_active_view, sublime.View), "old_active_view is not a sublime.View"
+    if note._filepath == note.filepath:
+        note.flush()
+        note.open()
+        return
 
-    note.close()
+    note._close(note._filepath)
     note.flush()
     close_view(old_view)
     note.open()
     new_view = open_view(note.filepath, old_view)
 
-    if old_view.id() == old_active_view.id():
-        old_note_window = [window for window in sublime.windows() if window.id() == old_window.id()]
-        if old_note_window:
-            old_note_window[0].focus_view(new_view)
-    else:
-        sublime.active_window().focus_view(old_active_view)
+    old_active_view = old_window.active_view()
+    assert isinstance(old_active_view, sublime.View), "old_active_view is not a sublime.View"
+    if isinstance(old_active_view, sublime.View):
+        # old_window.focus_view(old_active_view)
+        if old_view.id() == old_active_view.id():
+            old_note_window = [window for window in sublime.windows() if window.id() == old_window.id()]
+            if old_note_window:
+                old_note_window[0].focus_view(new_view)
+        else:
+            old_window.focus_view(old_active_view)
 
     sublime.set_timeout(partial(new_view.run_command, "revert"), 0)

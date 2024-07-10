@@ -124,10 +124,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         local_note.d.content = view_content
         # Send update
         note_updater = NoteUpdater(note=local_note, sm=sm)
-        note_updater.set_callback(
-            on_note_changed,
-            {"view": view},
-        )
+        note_updater.set_callback(on_note_changed)
         OperationManager().add_operation(note_updater)
 
 
@@ -137,6 +134,7 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
         note_id = self.list__id[selected_index]
         selected_note = Note.mapper_id_note[note_id]
         filepath = selected_note.open()
+        selected_note.flush()
         view = open_view(filepath)
         logger.info(("selected_note", selected_note))
         logger.info(("view", id(view), view))
@@ -169,11 +167,7 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
         logger.info(updated_notes)
         for note in updated_notes:
             if note.need_flush:
-                view = sublime.active_window().find_open_file(note._filepath)
-                if isinstance(view, sublime.View):
-                    on_note_changed(note, view)
-                    continue
-                note.flush()
+                on_note_changed(note)
 
     def run(self):
         logger.info(self.__class__.__name__)
