@@ -17,7 +17,6 @@ from utils.sublime import close_view, open_view
 __all__ = [
     "SimplenoteManager",
     "Local",
-    "Remote",
     "sort_notes",
     "on_note_changed",
     "SIMPLENOTE_TEMP_PATH",
@@ -69,17 +68,6 @@ class Local(_BaseManager):
     def objects(self, value: List[Note]):
         self._objects = value
 
-    # @classmethod
-    def load_notes(self):
-        try:
-            with open(SIMPLENOTE_NOTE_CACHE_FILE, "rb") as cache_file:
-                self.objects = pickle.load(cache_file, encoding="utf-8")
-        except (EOFError, IOError, FileNotFoundError) as err:
-            logger.exception(err)
-            with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
-                pickle.dump(self._objects, cache_file)
-                logger.debug((f"Created new objects cache file: {SIMPLENOTE_NOTE_CACHE_FILE}"))
-
     @staticmethod
     def _save_objects(SIMPLENOTE_NOTE_CACHE_FILE: str, objects: List[Note]):
         with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
@@ -108,31 +96,21 @@ class Local(_BaseManager):
     #     return note.d.__dict__
 
 
-class Remote(_BaseManager):
-
-    @property
-    def notes(self) -> List[Note]:
-        try:
-            return Note.index()
-        except Exception as err:
-            logger.exception(err)
-            raise err
-
-
 class SimplenoteManager(Singleton):
     def __init__(self):
         super().__init__()
         self.local: Local = Local()
-        self.remote: Remote = Remote()
 
-    # def save(self, local=False):
-    #     if local:
-    #         self.local.save()
-    #     self.remote.save()
 
-    @property
-    def instance(self):
-        return self.remote.api
+def load_notes():
+    try:
+        with open(SIMPLENOTE_NOTE_CACHE_FILE, "rb") as cache_file:
+            Note.mapper_id_note = pickle.load(cache_file, encoding="utf-8")
+    except (EOFError, IOError, FileNotFoundError) as err:
+        logger.exception(err)
+        with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
+            pickle.dump(Note.mapper_id_note, cache_file)
+            logger.debug((f"Created new objects cache file: {SIMPLENOTE_NOTE_CACHE_FILE}"))
 
 
 def sort_notes(a_note: Note, b_note: Note):

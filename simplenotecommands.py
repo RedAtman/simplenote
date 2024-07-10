@@ -235,10 +235,9 @@ def reload_if_needed():
 
 
 def plugin_loaded():
-    # sm.local.load_notes()
-    if len(sm.local.objects):
-        logger.info(("Loaded notes: ", sm.local.objects[0]))
-    note_files = [note.filename for note in sm.local.objects]
+    # load_notes()
+    logger.info(("Loaded notes number: ", len(Note.mapper_id_note)))
+    note_files = [note.filename for note in Note.mapper_id_note.values()]
     if not os.path.exists(SIMPLENOTE_TEMP_PATH):
         os.makedirs(SIMPLENOTE_TEMP_PATH)
     for f in os.listdir(SIMPLENOTE_TEMP_PATH):
