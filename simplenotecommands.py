@@ -101,7 +101,6 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
         note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
-        SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
         note_syntax = SETTINGS.get("note_syntax")
         assert isinstance(note_syntax, str)
         logger.info(("note_syntax", note_syntax))
