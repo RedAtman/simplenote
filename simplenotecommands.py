@@ -1,25 +1,13 @@
-import copy
-import functools
-from functools import cmp_to_key
 import logging
 import os
-import sys
 from threading import Lock
 from typing import Any, Dict, List
 
 from _config import CONFIG
 from models import Note
-from operations import MultipleNoteDownloader, NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
+from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from settings import Settings
-from simplenote import (
-    SIMPLENOTE_SETTINGS_FILE,
-    SIMPLENOTE_TEMP_PATH,
-    SimplenoteManager,
-    handle_open_filename_change,
-    sort_notes,
-    synch_note_resume,
-    update_note,
-)
+from simplenote import SIMPLENOTE_SETTINGS_FILE, SIMPLENOTE_TEMP_PATH, SimplenoteManager, on_note_changed
 import sublime
 import sublime_plugin
 from utils.sublime import close_view, open_view, show_message
@@ -49,6 +37,25 @@ sm = SimplenoteManager()
 class HandleNoteViewCommand(sublime_plugin.EventListener):
 
     waiting_to_save: List[Dict[str, Any]] = []
+
+    def on_close(self, view: sublime.View):
+        """
+        A method that handles the closing of a view. Retrieves the file name from the view, gets the corresponding note using the file name, closes the note, removes the '_view' attribute from the note, and logs the note information.
+        """
+        return
+        file_name = view.file_name()
+        assert isinstance(file_name, str), "file_name is not a string: %s" % type(file_name)
+        note = sm.local.get_note_from_path(file_name)
+        assert isinstance(note, Note), "note is not a Note: %s" % type(note)
+        # logger.info(view)
+        # logger.info(getattr(view, "note", None))
+        # note = getattr(view, "note", None)
+        logger.info(note)
+        assert isinstance(note, Note), "note is not a Note: %s" % type(note)
+        # note.close()
+        setattr(note, "_view", "")
+        # delattr(view, "note")
+        # logger.info(note)
 
     def on_modified(self, view: sublime.View):
 
@@ -95,80 +102,59 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
             sublime.set_timeout(flush_saves, debounce_time)
 
     def on_load(self, view: sublime.View):
+        logger.info(view)
+        logger.info(getattr(view, "note", None))
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
         note = sm.local.get_note_from_path(view_filepath)
+        # note = getattr(view, "note", None)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
-        logger.debug(("note", note))
+        logger.info(("note", note))
         SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
         note_syntax = SETTINGS.get("note_syntax")
         assert isinstance(note_syntax, str)
-        logger.debug(("note_syntax", note_syntax))
+        logger.info(("note_syntax", note_syntax))
         if note and note_syntax:
             view.set_syntax_file(note_syntax)
 
     def get_current_content(self, view: sublime.View):
         return view.substr(sublime.Region(0, view.size()))
 
-    def handle_note_changed(
-        self, modified_note_resume: Note, content: str, old_file_path: str, open_view: sublime.View
-    ):
-        # We get all the resume data back. We have to merge it
-        # with our data (extended fields and content)
-        for note in sm.local.objects:
-            if note.id == modified_note_resume.id:
-                # Set content to the updated one
-                # or to the view's content if we don't have any update
-                updated_from_server = False
-                if not getattr(modified_note_resume.d, "content"):
-                    modified_note_resume.d.content = content
-                else:
-                    updated_from_server = True
-
-                logger.debug(("updated_from_server", updated_from_server, "note", note))
-                update_note(note, modified_note_resume)  # Update all fields
-                name_changed = handle_open_filename_change(old_file_path, note)
-                # If we didn't reopen the view with the name changed, but the content has changed
-                # we have to update the view anyway
-                if updated_from_server and not name_changed:
-                    filepath = note.get_filepath()
-                    note.write_content_to_path(filepath)
-                    sublime.set_timeout(functools.partial(open_view.run_command, "revert"), 0)
-                break
-        sm.local.objects.sort(key=cmp_to_key(sort_notes), reverse=True)
-        sm.local.save_objects()
-
     def on_post_save(self, view: sublime.View):
+        logger.info(("view", id(view), view, getattr(view, "note", None)))
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
-        note = sm.local.get_note_from_path(view_filepath)
-        if note:
-            assert isinstance(note, Note)
-            # Update with new content
-            updated_note = copy.deepcopy(note)
-            # Handle when the note changes elsewhere and the user goes to that tab:
-            # sublime reloads the view, it's handled as changed and sent here
-            if getattr(updated_note.d, "content") and updated_note.d.content == self.get_current_content(view):
-                return
-            updated_note.d.content = self.get_current_content(view)
-            logger.debug(("new content", updated_note.d.content))
-            # Send update
-            note_updater = NoteUpdater(note=updated_note, sm=sm)
-            note_updater.set_callback(
-                self.handle_note_changed,
-                {"content": updated_note.d.content, "old_file_path": view_filepath, "open_view": view},
-            )
-            OperationManager().add_operation(note_updater)
+        local_note = sm.local.get_note_from_path(view_filepath)
+        # local_note = view.note
+        assert isinstance(local_note, Note), "note is not a Note: %s" % type(local_note)
+        # Update with new content
+        # Handle when the note changes elsewhere and the user goes to that tab:
+        # sublime reloads the view, it's handled as changed and sent here
+        view_content = view.substr(sublime.Region(0, view.size()))
+        if local_note.d.content == view_content:
+            return
+        local_note.d.content = view_content
+        # Send update
+        note_updater = NoteUpdater(note=local_note, sm=sm)
+        note_updater.set_callback(
+            on_note_changed,
+            {"view": view},
+        )
+        OperationManager().add_operation(note_updater)
 
 
 class NoteListCommand(sublime_plugin.ApplicationCommand):
 
     def handle_selected(self, selected_index: int):
-        if not selected_index > -1:
-            return
-
-        selected_note = sm.local.objects[selected_index]
-        open_view(selected_note)
+        note_id = self.list__id[selected_index]
+        selected_note = Note.mapper_id_note[note_id]
+        filepath = selected_note.open()
+        view = open_view(filepath)
+        setattr(view, "note", selected_note)
+        # setattr(selected_note, "_view", view)
+        selected_note._view = view
+        logger.info(("selected_note", selected_note))
+        logger.info(("view", id(view), view, getattr(view, "note", None)))
 
     def run(self):
         logger.info(self.__class__.__name__)
@@ -176,210 +162,33 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
             if not start():
                 return
 
-        i = 0
-        list__title: List[str] = []
-        for note in sm.local.objects:
-            logger.info(("note", note))
+        self.list__id: List[str] = []
+        self.list__title: List[str] = []
+        for id, note in Note.mapper_id_note.items():
             if note.d.deleted == True:
                 continue
-            i += 1
-            list__title.append(note.title)
-        logger.debug("notes len: %s" % len(list__title))
-        sublime.active_window().show_quick_panel(list__title, self.handle_selected)
+            self.list__id.append(id)
+            self.list__title.append(note.title)
+        sublime.active_window().show_quick_panel(self.list__title, self.handle_selected)
 
 
 class NoteSyncCommand(sublime_plugin.ApplicationCommand):
 
-    def merge_delta(self, updated_note_resume: List[Note], existing_notes: List[Note]):
-        logger.debug(("caller", sys._getframe(1).f_code.co_name))
-        logger.debug(("updated_note_resume", updated_note_resume, "existing_notes", existing_notes))
-        # updated_note_resume = [note.d.__dict__ for note in _updated_note_resume if note.d.deleted == 0]
-        # logger.debug(("updated_note_resume", updated_note_resume, "existing_notes", existing_notes))
-        # Here we create the note_resume we use on the rest of the app.
-        # The note_resume we store consists of:
-        #   The note resume as it comes from the simplenote api.
-        #   The title, filename and last modified date of the local cache entry
-
-        # Look at the new resume and find existing entries
-        for current_updated_note_resume in updated_note_resume:
-            existing_note_entry = None
-            for existing_note in existing_notes:
-                if existing_note.id == current_updated_note_resume.id:
-                    existing_note_entry: Note = existing_note
-                    break
-
-            logger.debug(("existing_note_entry", existing_note_entry))
-            # If we have it already
-            if isinstance(existing_note_entry, Note):
-                # Mark for update if needed
-                try:
-                    # Note with old content
-                    if existing_note_entry.local_modifydate < float(current_updated_note_resume.modifydate):
-                        synch_note_resume(existing_note_entry, current_updated_note_resume)
-                        existing_note_entry.needs_update = True
-                        logger.debug(("existing_note_entry", existing_note_entry))
-                    else:
-                        # Up to date note
-                        existing_note_entry.needs_update = False
-                except KeyError as err:
-                    logger.exception(err)
-                    # Note that never got the content downloaded:
-                    existing_note_entry.needs_update = True
-
-                logger.debug(("existing_note_entry", existing_note_entry))
-            # New note
-            else:
-                current_updated_note_resume.needs_update = True
-                existing_notes.append(current_updated_note_resume)
-
-        # Look at the existing notes to find deletions
-        updated_note_resume_keys = [note.id for note in updated_note_resume]
-        deleted_notes = [
-            deleted_note for deleted_note in existing_notes if deleted_note.id not in updated_note_resume_keys
-        ]
-        for deleted_note in deleted_notes:
-            existing_notes.remove(deleted_note)
-
-        sm.local.objects = existing_notes
-        sm.local.save_objects()
-        self.notes_synch(sm.local.objects)
-
-    def notes_synch(self, notes: List[Note]):
-        # Here we synch updated notes in order of priority.
-        # Open notes:
-        #   Locally unsaved
-        #   Locally saved
-        # Other notes in order of modifydate and priority
-        logger.debug(("caller", sys._getframe(1).f_code.co_name))
-        logger.debug(("notes", notes))
-        open_files_dirty = []
-        open_files_ok = []
-        for view_list in [window.views() for window in sublime.windows()]:
-            for view in view_list:
-                if view.file_name() == None:
+    def merge_note(self, updated_notes: List[Note]):
+        logger.info(updated_notes)
+        for note in updated_notes:
+            if note.need_flush:
+                view = getattr(note, "_view", None)
+                if isinstance(view, sublime.View):
+                    on_note_changed(note, view)
                     continue
-
-                if view.is_dirty():
-                    open_files_dirty.append(os.path.split(view.file_name())[1])
-                else:
-                    open_files_ok.append(os.path.split(view.file_name())[1])
-
-        # Classify notes
-        lu: List[Note] = []
-        ls: List[Note] = []
-        others: List[Note] = []
-        for note in notes:
-
-            if not note.needs_update:
-                continue
-
-            try:
-                filename = note.filename
-            except KeyError as err:
-                logger.exception(err)
-                others.append(note)
-                continue
-
-            if filename in open_files_dirty:
-                lu.append(note)
-            elif filename in open_files_ok:
-                ls.append(note)
-            else:
-                others.append(note)
-
-        # Sorted by priority/importance
-        lu.sort(key=cmp_to_key(sort_notes), reverse=True)
-        ls.sort(key=cmp_to_key(sort_notes), reverse=True)
-        others.sort(key=cmp_to_key(sort_notes), reverse=True)
-        logger.info(("lu", lu, "ls", ls, "others", others))
-
-        # Start updates
-        show_message("%s starting" % self.__class__.__name__)
-        if lu:
-            downloader = MultipleNoteDownloader(sm=sm, notes=lu)
-            downloader.set_callback(self.merge_open, {"existing_notes": notes, "dirty": True})
-            OperationManager().add_operation(downloader)
-        if ls:
-            downloader = MultipleNoteDownloader(sm=sm, notes=ls)
-            downloader.set_callback(self.merge_open, {"existing_notes": notes})
-            OperationManager().add_operation(downloader)
-        if others:
-            downloader = MultipleNoteDownloader(sm=sm, notes=others)
-            downloader.set_callback(self.merge_notes, {"existing_notes": notes})
-            OperationManager().add_operation(downloader)
-
-    def merge_open(self, updated_notes: List[Note], existing_notes: List[Note], dirty=False):
-        logger.debug(("caller", sys._getframe(1).f_code.co_name))
-        logger.debug(("updated_notes", updated_notes, "existing_notes", existing_notes, "dirty", dirty))
-        auto_overwrite_on_conflict = SETTINGS.get("on_conflict_use_server")
-        do_nothing_on_conflict = SETTINGS.get("on_conflict_leave_alone")
-        update = False
-
-        logger.info(
-            (not dirty, dirty and not do_nothing_on_conflict, (not dirty) or (dirty and not do_nothing_on_conflict))
-        )
-        # If it's not a conflict or it's a conflict we can resolve
-        if (not dirty) or (dirty and not do_nothing_on_conflict):
-
-            logger.info((not auto_overwrite_on_conflict) and dirty and len(updated_notes))
-            # If we don't have an overwrite policy, ask the user
-            if (not auto_overwrite_on_conflict) and dirty and len(updated_notes) > 0:
-                note_names = "\n".join([updated_note.title for updated_note in updated_notes])
-                update = sublime.ok_cancel_dialog("Note(s):\n%s\nAre in conflict. Overwrite?" % note_names, "Overwrite")
-
-            logger.info((not dirty) or update or auto_overwrite_on_conflict)
-            if (not dirty) or update or auto_overwrite_on_conflict:
-                # Update notes if the change is clean, or we were asked to update
-                for note in existing_notes:
-                    for updated_note in updated_notes:
-                        # If we find the updated note
-                        if note.id == updated_note.id:
-                            old_file_path = note.get_filepath()
-                            new_file_path = updated_note.get_filepath()
-                            # Update contents
-                            updated_note.write_content_to_path(new_file_path)
-                            # Handle filename change (note has the old filename value)
-                            handle_open_filename_change(old_file_path, updated_note)
-                            # Reload view of the note if it's selected
-                            for view in [window.active_view() for window in sublime.windows()]:
-                                if not isinstance(view, sublime.View):
-                                    continue
-                                if view.file_name() == new_file_path:
-                                    sublime.set_timeout(functools.partial(view.run_command, "revert"), 0)
-                            break
-
-            # Merge
-            self.merge_notes(updated_notes, existing_notes)
-
-    def merge_notes(self, updated_notes: List[Note], existing_notes: List[Note]):
-        logger.debug(("caller", sys._getframe(1).f_code.co_name))
-        logger.debug(("updated_notes", updated_notes, "existing_notes", existing_notes))
-        # Merge
-        for note in existing_notes:
-
-            if not note.needs_update:
-                continue
-
-            for updated_note in updated_notes:
-                try:
-                    if note.id == updated_note.id:
-                        update_note(note, updated_note)
-                except KeyError as err:
-                    logger.exception(err)
-                    logger.debug(("caller", sys._getframe(1).f_code.co_name))
-                    logger.debug(("note", note, "updated_note", updated_note))
-
-        sm.local.objects = existing_notes
-        logger.debug(("existing_objects", sm.local.objects))
-        # TODO: maybe first sort and then save
-        sm.local.save_objects()
-        sm.local.objects.sort(key=cmp_to_key(sort_notes), reverse=True)
+                note.flush()
 
     def run(self):
         logger.info(self.__class__.__name__)
         show_message(self.__class__.__name__)
         note_indicator = NotesIndicator(sm=sm)
-        note_indicator.set_callback(self.merge_delta, {"existing_notes": sm.local.objects})
+        note_indicator.set_callback(self.merge_note)
         OperationManager().add_operation(note_indicator)
 
 
@@ -387,11 +196,10 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
 
     def handle_new_note(self, note: Note):
         assert isinstance(note, Note), "note must be a Note"
-        update_note(note, note)
-        sm.local.objects.append(note)
-        sm.local.objects.sort(key=cmp_to_key(sort_notes), reverse=True)
-        sm.local.save_objects()
-        open_view(note)
+        view = open_view(note.filepath)
+        setattr(view, "note", note)
+        setattr(note, "view", view)
+        logger.info((view, note, getattr(view, "note"), getattr(note, "view")))
 
     def run(self):
         logger.info(self.__class__.__name__)
@@ -402,17 +210,11 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
 
 class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
 
-    def handle_deletion(self, note: Note, note_view: sublime.View):
-        filepath = note.get_filepath()
-        logger.info((note, note_view, filepath))
-        sm.local.objects.remove(note)
-        sm.local.save_objects()
-        try:
-            os.remove(filepath)
-        except OSError as err:
-            logger.exception(err)
-            raise err
-        close_view(note_view)
+    def handle_deletion(self, note: Note, view: sublime.View):
+        close_view(view)
+        note.close()
+        delattr(view, "note")
+        delattr(note, "_view")
 
     def run(self):
         logger.info(self.__class__.__name__)
