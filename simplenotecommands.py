@@ -56,7 +56,6 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
     def on_modified(self, view: sublime.View):
 
         def flush_saves():
-            logger.info(note)
             assert isinstance(note, Note), "note is not a Note: %s" % type(note)
             if OperationManager().running:
                 sublime.set_timeout(flush_saves, 1000)
@@ -98,21 +97,18 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
             sublime.set_timeout(flush_saves, debounce_time)
 
     def on_load(self, view: sublime.View):
-        # logger.info(view)
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
         note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
-        # logger.info(("note", note))
         SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
         note_syntax = SETTINGS.get("note_syntax")
         assert isinstance(note_syntax, str)
-        # logger.info(("note_syntax", note_syntax))
+        logger.info(("note_syntax", note_syntax))
         if note and note_syntax:
             view.set_syntax_file(note_syntax)
 
     def on_post_save(self, view: sublime.View):
-        logger.info(("view", id(view), view))
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
         local_note = Note.get_note_from_filepath(view_filepath)
@@ -140,7 +136,6 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
         logger.info(("view", id(view), view))
 
     def run(self):
-        logger.info(self.__class__.__name__)
         if not CONFIG.SIMPLENOTE_STARTED:
             if not start():
                 return
@@ -164,13 +159,11 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
 class NoteSyncCommand(sublime_plugin.ApplicationCommand):
 
     def merge_note(self, updated_notes: List[Note]):
-        logger.info(updated_notes)
         for note in updated_notes:
             if note.need_flush:
                 on_note_changed(note)
 
     def run(self):
-        logger.info(self.__class__.__name__)
         show_message(self.__class__.__name__)
         note_indicator = NotesIndicator(sm=sm)
         note_indicator.set_callback(self.merge_note)
@@ -184,7 +177,6 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
         view = open_view(note.filepath)
 
     def run(self):
-        logger.info(self.__class__.__name__)
         note_creator = NoteCreator(sm=sm)
         note_creator.set_callback(self.handle_new_note)
         OperationManager().add_operation(note_creator)
@@ -197,7 +189,6 @@ class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
         note.close()
 
     def run(self):
-        logger.info(self.__class__.__name__)
         note_view: sublime.View | None = sublime.active_window().active_view()
         assert isinstance(note_view, sublime.View), "note_view must be a sublime.View"
         view_filepath: str | None = note_view.file_name()
