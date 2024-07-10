@@ -1,6 +1,5 @@
 from collections import deque
 import logging
-import sys
 from threading import Event, Lock, Semaphore, Thread
 from typing import Any, Callable, Dict, List, Optional
 
@@ -49,11 +48,8 @@ class Operation(Thread):
         self.exception_callback = callback
 
     def join(self):
-        logger.debug(("caller", sys._getframe(1).f_code.co_name))
         Thread.join(self)
         if not self.callback is None:
-            logger.debug((self, self.callback, self.callback_kwargs, self.exception_callback))
-            logger.debug(self.result)
             if not isinstance(self.result, Exception):
                 self.callback(self.result, **self.callback_kwargs)
             elif self.exception_callback:
@@ -110,12 +106,10 @@ class NoteDeleter(Operation):
 
     def run(self):
         try:
-            note: Note = self.note.trash()
-            # self.result = True
-            self.result = note
+            self.note.trash()
+            self.result = self.note
         except Exception as err:
             self.result = err
-        logger.info(self.result)
 
 
 class MultipleNoteDownloader(Operation):
@@ -123,7 +117,6 @@ class MultipleNoteDownloader(Operation):
     def __init__(self, notes: List[Note], *args, semaphore: int = 9, **kwargs):
         super().__init__(*args, **kwargs)
         self.semaphore = semaphore
-        logger.debug(("notes", notes))
         self.notes: List[Note] = notes
 
     def run(self):
@@ -141,7 +134,6 @@ class MultipleNoteDownloader(Operation):
         for note in self.notes:
             assert isinstance(note, Note)
             assert isinstance(note.id, str)
-            logger.info((note_retriever.__name__, note.id, note.d.deleted, note.d.content))
             new_thread = Thread(
                 target=note_retriever,
                 args=(
@@ -153,7 +145,6 @@ class MultipleNoteDownloader(Operation):
             new_thread.start()
 
         _ = [th.join() for th in threads]
-        logger.debug(("results", results))
 
         for result in results:
             if isinstance(result, Exception):
