@@ -1,9 +1,9 @@
 from datetime import datetime
+from functools import partial
 import logging
 import os
 import pickle
 import re
-import time
 from typing import Any, Dict, List
 
 from models import Note
@@ -13,6 +13,17 @@ from settings import Settings
 import sublime
 from utils.patterns.singleton.base import Singleton
 from utils.sublime import close_view, open_view
+
+
+__all__ = [
+    "SimplenoteManager",
+    "Local",
+    "Remote",
+    "sort_notes",
+    "on_note_changed",
+    "SIMPLENOTE_TEMP_PATH",
+    "SIMPLENOTE_SETTINGS_FILE",
+]
 
 
 logger = logging.getLogger()
@@ -97,23 +108,28 @@ class Local(_BaseManager):
     # def model_to_dict(note: Note) -> Dict[str, Any]:
     #     return note.d.__dict__
 
-    # @classmethod
-    def get_note_from_path(cls, view_filepath: str):
+    @staticmethod
+    def get_note_from_path(view_absolute_filepath: str):
+        # logger.info(("view_absolute_filepath", view_absolute_filepath))
+        assert isinstance(view_absolute_filepath, str), "view_absolute_filepath must be a string"
         note = None
-        if view_filepath:
-            if os.path.dirname(view_filepath) == SIMPLENOTE_TEMP_PATH:
-                view_note_filename = os.path.split(view_filepath)[1]
-                list__note_filename = [note for note in cls._objects if note.get_filename() == view_note_filename]
-
-                if not list__note_filename:
-                    pattern = re.compile(r"\((.*?)\)")
-                    results = re.findall(pattern, view_note_filename)
-                    if results:
-                        noteKey = results[len(results) - 1]
-                        note = [note for note in cls._objects if note.id == noteKey]
-                        logger.debug(("noteKey", noteKey, "note", note))
-                if list__note_filename:
-                    note = list__note_filename[0]
+        pattern = re.compile(r"\((.*?)\)")
+        view_note_dir, view_note_filename = os.path.split(view_absolute_filepath)
+        # logger.info(("view_note_filename", view_note_dir, view_note_filename))
+        # if view_absolute_filepath:
+        if view_note_dir == SIMPLENOTE_TEMP_PATH:
+            list__note = [note for note in Note.mapper_id_note.values() if note.filename == view_note_filename]
+            # logger.info(("list__note", len(list__note), list__note))
+            if not list__note:
+                results = re.findall(pattern, view_note_filename)
+                # logger.info(("results", results))
+                if results:
+                    noteKey = results[len(results) - 1]
+                    # logger.info(("noteKey", noteKey))
+                    return Note.mapper_id_note[noteKey]
+                    # note = [note for note in cls._objects if note.id == noteKey]
+            if list__note:
+                note = list__note[0]
         return note
 
 
@@ -144,9 +160,6 @@ class SimplenoteManager(Singleton):
         return self.remote.api
 
 
-sm = SimplenoteManager()
-
-
 def sort_notes(a_note: Note, b_note: Note):
     if "pinned" in a_note.systemtags:
         return 1
@@ -158,58 +171,31 @@ def sort_notes(a_note: Note, b_note: Note):
         return (date_a > date_b) - (date_a < date_b)
 
 
-def handle_open_filename_change(old_file_path: str, updated_note: Note):
-    new_file_path = updated_note.get_filepath()
-    old_note_view = None
-    new_view = None
-    # If name changed
-    if old_file_path != new_file_path:
-        # Save the current active view because we might lose the focus
-        old_active_view = sublime.active_window().active_view()
-        assert isinstance(old_active_view, sublime.View), "old_active_view is not a sublime.View"
-        # Search for the view of the open note
-        for view_list in [window.views() for window in sublime.windows()]:
-            for view in view_list:
-                if view.file_name() == old_file_path:
-                    old_note_view = view
-                    break
-        # If found
-        if old_note_view:
-            # Open the note in a new view
-            new_view = open_view(updated_note, old_note_view)
-            # Close the old dirty note
-            old_note_view_id = old_note_view.id()
-            old_active_view_id = old_active_view.id()
-            if old_note_view.window():
-                old_note_window_id = old_note_view.window().id()
-            else:
-                old_note_window_id = sublime.active_window()  # Sometimes this happens on Sublime 2...
-            close_view(old_note_view)
-            # Focus on the new view or on the previous one depending
-            # on where we were
-            if old_note_view_id == old_active_view_id:
-                old_note_window = [window for window in sublime.windows() if window.id() == old_note_window_id]
-                if old_note_window:
-                    old_note_window[0].focus_view(new_view)
-            else:
-                sublime.active_window().focus_view(old_active_view)
-        try:
-            os.remove(old_file_path)
-        except OSError as err:
-            logger.exception(err)
-        return True
-    return False
+def on_note_changed(note: Note, view: sublime.View):
+    logger.info((view))
+    old_view = view
+    assert isinstance(old_view, sublime.View), "view is not a sublime.View"
+    old_filepath = old_view.file_name()
+    assert isinstance(old_filepath, str), "old_filepath is not a string: %s" % type(old_filepath)
+    old_window = old_view.window() or sublime.active_window()
 
+    old_active_view = sublime.active_window().active_view()
+    assert isinstance(old_active_view, sublime.View), "old_active_view is not a sublime.View"
 
-def synch_note_resume(existing_note_entry: Note, updated_note_resume: Note):
-    for key in updated_note_resume.d.__dict__:
-        setattr(existing_note_entry.d, key, getattr(updated_note_resume.d, key))
+    # note = getattr(old_view, "note", None)
+    # assert isinstance(note, Note), "note is not a Note: %s" % type(note)
 
+    note.close()
+    note.flush()
+    close_view(old_view)
+    note.open()
+    new_view = open_view(note.filepath, old_view)
 
-def update_note(existing_note: Note, updated_note: Note):
-    logger.debug(("existing_note", existing_note, "updated_note", updated_note))
-    synch_note_resume(existing_note, updated_note)
-    existing_note.local_modifydate = time.time()
-    existing_note.needs_update = False
-    filename = existing_note.get_filename()
-    existing_note.filename = filename
+    if old_view.id() == old_active_view.id():
+        old_note_window = [window for window in sublime.windows() if window.id() == old_window.id()]
+        if old_note_window:
+            old_note_window[0].focus_view(new_view)
+    else:
+        sublime.active_window().focus_view(old_active_view)
+
+    sublime.set_timeout(partial(new_view.run_command, "revert"), 0)
