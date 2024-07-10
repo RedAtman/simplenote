@@ -43,9 +43,9 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         A method that handles the closing of a view. Retrieves the file name from the view, gets the corresponding note using the file name, closes the note, removes the '_view' attribute from the note, and logs the note information.
         """
         return
-        file_name = view.file_name()
-        assert isinstance(file_name, str), "file_name is not a string: %s" % type(file_name)
-        note = sm.local.get_note_from_path(file_name)
+        view_filepath = view.file_name()
+        assert isinstance(view_filepath, str), "file_name is not a string: %s" % type(file_name)
+        note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         # logger.info(view)
         # logger.info(getattr(view, "note", None))
@@ -77,7 +77,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
 
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
-        note = sm.local.get_note_from_path(view_filepath)
+        note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         if note:
             debounce_time = SETTINGS.get("autosave_debounce_time")
@@ -106,7 +106,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         logger.info(getattr(view, "note", None))
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
-        note = sm.local.get_note_from_path(view_filepath)
+        note = Note.get_note_from_filepath(view_filepath)
         # note = getattr(view, "note", None)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         logger.info(("note", note))
@@ -121,8 +121,8 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         logger.info(("view", id(view), view, getattr(view, "note", None)))
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
-        local_note = sm.local.get_note_from_path(view_filepath)
-        # local_note = view.note
+        local_note = Note.get_note_from_filepath(view_filepath)
+        # local_note = getattr(view, "note", None)
         assert isinstance(local_note, Note), "note is not a Note: %s" % type(local_note)
         # get the current content of the view
         view_content = view.substr(sublime.Region(0, view.size()))
@@ -215,9 +215,9 @@ class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
         logger.info(self.__class__.__name__)
         note_view: sublime.View | None = sublime.active_window().active_view()
         assert isinstance(note_view, sublime.View), "note_view must be a sublime.View"
-        view_name: str | None = note_view.file_name()
-        assert isinstance(view_name, str), "view_name must be a str"
-        note = sm.local.get_note_from_path(view_name)
+        view_filepath: str | None = note_view.file_name()
+        assert isinstance(view_filepath, str), "view_name must be a str"
+        note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(note, Note), "note must be a Note"
         note_deleter = NoteDeleter(note=note, sm=sm)
         note_deleter.set_callback(self.handle_deletion, {"note_view": note_view})

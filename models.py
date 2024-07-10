@@ -331,6 +331,26 @@ class Note:
     def close(self):
         self._close(self.filepath)
 
+    @staticmethod
+    def get_note_from_filepath(view_absolute_filepath: str):
+        assert isinstance(view_absolute_filepath, str), "view_absolute_filepath must be a string"
+        view_note_dir, view_note_filename = os.path.split(view_absolute_filepath)
+        # logger.info(("view_note_filename", view_note_dir, view_note_filename))
+        if view_note_dir != SIMPLENOTE_TEMP_PATH:
+            return
+        pattern = re.compile(r"\((.*?)\)")
+        for note in Note.mapper_id_note.values():
+            if note.filename == view_note_filename:
+                return note
+
+        results = re.findall(pattern, view_note_filename)
+        # logger.info(("results", results))
+        if results:
+            note_id = results[len(results) - 1]
+            # logger.info(note_id)
+            return Note.mapper_id_note[note_id]
+        return
+
 
 if __name__ == "__main__":
     from pprint import pprint

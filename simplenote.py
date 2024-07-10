@@ -3,7 +3,6 @@ from functools import partial
 import logging
 import os
 import pickle
-import re
 from typing import Any, Dict, List
 
 from models import Note
@@ -107,30 +106,6 @@ class Local(_BaseManager):
     # @staticmethod
     # def model_to_dict(note: Note) -> Dict[str, Any]:
     #     return note.d.__dict__
-
-    @staticmethod
-    def get_note_from_path(view_absolute_filepath: str):
-        # logger.info(("view_absolute_filepath", view_absolute_filepath))
-        assert isinstance(view_absolute_filepath, str), "view_absolute_filepath must be a string"
-        note = None
-        pattern = re.compile(r"\((.*?)\)")
-        view_note_dir, view_note_filename = os.path.split(view_absolute_filepath)
-        # logger.info(("view_note_filename", view_note_dir, view_note_filename))
-        # if view_absolute_filepath:
-        if view_note_dir == SIMPLENOTE_TEMP_PATH:
-            list__note = [note for note in Note.mapper_id_note.values() if note.filename == view_note_filename]
-            # logger.info(("list__note", len(list__note), list__note))
-            if not list__note:
-                results = re.findall(pattern, view_note_filename)
-                # logger.info(("results", results))
-                if results:
-                    noteKey = results[len(results) - 1]
-                    # logger.info(("noteKey", noteKey))
-                    return Note.mapper_id_note[noteKey]
-                    # note = [note for note in cls._objects if note.id == noteKey]
-            if list__note:
-                note = list__note[0]
-        return note
 
 
 class Remote(_BaseManager):
