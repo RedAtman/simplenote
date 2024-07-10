@@ -9,7 +9,6 @@ import string
 import time
 from typing import Any, ClassVar, Dict, List, Optional, TypedDict
 from uuid import uuid4
-from weakref import WeakValueDictionary
 
 from settings import Settings
 
@@ -69,9 +68,6 @@ class Note:
     v: int = 0
     d: _Note = field(default_factory=_Note)
 
-    modifydate: float = field(default_factory=float, repr=False)
-    systemtags: List[str] = field(default_factory=list, repr=False)
-
     _content: str = field(default_factory=str)
 
     def __new__(cls, id: str = "", **kwargs):
@@ -100,8 +96,6 @@ class Note:
         self._add_extra_fields()
 
     def _add_extra_fields(self):
-        self.modifydate = self.d.modificationDate
-        self.systemtags = self.d.systemTags
         self._content = self.__dict__["__kwargs"].get("_content", "")
 
     def _nest_dict(self) -> Dict[str, Any]:

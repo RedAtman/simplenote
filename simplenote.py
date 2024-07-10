@@ -136,13 +136,13 @@ class SimplenoteManager(Singleton):
 
 
 def sort_notes(a_note: Note, b_note: Note):
-    if "pinned" in a_note.systemtags:
+    if "pinned" in a_note.d.systemTags:
         return 1
-    elif "pinned" in b_note.systemtags:
+    elif "pinned" in b_note.d.systemTags:
         return -1
     else:
-        date_a = datetime.fromtimestamp(float(a_note.modifydate))
-        date_b = datetime.fromtimestamp(float(b_note.modifydate))
+        date_a = datetime.fromtimestamp(float(a_note.d.modificationDate))
+        date_b = datetime.fromtimestamp(float(b_note.d.modificationDate))
         return (date_a > date_b) - (date_a < date_b)
 
 
