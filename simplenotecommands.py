@@ -112,6 +112,8 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
         local_note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(local_note, Note), "note is not a Note: %s" % type(local_note)
+        if not local_note:
+            return
         # get the current content of the view
         view_content = view.substr(sublime.Region(0, view.size()))
         if local_note.d.content == view_content:
