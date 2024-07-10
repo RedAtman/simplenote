@@ -33,7 +33,6 @@ from api import Simplenote
 # Take out invalid characters from title and use that as base for the name
 VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 API = Simplenote(SETTINGS.username, SETTINGS.password)
-logger.warning((API, API.token))
 
 
 @dataclass
@@ -82,18 +81,15 @@ class Note:
         if id not in Note.mapper_id_note:
             instance = super().__new__(cls)
             Note.mapper_id_note[id] = instance
+            assert "d" in kwargs, "d not in kwargs"
+            assert isinstance(kwargs["d"], dict), "d is not a dict"
+            assert "content" in kwargs["d"], "content not in kwargs['d']"
+            assert isinstance(kwargs["d"]["content"], str), "kwargs['d']['content'] is not a str"
+            kwargs["_content"] = kwargs["d"]["content"]
             instance.__dict__["__kwargs"] = kwargs
             return instance
         instance = Note.mapper_id_note[id]
         kwargs["_content"] = getattr(instance, "_content", "")
-        # logger.info((getattr(instance, "_content", "")))
-        # logger.info(instance)
-        # logger.info(kwargs)
-        instance.__dict__.update(kwargs)
-        # kwargs["id"] = id
-        # logger.info(instance.__dict__.keys())
-        logger.info(instance)
-        logger.info(kwargs)
         instance.__dict__["__kwargs"] = kwargs
         return instance
 
@@ -104,11 +100,9 @@ class Note:
         self._add_extra_fields()
 
     def _add_extra_fields(self):
-        logger.info((id(self), self))
         self.modifydate = self.d.modificationDate
         self.systemtags = self.d.systemTags
         self._content = self.__dict__["__kwargs"].get("_content", "")
-        # logger.info((id(self), self))
 
     def _nest_dict(self) -> Dict[str, Any]:
         result = self.__dict__
@@ -217,7 +211,7 @@ class Note:
     @property
     def title(self):
         try:
-            content = self.content
+            content = self.d.content
         except Exception:
             return SIMPLENOTE_DEFAULT_NOTE_TITLE
         return self.get_title(content)
@@ -241,8 +235,6 @@ class Note:
     @property
     def filename(self) -> str:
         filename = self.get_filename(self.id, self.title)
-        # logger.info((filename, self._filename))
-        # logger.info((id(self), self))
         return filename
         # if self._filename is None:
         #     self._filename = filename
@@ -331,7 +323,6 @@ class Note:
     def get_note_from_filepath(view_absolute_filepath: str):
         assert isinstance(view_absolute_filepath, str), "view_absolute_filepath must be a string"
         view_note_dir, view_note_filename = os.path.split(view_absolute_filepath)
-        # logger.info(("view_note_filename", view_note_dir, view_note_filename))
         if view_note_dir != SIMPLENOTE_TEMP_PATH:
             return
         pattern = re.compile(r"\((.*?)\)")
@@ -341,10 +332,8 @@ class Note:
 
         # TODO: maybe results include more than one
         results = re.findall(pattern, view_note_filename)
-        # logger.info(("results", results))
         if results:
             note_id = results[len(results) - 1]
-            # logger.info(note_id)
             return Note.mapper_id_note[note_id]
         return
 
