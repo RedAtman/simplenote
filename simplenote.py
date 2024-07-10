@@ -166,6 +166,7 @@ def on_note_changed(note: Note):
     note.open()
     new_view = open_view(note.filepath, old_view)
 
+    # TODO: maybe not needed, or needed to be tested
     old_active_view = old_window.active_view()
     assert isinstance(old_active_view, sublime.View), "old_active_view is not a sublime.View"
     if isinstance(old_active_view, sublime.View):
