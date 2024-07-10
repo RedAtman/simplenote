@@ -15,12 +15,14 @@ from utils.sublime import close_view, open_view
 
 
 __all__ = [
-    "SimplenoteManager",
-    "Local",
-    "sort_notes",
-    "on_note_changed",
     "SIMPLENOTE_TEMP_PATH",
     "SIMPLENOTE_SETTINGS_FILE",
+    "SimplenoteManager",
+    "Local",
+    "load_notes",
+    "clear_orphaned_filepaths",
+    "sort_notes",
+    "on_note_changed",
 ]
 
 
@@ -111,6 +113,15 @@ def load_notes():
         with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
             pickle.dump(Note.mapper_id_note, cache_file)
             logger.debug((f"Created new objects cache file: {SIMPLENOTE_NOTE_CACHE_FILE}"))
+
+
+def clear_orphaned_filepaths():
+    list__filepath = [note.filename for note in Note.mapper_id_note.values()]
+    if not os.path.exists(SIMPLENOTE_TEMP_PATH):
+        os.makedirs(SIMPLENOTE_TEMP_PATH)
+    for filepath in os.listdir(SIMPLENOTE_TEMP_PATH):
+        if filepath not in list__filepath:
+            os.remove(os.path.join(SIMPLENOTE_TEMP_PATH, filepath))
 
 
 def sort_notes(a_note: Note, b_note: Note):

@@ -1,5 +1,4 @@
 import logging
-import os
 from threading import Lock
 from typing import Any, Dict, List
 
@@ -7,7 +6,12 @@ from _config import CONFIG
 from models import Note
 from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from settings import Settings
-from simplenote import SIMPLENOTE_SETTINGS_FILE, SIMPLENOTE_TEMP_PATH, SimplenoteManager, on_note_changed
+from simplenote import (
+    SIMPLENOTE_SETTINGS_FILE,
+    SimplenoteManager,
+    clear_orphaned_filepaths,
+    on_note_changed,
+)
 import sublime
 import sublime_plugin
 from utils.sublime import close_view, open_view, show_message
@@ -237,12 +241,7 @@ def reload_if_needed():
 def plugin_loaded():
     # load_notes()
     logger.info(("Loaded notes number: ", len(Note.mapper_id_note)))
-    note_files = [note.filename for note in Note.mapper_id_note.values()]
-    if not os.path.exists(SIMPLENOTE_TEMP_PATH):
-        os.makedirs(SIMPLENOTE_TEMP_PATH)
-    for f in os.listdir(SIMPLENOTE_TEMP_PATH):
-        if f not in note_files:
-            os.remove(os.path.join(SIMPLENOTE_TEMP_PATH, f))
+    clear_orphaned_filepaths()
 
     logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
     logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
