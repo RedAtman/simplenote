@@ -1,7 +1,6 @@
 import logging
 from typing import Optional
 
-from models import Note
 import sublime
 
 
@@ -36,8 +35,7 @@ def get_view_window(view: Optional[sublime.View] = None) -> sublime.Window:
     return window
 
 
-def open_view(note: Note, view: Optional[sublime.View] = None):
-    filepath = note.open()
+def open_view(filepath: str, view: Optional[sublime.View] = None):
     window = get_view_window(view)
     return window.open_file(filepath)
 
