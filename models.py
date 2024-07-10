@@ -61,7 +61,7 @@ class NoteType(TypedDict):
 
 @dataclass
 class Note:
-    mapper_id_note: ClassVar[Dict[str, "Note"]] = {}
+    mapper_id_note: ClassVar[Dict[str, "Note"]] = dict()
     # mapper_id_note: ClassVar[WeakValueDictionary[str, "Note"]] = WeakValueDictionary()
 
     id: str = field(default_factory=lambda: uuid4().hex)
@@ -71,17 +71,10 @@ class Note:
     _content: str = field(default_factory=str)
 
     def __new__(cls, id: str = "", **kwargs):
-        if not id:
-            id = uuid4().hex
-
         if id not in Note.mapper_id_note:
             instance = super().__new__(cls)
-            Note.mapper_id_note[id] = instance
-            assert "d" in kwargs, "d not in kwargs"
-            assert isinstance(kwargs["d"], dict), "d is not a dict"
-            assert "content" in kwargs["d"], "content not in kwargs['d']"
-            assert isinstance(kwargs["d"]["content"], str), "kwargs['d']['content'] is not a str"
-            kwargs["_content"] = kwargs["d"]["content"]
+            # Note.mapper_id_note[id] = instance
+            kwargs["_content"] = kwargs.get("d", {}).get("content", "")
             instance.__dict__["__kwargs"] = kwargs
             return instance
         instance = Note.mapper_id_note[id]
@@ -89,7 +82,8 @@ class Note:
         instance.__dict__["__kwargs"] = kwargs
         return instance
 
-    def __post_init__(self, **kwargs):
+    def __post_init__(self):
+        Note.mapper_id_note[self.id] = self
         if isinstance(self.d, dict):
             d = _Note(**self.d)
             self.d = d
@@ -124,7 +118,6 @@ class Note:
         return Note(**_note)
 
     def create(self) -> "Note":
-        self.d.creationDate = time.time()
         status, msg, _note = API.modify(self.d.__dict__, self.id)
         assert status == 0, msg
         assert isinstance(_note, dict)
@@ -145,7 +138,9 @@ class Note:
         status, msg, _note = API.trash(note_id)
         assert status == 0, msg
         assert isinstance(_note, dict)
-        return Note(**_note)
+        note = Note.mapper_id_note[note_id]
+        del Note.mapper_id_note[note_id]
+        return note
 
     def trash(self) -> "Note":
         assert not self.id is None, "Note id is None"
@@ -176,8 +171,6 @@ class Note:
 
     @property
     def need_flush(self) -> bool:
-        # if not self._content:
-        #     self._content = self.d.content
         return self._content != self.d.content
 
     def flush(self):
