@@ -60,7 +60,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
     def on_modified(self, view: sublime.View):
 
         def flush_saves():
-            logger.debug(note)
+            logger.info(note)
             assert isinstance(note, Note), "note is not a Note: %s" % type(note)
             if OperationManager().running:
                 sublime.set_timeout(flush_saves, 1000)
@@ -117,9 +117,6 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         if note and note_syntax:
             view.set_syntax_file(note_syntax)
 
-    def get_current_content(self, view: sublime.View):
-        return view.substr(sublime.Region(0, view.size()))
-
     def on_post_save(self, view: sublime.View):
         logger.info(("view", id(view), view, getattr(view, "note", None)))
         view_filepath = view.file_name()
@@ -127,9 +124,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         local_note = sm.local.get_note_from_path(view_filepath)
         # local_note = view.note
         assert isinstance(local_note, Note), "note is not a Note: %s" % type(local_note)
-        # Update with new content
-        # Handle when the note changes elsewhere and the user goes to that tab:
-        # sublime reloads the view, it's handled as changed and sent here
+        # get the current content of the view
         view_content = view.substr(sublime.Region(0, view.size()))
         if local_note.d.content == view_content:
             return
