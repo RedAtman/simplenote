@@ -98,16 +98,16 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
             sublime.set_timeout(flush_saves, debounce_time)
 
     def on_load(self, view: sublime.View):
-        logger.info(view)
+        # logger.info(view)
         view_filepath = view.file_name()
         assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
         note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
-        logger.info(("note", note))
+        # logger.info(("note", note))
         SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
         note_syntax = SETTINGS.get("note_syntax")
         assert isinstance(note_syntax, str)
-        logger.info(("note_syntax", note_syntax))
+        # logger.info(("note_syntax", note_syntax))
         if note and note_syntax:
             view.set_syntax_file(note_syntax)
 
@@ -155,7 +155,7 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
         sublime.active_window().show_quick_panel(
             self.list__title,
             self.on_select,
-            # flags=sublime.KEEP_OPEN_ON_FOCUS_LOST,
+            flags=sublime.KEEP_OPEN_ON_FOCUS_LOST,
             # on_highlight=self.on_select,
             placeholder="Select Note press key 'enter' to open",
         )
@@ -205,7 +205,7 @@ class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
         note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(note, Note), "note must be a Note"
         note_deleter = NoteDeleter(note=note, sm=sm)
-        note_deleter.set_callback(self.handle_deletion, {"note_view": note_view})
+        note_deleter.set_callback(self.handle_deletion, {"view": note_view})
         OperationManager().add_operation(note_deleter)
 
 
