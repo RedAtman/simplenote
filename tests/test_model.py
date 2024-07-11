@@ -13,12 +13,8 @@ content = "# SimplenoteTitle\n\nSimplenoteBody"
 _note_kwargs: dict[str, Any] = {
     "tags": [],
     "deleted": False,
-    "shareURL": "",
     "systemTags": [],
     "content": content,
-    "publishURL": "",
-    "modificationDate": 1539088227.272,
-    "creationDate": 1529054831.73117,
 }
 _d_kwargs: dict[str, Any] = {
     "d": _note_kwargs,
