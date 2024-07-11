@@ -6,12 +6,7 @@ from _config import CONFIG
 from models import Note
 from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from settings import Settings
-from simplenote import (
-    SIMPLENOTE_SETTINGS_FILE,
-    SimplenoteManager,
-    clear_orphaned_filepaths,
-    on_note_changed,
-)
+from simplenote import SIMPLENOTE_SETTINGS_FILE, SimplenoteManager, clear_orphaned_filepaths, on_note_changed
 import sublime
 import sublime_plugin
 from utils.sublime import close_view, open_view, show_message
@@ -75,30 +70,31 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
                     break
 
         view_filepath = view.file_name()
-        assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
+        if not isinstance(view_filepath, str):
+            return
         note = Note.get_note_from_filepath(view_filepath)
-        assert isinstance(note, Note), "note is not a Note: %s" % type(note)
-        if note:
-            debounce_time = SETTINGS.get("autosave_debounce_time")
-            assert isinstance(debounce_time, int)
-            if not debounce_time:
-                return
-            debounce_time = debounce_time * 1000
+        if not isinstance(note, Note):
+            return
 
-            found = False
-            for entry in HandleNoteViewCommand.waiting_to_save:
-                if entry["note_key"] == note.id:
-                    with entry["lock"]:
-                        entry["count"] = entry["count"] + 1
-                    found = True
-                    break
-            if not found:
-                new_entry = {}
-                new_entry["note_key"] = note.id
-                new_entry["lock"] = Lock()
-                new_entry["count"] = 1
-                HandleNoteViewCommand.waiting_to_save.append(new_entry)
-            sublime.set_timeout(flush_saves, debounce_time)
+        debounce_time = SETTINGS.get("autosave_debounce_time")
+        if not isinstance(debounce_time, int):
+            return
+        debounce_time = debounce_time * 1000
+
+        found = False
+        for entry in HandleNoteViewCommand.waiting_to_save:
+            if entry["note_key"] == note.id:
+                with entry["lock"]:
+                    entry["count"] = entry["count"] + 1
+                found = True
+                break
+        if not found:
+            new_entry = {}
+            new_entry["note_key"] = note.id
+            new_entry["lock"] = Lock()
+            new_entry["count"] = 1
+            HandleNoteViewCommand.waiting_to_save.append(new_entry)
+        sublime.set_timeout(flush_saves, debounce_time)
 
     def on_load(self, view: sublime.View):
         note_syntax = SETTINGS.get("note_syntax")
@@ -108,18 +104,17 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
 
     def on_post_save(self, view: sublime.View):
         view_filepath = view.file_name()
-        assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
-        local_note = Note.get_note_from_filepath(view_filepath)
-        assert isinstance(local_note, Note), "note is not a Note: %s" % type(local_note)
-        if not local_note:
+        if not isinstance(view_filepath, str):
+            return
+        note = Note.get_note_from_filepath(view_filepath)
+        if not isinstance(note, Note):
             return
         # get the current content of the view
         view_content = view.substr(sublime.Region(0, view.size()))
-        if local_note.d.content == view_content:
+        if note.d.content == view_content:
             return
-        local_note.d.content = view_content
-        # Send update
-        note_updater = NoteUpdater(note=local_note, sm=sm)
+        note.content = view_content
+        note_updater = NoteUpdater(note=note, sm=sm)
         note_updater.set_callback(on_note_changed)
         OperationManager().add_operation(note_updater)
 
@@ -132,8 +127,6 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
         filepath = selected_note.open()
         selected_note.flush()
         view = open_view(filepath)
-        logger.info(("selected_note", selected_note))
-        logger.info(("view", id(view), view))
 
     def run(self):
         if not CONFIG.SIMPLENOTE_STARTED:
@@ -174,7 +167,6 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
 class NoteCreateCommand(sublime_plugin.ApplicationCommand):
 
     def handle_new_note(self, note: Note):
-        assert isinstance(note, Note), "note must be a Note"
         view = open_view(note.filepath)
 
     def run(self):
