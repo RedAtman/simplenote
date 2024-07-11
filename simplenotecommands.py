@@ -190,14 +190,17 @@ class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
         note.close()
 
     def run(self):
-        note_view: sublime.View | None = sublime.active_window().active_view()
-        assert isinstance(note_view, sublime.View), "note_view must be a sublime.View"
-        view_filepath: str | None = note_view.file_name()
-        assert isinstance(view_filepath, str), "view_name must be a str"
+        view: sublime.View | None = sublime.active_window().active_view()
+        if not isinstance(view, sublime.View):
+            return
+        view_filepath = view.file_name()
+        if not isinstance(view_filepath, str):
+            return
         note = Note.get_note_from_filepath(view_filepath)
-        assert isinstance(note, Note), "note must be a Note"
+        if not isinstance(note, Note):
+            return
         note_deleter = NoteDeleter(note=note, sm=sm)
-        note_deleter.set_callback(self.handle_deletion, {"view": note_view})
+        note_deleter.set_callback(self.handle_deletion, {"view": view})
         OperationManager().add_operation(note_deleter)
 
 

@@ -99,9 +99,8 @@ class NoteUpdater(Operation):
 
 class NoteDeleter(Operation):
 
-    def __init__(self, *args, note: Optional[Note] = None, **kwargs):
+    def __init__(self, *args, note: Note, **kwargs):
         super().__init__(*args, **kwargs)
-        assert isinstance(note, Note), "note is not a Note object"
         self.note: Note = note
 
     def run(self):
