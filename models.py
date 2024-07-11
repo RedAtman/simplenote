@@ -134,15 +134,15 @@ class Note:
         return self
 
     @classmethod
-    def _trash(cls, note_id: str) -> "Note":
+    def _trash(cls, note_id: str) -> Dict[str, Any]:
         status, msg, _note = API.trash(note_id)
         assert status == 0, msg
         assert isinstance(_note, dict)
-        note = Note.mapper_id_note[note_id]
-        del Note.mapper_id_note[note_id]
-        return note
+        if note_id in Note.mapper_id_note:
+            del Note.mapper_id_note[note_id]
+        return _note
 
-    def trash(self) -> "Note":
+    def trash(self) -> Dict[str, Any]:
         assert not self.id is None, "Note id is None"
         return self._trash(self.id)
         self.d.deleted = True
@@ -296,7 +296,9 @@ class Note:
             return
         try:
             os.remove(filepath)
-        except OSError as err:
+        except (OSError, FileNotFoundError) as err:
+            logger.exception(err)
+        except Exception as err:
             logger.exception(err)
 
     def close(self):
@@ -317,7 +319,7 @@ class Note:
         results = re.findall(pattern, view_note_filename)
         if results:
             note_id = results[len(results) - 1]
-            return Note.mapper_id_note[note_id]
+            return Note.mapper_id_note.get(note_id)
         return
 
 
