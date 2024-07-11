@@ -7,13 +7,11 @@ import functools
 import logging
 import os
 import pickle
-import time
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
-import uuid
 
 from utils.patterns.singleton.base import Singleton
-from utils.request import request, Response
+from utils.request import Response, request
 
 
 logger = logging.getLogger()
@@ -172,9 +170,6 @@ class Simplenote(Singleton):
             assert isinstance(_version, str), "version is not a string: %s" % _version
             assert _version.isdigit(), "version is not a number: %s" % _version
             return 0, msg, {"id": note_id, "v": int(_version), "d": response.data}
-            # result = response.json()
-            # assert isinstance(result, dict), "result is not a dict: %s" % result
-            # return result
         except AssertionError as err:
             logger.exception(err)
             logger.error(response)
