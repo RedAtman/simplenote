@@ -101,15 +101,10 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
             sublime.set_timeout(flush_saves, debounce_time)
 
     def on_load(self, view: sublime.View):
-        view_filepath = view.file_name()
-        assert isinstance(view_filepath, str), "view_filepath is not a string: %s" % type(view_filepath)
-        note = Note.get_note_from_filepath(view_filepath)
-        assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         note_syntax = SETTINGS.get("note_syntax")
-        assert isinstance(note_syntax, str)
-        logger.info(("note_syntax", note_syntax))
-        if note and note_syntax:
-            view.set_syntax_file(note_syntax)
+        if not isinstance(note_syntax, str):
+            return
+        view.set_syntax_file(note_syntax)
 
     def on_post_save(self, view: sublime.View):
         view_filepath = view.file_name()
@@ -165,6 +160,7 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
 
     def merge_note(self, updated_notes: List[Note]):
         for note in updated_notes:
+            logger.info(("note", note, note.d.tags, note.d.systemTags))
             if note.need_flush:
                 on_note_changed(note)
 
