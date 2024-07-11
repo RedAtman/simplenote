@@ -157,9 +157,9 @@ class Simplenote(Singleton):
             except FileNotFoundError as err:
                 logger.exception(err)
                 self._token = self.authenticate(self.username, self.password)
-            # except (EOFError, Exception) as err:
-            #     logger.exception(err)
-            #     raise err
+            except (EOFError, Exception) as err:
+                logger.exception(err)
+                raise err
         return self._token
 
     def _parse_response(self, note_id: str, response: Response):
@@ -244,7 +244,7 @@ class Simplenote(Singleton):
             return 0, "OK", response.data
         except IOError as err:
             logger.exception(err)
-            return -1, err, {}
+            return -1, err, []
 
     def retrieve(self, note_id: str, version: Optional[int] = None):
         """Method to get a specific note
@@ -290,7 +290,6 @@ class Simplenote(Singleton):
             raise ValueError("note should be a string or a dict, but got %s" % note)
         if note_id is None:
             raise ValueError("note_id should be a string, but got %s" % note_id)
-            note_id = uuid.uuid4().hex
         try:
             response = request(
                 URL.modify(note_id, version),
@@ -347,7 +346,6 @@ class Simplenote(Singleton):
         assert "deleted" in note, "deleted not in note: %s" % note
         assert isinstance(note["deleted"], bool), "note['deleted'] is not a bool: %s" % note["deleted"]
         note["deleted"] = True
-        note["modificationDate"] = time.time()
         return self.modify(note, note_id, version)
 
 

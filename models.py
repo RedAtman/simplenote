@@ -125,8 +125,6 @@ class Note:
         return self
 
     def modify(self, version: Optional[int] = None) -> "Note":
-        # TODO: maybe do not need to update the modificationDate here
-        self.d.modificationDate = time.time()
         status, msg, _note = API.modify(self.d.__dict__, self.id, version)
         assert status == 0, msg
         assert isinstance(_note, dict)
@@ -145,17 +143,9 @@ class Note:
     def trash(self) -> Dict[str, Any]:
         assert not self.id is None, "Note id is None"
         return self._trash(self.id)
-        self.d.deleted = True
-        self.d.modificationDate = time.time()
-        status, _note = API.modify(self.d.__dict__, self.id)
-        assert status == 0, "Error deleting note"
-        assert isinstance(_note, dict)
-        self = Note(**_note)
-        return self
 
     def restore(self) -> "Note":
         self.d.deleted = False
-        self.d.modificationDate = time.time()
         status, msg, _note = API.modify(self.d.__dict__, self.id)
         assert status == 0, "Error deleting note"
         assert isinstance(_note, dict)
@@ -333,12 +323,8 @@ if __name__ == "__main__":
         "d": {
             "tags": [],
             "deleted": False,
-            "shareURL": "",
             "systemTags": [],
             "content": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
-            "publishURL": "",
-            # "modificationDate": 0,
-            # "creationDate": 0,
         },
     }
     note = Note(**kwargs)
@@ -357,12 +343,8 @@ if __name__ == "__main__":
         "d": {
             "tags": ["tag1", "tag2"],
             "deleted": False,
-            "shareURL": "",
             "systemTags": ["systemtag1", "systemtag2"],
             "content": "content",
-            "publishURL": "",
-            "modificationDate": 0,
-            "creationDate": 0,
         },
     }
     note = Note(**note)
