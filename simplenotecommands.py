@@ -6,7 +6,7 @@ from _config import CONFIG
 from models import Note
 from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from settings import Settings
-from simplenote import SIMPLENOTE_SETTINGS_FILE, SimplenoteManager, clear_orphaned_filepaths, on_note_changed
+from simplenote import SIMPLENOTE_SETTINGS_FILE, clear_orphaned_filepaths, on_note_changed
 import sublime
 import sublime_plugin
 from utils.sublime import close_view, open_view, show_message
@@ -29,8 +29,6 @@ logger = logging.getLogger()
 
 
 SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
-
-sm = SimplenoteManager()
 
 
 class HandleNoteViewCommand(sublime_plugin.EventListener):
@@ -114,7 +112,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         if note.d.content == view_content:
             return
         note.content = view_content
-        note_updater = NoteUpdater(note=note, sm=sm)
+        note_updater = NoteUpdater(note=note)
         note_updater.set_callback(on_note_changed)
         OperationManager().add_operation(note_updater)
 
@@ -159,7 +157,7 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
 
     def run(self):
         show_message(self.__class__.__name__)
-        note_indicator = NotesIndicator(sm=sm)
+        note_indicator = NotesIndicator()
         note_indicator.set_callback(self.merge_note)
         OperationManager().add_operation(note_indicator)
 
@@ -170,7 +168,7 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
         view = open_view(note.filepath)
 
     def run(self):
-        note_creator = NoteCreator(sm=sm)
+        note_creator = NoteCreator()
         note_creator.set_callback(self.handle_new_note)
         OperationManager().add_operation(note_creator)
 
@@ -191,7 +189,7 @@ class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
         note = Note.get_note_from_filepath(view_filepath)
         if not isinstance(note, Note):
             return
-        note_deleter = NoteDeleter(note=note, sm=sm)
+        note_deleter = NoteDeleter(note=note)
         note_deleter.set_callback(self.handle_deletion, {"view": view})
         OperationManager().add_operation(note_deleter)
 

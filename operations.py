@@ -4,7 +4,6 @@ from threading import Event, Lock, Semaphore, Thread
 from typing import Any, Callable, Dict, List, Optional
 
 from models import Note
-from simplenote import SimplenoteManager
 import sublime
 from utils.patterns.singleton.base import Singleton
 from utils.sublime import remove_status, show_message
@@ -24,16 +23,12 @@ logger = logging.getLogger()
 
 
 class Operation(Thread):
-    sm: SimplenoteManager
     callback: Optional[Callable[..., Any]]
     callback_kwargs: Dict[str, Any]
     exception_callback: Optional[Callable[..., Any]]
 
-    def __init__(self, *args, sm=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not isinstance(sm, SimplenoteManager):
-            raise Exception(f"Invalid SimplenoteManager instance, expected SimplenoteManager got {type(sm)}, {sm}")
-        self.sm = sm
         self.callback = None
         self.exception_callback = None
         self.result = None

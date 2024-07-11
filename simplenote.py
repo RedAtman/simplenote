@@ -17,7 +17,6 @@ from utils.sublime import close_view, open_view
 __all__ = [
     "SIMPLENOTE_TEMP_PATH",
     "SIMPLENOTE_SETTINGS_FILE",
-    "SimplenoteManager",
     "Local",
     "load_notes",
     "clear_orphaned_filepaths",
@@ -96,12 +95,6 @@ class Local(_BaseManager):
     # @staticmethod
     # def model_to_dict(note: Note) -> Dict[str, Any]:
     #     return note.d.__dict__
-
-
-class SimplenoteManager(Singleton):
-    def __init__(self):
-        super().__init__()
-        self.local: Local = Local()
 
 
 def load_notes():
