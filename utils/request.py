@@ -1,24 +1,30 @@
+from dataclasses import dataclass
 from email.message import Message
+import gzip
+import io
 import json
 import logging
 import typing
 import urllib.error
 import urllib.parse
 import urllib.request
-
+import zlib
 
 __all__ = [
     "request",
     "Response",
 ]
+__version__ = "0.0.1"
+__author__ = "redatman"
+__date__ = "2024-07-12"
 
 
 logger = logging.getLogger()
 
 
 DEFAULT_HEADERS = {
-    "Accept": "application/json",
-    # "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    # "Accept": "application/json",
+    "Accept": "text/html,application/json,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
     "Content-Type": "application/json; charset=UTF-8",
@@ -32,16 +38,30 @@ DEFAULT_HEADERS = {
     # "Sec-Fetch-Site": "none",
     # "Sec-Fetch-User": "?1",
     "Upgrade-Insecure-Requests": "1",
-    # "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "User-Agent": "Magic Browser",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    # "User-Agent": "Magic Browser",
     "Referer": "https://www.google.com/",
 }
 
 
+@dataclass
+class ContentDecoding:
+    default: typing.Callable = lambda response: response.read().decode(response.headers.get_content_charset("utf-8"))
+    # TODO: need validate
+    gzip: typing.Callable = lambda response: gzip.GzipFile(fileobj=io.BytesIO(response.read())).read().decode()
+    # TODO: need validate
+    deflate: typing.Callable = lambda response: zlib.decompress(response.read(), -zlib.MAX_WBITS)
+
+    @staticmethod
+    def br(response):
+        decompressor = zlib.decompressobj(wbits=16 + zlib.MAX_WBITS)
+        return decompressor.decompress(response.read()) + decompressor.flush()
+
+
 class Response(typing.NamedTuple):
-    body: str
-    headers: Message
     status: int
+    headers: Message
+    body: str
     error_count: int = 0
 
     def json(self) -> typing.Union[typing.Dict[str, str], typing.List[typing.Dict[str, str]]]:
@@ -94,68 +114,39 @@ def request(
         else:
             request_data = urllib.parse.urlencode(data).encode()
 
+    logger.debug(f"url: {url}, method: {method}, headers: {headers}, data: {data}")
     httprequest = urllib.request.Request(url, data=request_data, headers=headers, method=method)
 
-    try:
-        with urllib.request.urlopen(httprequest) as httpresponse:
+    with urllib.request.urlopen(httprequest) as httpresponse:
+        try:
+            # content_encoding = httpresponse.getheader("Content-Encoding", "default")
+            content_encoding = httpresponse.info().get("content-encoding", "default")
+            logger.debug(content_encoding)
+            body = getattr(ContentDecoding, content_encoding, ContentDecoding.default)(httpresponse)
             response = Response(
                 headers=httpresponse.headers,
                 status=httpresponse.status,
-                body=httpresponse.read().decode(httpresponse.headers.get_content_charset("utf-8")),
+                body=body,
             )
-    except urllib.error.HTTPError as err:
-        logger.error((method, url, err))
-        logger.error(data)
-        logger.exception(err)
-        response = Response(
-            body=str(err.reason),
-            headers=err.headers,
-            status=err.code,
-            error_count=error_count + 1,
-        )
-    except urllib.error.URLError as err:
-        logger.error((method, url, err))
-        logger.error(data)
-        logger.exception(err)
-        response = Response(
-            body=str(err.reason),
-            headers=Message(),
-            status=500,
-            error_count=error_count + 1,
-        )
-    except Exception as err:
-        logger.error((method, url, err))
-        logger.error(data)
-        logger.exception(err)
-        response = Response(
-            body=str(err),
-            headers=Message(),
-            status=500,
-            error_count=error_count + 1,
-        )
-    logger.debug(response)
+        except Exception as err:
+            logger.error((method, url, headers, data))
+            logger.exception(err)
+            _body = str(err)
+            _headers = Message()
+            _status = 500
+            error_count += 1
+            if isinstance(err, urllib.error.HTTPError):
+                _body = str(err.reason)
+                _headers = err.headers
+                _status = err.code
+            elif isinstance(err, urllib.error.URLError):
+                _body = str(err.reason)
+
+            response = Response(
+                body=_body,
+                headers=_headers,
+                status=_status,
+                error_count=error_count,
+            )
+
     return response
-
-
-if __name__ == "__main__":
-    from pprint import pprint
-
-    response = Response(body="{}", headers=Message(), status=200)
-    print(response)
-    print(response.status)
-    print(response.headers)
-    print(response.body)
-
-    request_tasks = {
-        "get": "https://httpbin.org/get?foo=bar",
-        "post": "https://httpbin.org/post",
-        "patch": "https://httpbin.org/patch",
-    }
-
-    for method, url in request_tasks.items():
-        response = request(url, method=method.upper(), data={"title": "foo", "body": method.upper()})
-        print(response.status)
-        # print(type(response.body))
-        # print(response.body)
-        # print(response.json())
-        pprint(response.data)
