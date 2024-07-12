@@ -10,6 +10,13 @@ Sublime Text 3/4 plugin for Simplenote.
   * Sublime Text 4 compatibility
   * Bug fixes
 
+Planned features:
+
+* Replace the existing RESTful API with WebSocket to reduce network I/O.
+* Add a new note list display mode.
+* Automatically detect whether a note is in Markdown format and apply system tags to inform other platform clients.
+...
+
 ## Installation
 
 ---------
