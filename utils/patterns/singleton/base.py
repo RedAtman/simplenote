@@ -20,11 +20,19 @@ class _Singleton:
 Singleton = type("SingleTon", (_Singleton,), {})
 
 if __name__ == "__main__":
+    Singleton = type("SingleTon", (_Singleton,), {})
     singleton_obj = Singleton("obj")
     print(singleton_obj)
+    print(id(singleton_obj))
     singleton_obj2 = Singleton("obj2")
     print(singleton_obj2)
+    print(id(singleton_obj2))
     print(singleton_obj == singleton_obj2)
     print(singleton_obj is singleton_obj2)
-    print(id(singleton_obj))
-    print(id(singleton_obj2))
+    print("-----" * 10)
+    SingletonSecond = type("SingleTon", (_Singleton,), {})
+    singleton_second = SingletonSecond("obj")
+    for subclass in _Singleton.__subclasses__():
+        print({subclass: getattr(subclass, "_Singleton__instance")})
+    print(singleton_obj == singleton_second)
+    print(singleton_obj is singleton_second)
