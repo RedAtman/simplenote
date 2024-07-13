@@ -3,8 +3,9 @@ import logging
 from threading import Event, Lock, Semaphore, Thread
 from typing import Any, Callable, Dict, List, Optional
 
-from models import Note
 import sublime
+
+from models import Note
 from utils.patterns.singleton.base import Singleton
 from utils.sublime import remove_status, show_message
 
@@ -55,9 +56,13 @@ class Operation(Thread):
 
 class NotesIndicator(Operation):
 
+    def __init__(self, *args, sync_note_number: int = 1000, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.sync_note_number = sync_note_number
+
     def run(self):
         try:
-            result: List[Note] = Note.index()
+            result: List[Note] = Note.index(limit=self.sync_note_number, data=True)
             self.result = result
         except Exception as err:
             logger.exception(err)

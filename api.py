@@ -3,6 +3,7 @@
 :doc: https://simperium.com/docs/reference/http/#auth
 """
 
+import base64
 import functools
 import logging
 import os
@@ -18,11 +19,11 @@ logger = logging.getLogger()
 
 __all__ = ["Simplenote"]
 
-SIMPLENOTE_BASE_DIR = os.environ.get("SIMPLENOTE_BASE_DIR", os.path.abspath(os.path.dirname(__file__)))
-SIMPLENOTE_APP_ID: str = os.environ.get("SIMPLENOTE_APP_ID", "")
-SIMPLENOTE_APP_KEY: str = os.environ.get("SIMPLENOTE_APP_KEY", "")
-SIMPLENOTE_BUCKET: str = os.environ.get("SIMPLENOTE_BUCKET", "")
-_SIMPLENOTE_TOKEN_FILE = os.environ.get("SIMPLENOTE_TOKEN_FILE", "simplenote_token.pkl")
+SIMPLENOTE_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+SIMPLENOTE_APP_ID: str = "chalk-bump-f49"
+SIMPLENOTE_APP_KEY: str = base64.b64decode("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=").decode("utf-8")
+SIMPLENOTE_BUCKET: str = "note"
+_SIMPLENOTE_TOKEN_FILE = "simplenote_token.pkl"
 SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_TOKEN_FILE)
 simplenote_variables = [
     SIMPLENOTE_BASE_DIR,
@@ -166,7 +167,7 @@ class Simplenote(Singleton):
             assert isinstance(response, Response), "response is not a Response: %s" % response
             assert response.status == 200, "response.status is not 200: %s" % response
             _version: str | None = response.headers.get("X-Simperium-Version")
-            logger.info(("status:", response.status, "version:", _version))
+            logger.debug(("status:", response.status, "version:", _version))
             assert isinstance(_version, str), "version is not a string: %s" % _version
             assert _version.isdigit(), "version is not a number: %s" % _version
             return 0, msg, {"id": note_id, "v": int(_version), "d": response.data}
@@ -345,8 +346,12 @@ class Simplenote(Singleton):
 
 
 if __name__ == "__main__":
-    from _config import CONFIG
+    from settings import get_settings
 
-    simplenote = Simplenote(username=CONFIG.SIMPLENOTE_USERNAME, password=CONFIG.SIMPLENOTE_PASSWORD)
+    username = get_settings("username")
+    password = get_settings("password")
+    if not isinstance(username, str) or not isinstance(password, str):
+        raise Exception("Missing username or password")
+    simplenote = Simplenote(password, password)
     token = simplenote.token
     print("token: %s" % token)
