@@ -5,11 +5,10 @@ import os
 import pickle
 from typing import Any, Dict, List
 
-from models import Note
-from settings import Settings
-
 # https://www.sublimetext.com/docs/api_reference.html
 import sublime
+
+from models import SIMPLENOTE_TEMP_PATH, Note
 from utils.patterns.singleton.base import Singleton
 from utils.sublime import close_view, open_view
 
@@ -28,17 +27,12 @@ __all__ = [
 logger = logging.getLogger()
 
 
-SIMPLENOTE_PROJECT_NAME = os.environ.get("SIMPLENOTE_PROJECT_NAME", "Simplenote")
+SIMPLENOTE_PROJECT_NAME = "Simplenote"
 SIMPLENOTE_PACKAGE_PATH = os.path.join(sublime.packages_path(), SIMPLENOTE_PROJECT_NAME)
-SIMPLENOTE_DEFAULT_NOTE_TITLE = os.environ.get("SIMPLENOTE_DEFAULT_NOTE_TITLE", "untitled")
 SIMPLENOTE_TEMP_PATH = os.path.join(SIMPLENOTE_PACKAGE_PATH, "temp")
-_SIMPLENOTE_NOTE_CACHE_FILE = os.environ.get("SIMPLENOTE_NOTE_CACHE_FILE", "note_cache.pkl")
-SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, _SIMPLENOTE_NOTE_CACHE_FILE)
-SIMPLENOTE_NOTE_FETCH_LENGTH = int(os.environ.get("SIMPLENOTE_NOTE_FETCH_LENGTH", 1000))
-_SIMPLENOTE_SETTINGS_FILE = os.environ.get("SIMPLENOTE_SETTINGS_FILE", "simplenote.sublime-settings")
-SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, _SIMPLENOTE_SETTINGS_FILE)
-# SETTINGS = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
-SETTINGS: Settings = Settings(SIMPLENOTE_SETTINGS_FILE)
+SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, "note_cache.pkl")
+SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
+# SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, _SIMPLENOTE_SETTINGS_FILE)
 
 
 class _BaseManager(Singleton):
@@ -133,7 +127,6 @@ def on_note_changed(note: Note):
     old_view = old_window.find_open_file(note._filepath)
     # if note is not open in the current window
     if not isinstance(old_view, sublime.View):
-        logger.info((note._content, note.d.content))
         note.flush()
         return
 

@@ -2,13 +2,13 @@ import logging
 from threading import Lock
 from typing import Any, Dict, List
 
-from _config import CONFIG
-from models import Note
-from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
-from settings import Settings
-from simplenote import SIMPLENOTE_SETTINGS_FILE, clear_orphaned_filepaths, on_note_changed
 import sublime
 import sublime_plugin
+
+from models import Note
+from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
+from settings import get_settings
+from simplenote import clear_orphaned_filepaths, on_note_changed
 from utils.sublime import close_view, open_view, show_message
 
 
@@ -28,7 +28,8 @@ __all__ = [
 logger = logging.getLogger()
 
 
-SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
+SIMPLENOTE_RELOAD_CALLS = -1
+SIMPLENOTE_STARTED = False
 
 
 class HandleNoteViewCommand(sublime_plugin.EventListener):
@@ -44,11 +45,8 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         assert isinstance(view_filepath, str), "file_name is not a string: %s" % type(file_name)
         note = Note.get_note_from_filepath(view_filepath)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
-        # logger.info(view)
-        logger.info(note)
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         # note.close()
-        # logger.info(note)
 
     def on_modified(self, view: sublime.View):
 
@@ -74,10 +72,13 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         if not isinstance(note, Note):
             return
 
-        debounce_time = SETTINGS.get("autosave_debounce_time")
-        if not isinstance(debounce_time, int):
+        autosave_debounce_time = get_settings("autosave_debounce_time")
+        if not isinstance(autosave_debounce_time, int):
+            show_message(
+                "autosave_debounce_time is not an int: %s, Please check your settings" % type(autosave_debounce_time)
+            )
             return
-        debounce_time = debounce_time * 1000
+        debounce_time = autosave_debounce_time * 1000
 
         found = False
         for entry in HandleNoteViewCommand.waiting_to_save:
@@ -95,8 +96,9 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         sublime.set_timeout(flush_saves, debounce_time)
 
     def on_load(self, view: sublime.View):
-        note_syntax = SETTINGS.get("note_syntax")
+        note_syntax = get_settings("note_syntax")
         if not isinstance(note_syntax, str):
+            show_message("`note_syntax` must be a string. Please check settings file.")
             return
         view.set_syntax_file(note_syntax)
 
@@ -127,7 +129,8 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
         view = open_view(filepath)
 
     def run(self):
-        if not CONFIG.SIMPLENOTE_STARTED:
+        global SIMPLENOTE_STARTED
+        if not SIMPLENOTE_STARTED:
             if not start():
                 return
 
@@ -151,13 +154,16 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
 
     def merge_note(self, updated_notes: List[Note]):
         for note in updated_notes:
-            logger.info(("note", note, note.d.tags, note.d.systemTags))
             if note.need_flush:
                 on_note_changed(note)
 
     def run(self):
         show_message(self.__class__.__name__)
-        note_indicator = NotesIndicator()
+        sync_note_number = get_settings("sync_note_number", 1000)
+        if not isinstance(sync_note_number, int):
+            show_message("`sync_note_number` must be an integer. Please check settings file.")
+            return
+        note_indicator = NotesIndicator(sync_note_number=sync_note_number)
         note_indicator.set_callback(self.merge_note)
         OperationManager().add_operation(note_indicator)
 
@@ -199,47 +205,53 @@ def sync():
     if not manager.running:
         sublime.run_command("note_sync")
     else:
-        logger.info("Sync omitted")
-    sync_every = SETTINGS.get("sync_every", 0)
+        logger.debug("Sync omitted")
+
+    sync_every = get_settings("sync_every", 0)
+    logger.debug(("Simplenote sync_every", sync_every))
+    if not isinstance(sync_every, int):
+        show_message("`sync_every` must be an integer. Please check settings file.")
+        return
 
     if sync_every > 0:
         sublime.set_timeout(sync, sync_every * 1000)
 
 
 def start():
+    global SIMPLENOTE_STARTED
     sync()
-    CONFIG.SIMPLENOTE_STARTED = True
-    return CONFIG.SIMPLENOTE_STARTED
+    SIMPLENOTE_STARTED = True
+    return SIMPLENOTE_STARTED
 
 
 def reload_if_needed():
-    logger.info(("Reloading", SETTINGS.get("autostart")))
-    # RELOAD_CALLS = locals().get("RELOAD_CALLS", -1)
-    RELOAD_CALLS = CONFIG.SIMPLENOTE_RELOAD_CALLS
+    global SIMPLENOTE_RELOAD_CALLS
+
     # Sublime calls this twice for some reason :(
-    RELOAD_CALLS += 1
-    if RELOAD_CALLS % 2 != 0:
-        logger.debug("Reload call %s" % RELOAD_CALLS)
+    SIMPLENOTE_RELOAD_CALLS += 1
+    if SIMPLENOTE_RELOAD_CALLS % 2 != 0:
+        logger.debug("Simplenote Reload call %s" % SIMPLENOTE_RELOAD_CALLS)
         return
 
-    if SETTINGS.get("autostart"):
-        sublime.set_timeout(start, 2000)  # I know...
+    autostart = get_settings("autostart")
+    if bool(autostart):
+        autostart = True
+    logger.debug(("Simplenote Reloading", autostart))
+    if autostart:
+        sublime.set_timeout(start, 2000)
         logger.debug("Auto Starting")
 
 
 def plugin_loaded():
     # load_notes()
-    logger.info(("Loaded notes number: ", len(Note.mapper_id_note)))
+    logger.debug(("Loaded notes number: ", len(Note.mapper_id_note)))
     clear_orphaned_filepaths()
 
-    logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
-    logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
+    # logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
+    # logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
     # SETTINGS.clear_on_change("username")
     # SETTINGS.clear_on_change("password")
     # SETTINGS.add_on_change("username", reload_if_needed)
     # SETTINGS.add_on_change("password", reload_if_needed)
 
     reload_if_needed()
-
-
-CONFIG.SIMPLENOTE_STARTED = False

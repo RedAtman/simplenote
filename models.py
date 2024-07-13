@@ -10,7 +10,10 @@ import time
 from typing import Any, ClassVar, Dict, List, Optional, TypedDict
 from uuid import uuid4
 
-from settings import Settings
+from api import Simplenote
+from settings import get_settings
+from utils.decorator import class_property
+from utils.sublime import show_message
 
 
 # from typing_extensions import Unpack
@@ -19,19 +22,15 @@ from settings import Settings
 logger = logging.getLogger()
 
 
-SIMPLENOTE_DEFAULT_NOTE_TITLE = os.environ.get("SIMPLENOTE_DEFAULT_NOTE_TITLE", "untitled")
-SIMPLENOTE_BASE_DIR = os.environ.get("SIMPLENOTE_BASE_DIR", os.path.abspath(os.path.dirname(__file__)))
+SIMPLENOTE_DEFAULT_NOTE_TITLE = "untitled"
+SIMPLENOTE_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SIMPLENOTE_TEMP_PATH = os.path.join(SIMPLENOTE_BASE_DIR, "temp")
-_SIMPLENOTE_SETTINGS_FILE = os.environ.get("SIMPLENOTE_SETTINGS_FILE", "simplenote.sublime-settings")
-SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_SETTINGS_FILE)
-SETTINGS = Settings(SIMPLENOTE_SETTINGS_FILE)
-# api = import_module("api")
-from api import Simplenote
+SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
+# SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_SETTINGS_FILE)
 
 
 # Take out invalid characters from title and use that as base for the name
 VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
-API = Simplenote(SETTINGS.username, SETTINGS.password)
 
 
 @dataclass
@@ -100,9 +99,18 @@ class Note:
     def __eq__(self, value: "Note") -> bool:
         return self.id == value.id
 
-    @staticmethod
-    def index(limit: int = 1000, data: bool = True) -> List["Note"]:
-        status, msg, result = API.index(limit, data)
+    @class_property
+    def API(cls) -> Simplenote:
+        username = get_settings("username")
+        password = get_settings("password")
+        if not isinstance(username, str) or not isinstance(password, str):
+            show_message("Missing username or password, Please configure Simplenote settings")
+            raise Exception("Missing username or password")
+        return Simplenote(password, password)
+
+    @classmethod
+    def index(cls, limit: int = 1000, data: bool = True) -> List["Note"]:
+        status, msg, result = cls.API.index(limit, data)
         assert status == 0, msg
         assert isinstance(result, dict)
         assert "index" in result
@@ -110,22 +118,22 @@ class Note:
         assert isinstance(_notes, list)
         return [Note(**note) for note in _notes]
 
-    @staticmethod
-    def retrieve(note_id: str) -> "Note":
-        status, msg, _note = API.retrieve(note_id)
+    @classmethod
+    def retrieve(cls, note_id: str) -> "Note":
+        status, msg, _note = cls.API.retrieve(note_id)
         assert status == 0, msg
         assert isinstance(_note, dict)
         return Note(**_note)
 
     def create(self) -> "Note":
-        status, msg, _note = API.modify(self.d.__dict__, self.id)
+        status, msg, _note = self.API.modify(self.d.__dict__, self.id)
         assert status == 0, msg
         assert isinstance(_note, dict)
         assert self.id == _note["id"]
         return self
 
     def modify(self, version: Optional[int] = None) -> "Note":
-        status, msg, _note = API.modify(self.d.__dict__, self.id, version)
+        status, msg, _note = self.API.modify(self.d.__dict__, self.id, version)
         assert status == 0, msg
         assert isinstance(_note, dict)
         self = Note(**_note)
@@ -133,7 +141,7 @@ class Note:
 
     @classmethod
     def _trash(cls, note_id: str) -> Dict[str, Any]:
-        status, msg, _note = API.trash(note_id)
+        status, msg, _note = cls.API.trash(note_id)
         assert status == 0, msg
         assert isinstance(_note, dict)
         if note_id in Note.mapper_id_note:
@@ -146,14 +154,14 @@ class Note:
 
     def restore(self) -> "Note":
         self.d.deleted = False
-        status, msg, _note = API.modify(self.d.__dict__, self.id)
+        status, msg, _note = self.API.modify(self.d.__dict__, self.id)
         assert status == 0, "Error deleting note"
         assert isinstance(_note, dict)
         self = Note(**_note)
         return self
 
     def delete(self) -> "Note":
-        status, msg, _note = API.delete(self.id)
+        status, msg, _note = self.API.delete(self.id)
         assert status == 0, "Error deleting note"
         assert isinstance(_note, dict)
         self = Note(**_note)
@@ -230,8 +238,11 @@ class Note:
 
     @staticmethod
     def get_filename(id: str, title: str) -> str:
-        title_extension_map: List[Dict[str, str]] = SETTINGS.get("title_extension_map")
-        assert isinstance(title_extension_map, list), f"Invalid title_extension_map: {title_extension_map}"
+        title_extension_map: List[Dict[str, str]] = get_settings("title_extension_map")
+        if not isinstance(title_extension_map, list):
+            show_message(
+                "`title_extension_map` must be a list. Please check settings file: %s." % SIMPLENOTE_SETTINGS_FILE
+            )
         base = "".join(c for c in title if c in VALID_CHARS)
         # Determine extension based on title
         extension = ""
