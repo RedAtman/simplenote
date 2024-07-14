@@ -106,6 +106,11 @@ class _Note:
                 note.tree.add(value, note)
         super().__setattr__(name, value)
 
+    def _nest_dict(self) -> Dict[str, Any]:
+        result = self.__dict__
+        del result["note"]
+        return result
+
 
 class NoteType(TypedDict):
     tags: List[str]
@@ -163,7 +168,7 @@ class Note:
 
     def _nest_dict(self) -> Dict[str, Any]:
         result = self.__dict__
-        result["d"] = self.d.__dict__
+        result["d"] = self.d._nest_dict()
         return result
 
     # TODO: use __eq__ to compare notes
@@ -198,14 +203,14 @@ class Note:
         return Note(**_note)
 
     def create(self) -> "Note":
-        status, msg, _note = self.API.modify(self.d.__dict__, self.id)
+        status, msg, _note = self.API.modify(self.d._nest_dict(), self.id)
         assert status == 0, msg
         assert isinstance(_note, dict)
         assert self.id == _note["id"]
         return self
 
     def modify(self, version: Optional[int] = None) -> "Note":
-        status, msg, _note = self.API.modify(self.d.__dict__, self.id, version)
+        status, msg, _note = self.API.modify(self.d._nest_dict(), self.id, version)
         assert status == 0, msg
         assert isinstance(_note, dict)
         self = Note(**_note)
@@ -226,7 +231,7 @@ class Note:
 
     def restore(self) -> "Note":
         self.d.deleted = False
-        status, msg, _note = self.API.modify(self.d.__dict__, self.id)
+        status, msg, _note = self.API.modify(self.d._nest_dict(), self.id)
         assert status == 0, "Error deleting note"
         assert isinstance(_note, dict)
         self = Note(**_note)
