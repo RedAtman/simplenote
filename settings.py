@@ -1,6 +1,3 @@
-import sublime
-
-
 SETTINGS = None
 
 
@@ -21,6 +18,8 @@ def get_settings(key: str, default=None):
     "Returns value of given Emmet setting"
     global SETTINGS
     if SETTINGS is None:
+        import sublime
+
         SETTINGS = sublime.load_settings("simplenote.sublime-settings")
     return SETTINGS.get(key, default)
 
