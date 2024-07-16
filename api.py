@@ -27,15 +27,6 @@ SIMPLENOTE_APP_KEY: str = base64.b64decode("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMw
 SIMPLENOTE_BUCKET: str = "note"
 _SIMPLENOTE_TOKEN_FILE = "simplenote_token.pkl"
 SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_TOKEN_FILE)
-simplenote_variables = [
-    SIMPLENOTE_BASE_DIR,
-    SIMPLENOTE_APP_ID,
-    SIMPLENOTE_APP_KEY,
-    SIMPLENOTE_BUCKET,
-    SIMPLENOTE_TOKEN_FILE,
-]
-if not all(simplenote_variables):
-    raise Exception("Simplenote variables %s must be set in environment variables" % simplenote_variables)
 
 
 class URL:
