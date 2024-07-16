@@ -2,13 +2,12 @@ import logging
 from threading import Lock
 from typing import Any, Dict, List
 
-import sublime
-import sublime_plugin
-
 from models import Note
 from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from settings import get_settings
 from simplenote import clear_orphaned_filepaths, on_note_changed
+import sublime
+import sublime_plugin
 from utils.sublime import close_view, open_view, show_message
 
 
@@ -122,8 +121,8 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
 class NoteListCommand(sublime_plugin.ApplicationCommand):
 
     def on_select(self, selected_index: int):
-        note_id = self.list__id[selected_index]
-        selected_note = Note.mapper_id_note[note_id]
+        note_id = self.list__modificationDate[selected_index]
+        selected_note = Note.tree.find(note_id)
         filepath = selected_note.open()
         selected_note.flush()
         view = open_view(filepath)
@@ -134,13 +133,16 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
             if not start():
                 return
 
-        self.list__id: List[str] = []
+        self.list__modificationDate: List[float] = []
         self.list__title: List[str] = []
-        for id, note in Note.mapper_id_note.items():
+        for note in Note.tree.iter(reverse=True):
+            if not isinstance(note, Note):
+                raise Exception("note is not a Note: %s" % type(note))
             if note.d.deleted == True:
                 continue
-            self.list__id.append(id)
+            self.list__modificationDate.append(note.d.modificationDate)
             self.list__title.append(note.title)
+
         sublime.active_window().show_quick_panel(
             self.list__title,
             self.on_select,
