@@ -22,7 +22,15 @@ jobs:
       id: get_latest_tag
       run: |
         latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+        echo "Latest tag: $latest_tag"
         echo "::set-output name=latest_tag::$latest_tag"
+      shell: bash
+
+    - name: Debug information
+      run: |
+        git status
+        git log -1
+        git remote -v
       shell: bash
 
     - name: Calculate new version
@@ -34,15 +42,22 @@ jobs:
         else
           new_version=$(echo $latest_tag | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
         fi
+        echo "New version: $new_version"
         echo "::set-output name=new_version::$new_version"
       shell: bash
 
     - name: Create tag
-      run: git tag -a "${{ steps.calc_new_version.outputs.new_version }}" -m "Release ${{ steps.calc_new_version.outputs.new_version }}"
+      run: |
+        new_version=${{ steps.calc_new_version.outputs.new_version }}
+        echo "Creating tag $new_version"
+        git tag -a "$new_version" -m "Release $new_version"
       shell: bash
 
     - name: Push tag to GitHub
-      run: git push origin "${{ steps.calc_new_version.outputs.new_version }}"
+      run: |
+        new_version=${{ steps.calc_new_version.outputs.new_version }}
+        echo "Pushing tag $new_version"
+        git push origin "$new_version"
       shell: bash
 
     - name: Create GitHub Release
