@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## v1.1.0 (2024-07-17)
+## v0.3.0 (2024-07-17)
 
 ### Feature
 
@@ -15,82 +15,6 @@ Add debug information to the release workflow to help troubleshoot potential iss
 * feat: Automate release creation on merge
 
 Adds a GitHub workflow to automatically create releases and tags on successful merges to the `master` branch. This workflow calculates a new version based on the latest existing tag, creates a tag, pushes it to the remote repository, and publishes a GitHub release. ([`a6a4f62`](https://github.com/RedAtman/simplenote/commit/a6a4f62ffedcc9ae75afeab5a5e5a910069885a3))
-
-* feat: Add timestamp for modification
-
-Adds a timestamp to the modification date of a note, ensuring accurate tracking of note changes. This resolves an issue where the modification date was not being properly updated. ([`cdc27ab`](https://github.com/RedAtman/simplenote/commit/cdc27abfdcd387311f57a11bad5cadcc76f77d8f))
-
-* feat: Remove Red-Black Tree implementation
-
-The Red-Black Tree implementation has been removed due to its unused status and the potential for future conflicts. This decision streamlines the codebase and reduces maintenance overhead. ([`e4086e0`](https://github.com/RedAtman/simplenote/commit/e4086e0d05b5e0a9802dcbee9def9e309665bf9d))
-
-* feat: Implement Red-Black Tree
-
-Introduces a Red-Black Tree data structure, providing a balanced binary search tree implementation with efficient insertion, deletion, and search operations. Comprehensive unit tests are included to ensure correctness and robustness. ([`7ac1630`](https://github.com/RedAtman/simplenote/commit/7ac163014ae748347949d021009aa0a2c71738c0))
-
-* feat: Implement note modification date tracking using a Red-Black Tree
-
-This commit introduces a new data structure, a Red-Black Tree, to efficiently track the modification date of notes.
-
-The Red-Black Tree stores notes keyed by their modification dates, enabling fast retrieval and deletion of notes based on their modification times. This optimization ensures that when a note&#39;s content or other attributes are modified, the associated modification date is updated correctly and efficiently in the tree.
-
-The modification date is now automatically updated when the `d` attribute of a note is modified, ensuring that the tree always reflects the latest state of notes.
-
-This implementation simplifies note modification handling and provides a performant way to access notes based on their modification date. ([`3d1dff3`](https://github.com/RedAtman/simplenote/commit/3d1dff316a9705a588542ef2bb4d377a1266a22d))
-
-* feat: introduce enum for node colors
-
-Refactor the `Color` enum into the codebase to improve readability and type safety. This enhances the overall maintainability and clarity of the red-black tree implementation. ([`b523da3`](https://github.com/RedAtman/simplenote/commit/b523da37fa658f280a67f17a6f051338408d3a89))
-
-* feat: refactor settings logic, replace hardcoded credentials with environment variables
-
-This change introduces environment variables for app ID, app key, and bucket, allowing users to configure them instead of using hardcoded values. The existing code has been updated to utilize these environment variables, making it more flexible and secure. ([`f6d8972`](https://github.com/RedAtman/simplenote/commit/f6d8972fbee4d5fd8f8bb485e97621f24a1adb23))
-
-* feat: add decorator utils
-
-Adds utility functions for timing function execution, creating class properties, and ensuring singleton instances. These decorators enhance code clarity and maintainability by encapsulating common patterns. ([`328b1cf`](https://github.com/RedAtman/simplenote/commit/328b1cf55c86aa8e818c1d5456976a70defd0a12))
-
-* feat: utils.request: Improve error handling in network requests, And support for content encoding
-
-More comprehensive logging of network request errors, including headers and data, for easier debugging. Additionally, a more robust error handling mechanism is in place to better identify and categorize various network request exceptions. This ensures more informative feedback and graceful error handling in the face of network issues. ([`bfb861b`](https://github.com/RedAtman/simplenote/commit/bfb861bb5d138019df832dcbadf0a9ed05e1ea1a))
-
-* feat: Add Simplenote settings file
-
-Adds a new settings file for configuring the Simplenote plugin, allowing users to customize credentials, sync behavior, and other preferences.  This enables users to tailor the plugin to their specific needs and workflow. ([`f66e19b`](https://github.com/RedAtman/simplenote/commit/f66e19be6865007a8f74b939f0e5edfc8567d92e))
-
-* feat: outline future development plans
-
-Adds a section to the README outlining planned features for the future. ([`90e72f5`](https://github.com/RedAtman/simplenote/commit/90e72f52179c70d03cc84068377e58d5e54a080a))
-
-* feat: Implement Red-Black Tree
-
-Adds a Red-Black Tree implementation with support for insertion, deletion, and basic search operations. The implementation is based on classic algorithms and adheres to Red-Black Tree invariants. Includes unit tests for verification. ([`b498f9c`](https://github.com/RedAtman/simplenote/commit/b498f9cb580df113e187e2f0c23861f7be79dae7))
-
-### Fix
-
-* fix: Migrate cache to sublime cache path
-
-Move the note cache file from the package path to the Sublime Text cache path. This helps avoid cluttering the package path with potentially large cache files and ensures consistent cache location across installations. ([`343ba0f`](https://github.com/RedAtman/simplenote/commit/343ba0f419a4bbf6653d9a84146ac865646dac99))
-
-### Refactor
-
-* refactor: Migrate from ID-based note lookups to tree-based
-
-Migrate from storing notes in a dictionary keyed by ID to using a tree structure. This simplifies note retrieval and eliminates the need to maintain a separate dictionary. ([`6fb16cf`](https://github.com/RedAtman/simplenote/commit/6fb16cf16960e4dd8b61b615e0b73de01166229f))
-
-### Test
-
-* test: Implement modificationDate in Note class
-
-Improves the `Note` class by using `modificationDate` for object identification and tree traversal. This eliminates the need for additional unique identifiers and improves data consistency.
-
-The change addresses issues related to duplicated notes and ensures that the tree structure accurately represents the note order based on their modification timestamps. ([`1730335`](https://github.com/RedAtman/simplenote/commit/173033500b7195393429423eccc762ce8d9e1b18))
-
-* test: Add note tree and improve Note class
-
-Added a tree structure to track and access notes more efficiently. This enables unique identification and retrieval of notes. Enhanced the Note class for better data handling and consistency. ([`b2f459d`](https://github.com/RedAtman/simplenote/commit/b2f459df12925f68ea38d1369ced9830958a7e36))
-
-* test: Add Singleton subclassing test ([`48bea8b`](https://github.com/RedAtman/simplenote/commit/48bea8bcaacdfb63c46952e18346b89fd9c5ac7b))
 
 ### Unknown
 
@@ -154,6 +78,62 @@ Explicitly set the shell to bash in the create-release workflow to prevent issue
 
 feat: Automate release creation on merge ([`25fc238`](https://github.com/RedAtman/simplenote/commit/25fc2380137548ec8fce211d9fcbd8dab984fc1c))
 
+## v0.2.9 (2024-07-16)
+
+### Feature
+
+* feat: Add timestamp for modification
+
+Adds a timestamp to the modification date of a note, ensuring accurate tracking of note changes. This resolves an issue where the modification date was not being properly updated. ([`cdc27ab`](https://github.com/RedAtman/simplenote/commit/cdc27abfdcd387311f57a11bad5cadcc76f77d8f))
+
+* feat: Remove Red-Black Tree implementation
+
+The Red-Black Tree implementation has been removed due to its unused status and the potential for future conflicts. This decision streamlines the codebase and reduces maintenance overhead. ([`e4086e0`](https://github.com/RedAtman/simplenote/commit/e4086e0d05b5e0a9802dcbee9def9e309665bf9d))
+
+* feat: Implement Red-Black Tree
+
+Introduces a Red-Black Tree data structure, providing a balanced binary search tree implementation with efficient insertion, deletion, and search operations. Comprehensive unit tests are included to ensure correctness and robustness. ([`7ac1630`](https://github.com/RedAtman/simplenote/commit/7ac163014ae748347949d021009aa0a2c71738c0))
+
+* feat: Implement note modification date tracking using a Red-Black Tree
+
+This commit introduces a new data structure, a Red-Black Tree, to efficiently track the modification date of notes.
+
+The Red-Black Tree stores notes keyed by their modification dates, enabling fast retrieval and deletion of notes based on their modification times. This optimization ensures that when a note&#39;s content or other attributes are modified, the associated modification date is updated correctly and efficiently in the tree.
+
+The modification date is now automatically updated when the `d` attribute of a note is modified, ensuring that the tree always reflects the latest state of notes.
+
+This implementation simplifies note modification handling and provides a performant way to access notes based on their modification date. ([`3d1dff3`](https://github.com/RedAtman/simplenote/commit/3d1dff316a9705a588542ef2bb4d377a1266a22d))
+
+* feat: introduce enum for node colors
+
+Refactor the `Color` enum into the codebase to improve readability and type safety. This enhances the overall maintainability and clarity of the red-black tree implementation. ([`b523da3`](https://github.com/RedAtman/simplenote/commit/b523da37fa658f280a67f17a6f051338408d3a89))
+
+### Fix
+
+* fix: Migrate cache to sublime cache path
+
+Move the note cache file from the package path to the Sublime Text cache path. This helps avoid cluttering the package path with potentially large cache files and ensures consistent cache location across installations. ([`343ba0f`](https://github.com/RedAtman/simplenote/commit/343ba0f419a4bbf6653d9a84146ac865646dac99))
+
+### Refactor
+
+* refactor: Migrate from ID-based note lookups to tree-based
+
+Migrate from storing notes in a dictionary keyed by ID to using a tree structure. This simplifies note retrieval and eliminates the need to maintain a separate dictionary. ([`6fb16cf`](https://github.com/RedAtman/simplenote/commit/6fb16cf16960e4dd8b61b615e0b73de01166229f))
+
+### Test
+
+* test: Implement modificationDate in Note class
+
+Improves the `Note` class by using `modificationDate` for object identification and tree traversal. This eliminates the need for additional unique identifiers and improves data consistency.
+
+The change addresses issues related to duplicated notes and ensures that the tree structure accurately represents the note order based on their modification timestamps. ([`1730335`](https://github.com/RedAtman/simplenote/commit/173033500b7195393429423eccc762ce8d9e1b18))
+
+* test: Add note tree and improve Note class
+
+Added a tree structure to track and access notes more efficiently. This enables unique identification and retrieval of notes. Enhanced the Note class for better data handling and consistency. ([`b2f459d`](https://github.com/RedAtman/simplenote/commit/b2f459df12925f68ea38d1369ced9830958a7e36))
+
+### Unknown
+
 * Merge pull request #3 from RedAtman/fix_cache_file_path
 
 Fix cache file path ([`e424d1e`](https://github.com/RedAtman/simplenote/commit/e424d1ed0974b1aee5eeaa96a16e47bcf40f2b2d))
@@ -182,11 +162,33 @@ The code previously incorrectly nested dictionaries when creating and modifying 
 
 Avoids unnecessary import of `sublime` module when Emmet settings are not accessed. This enhances performance by delaying the import until it&#39;s actually required. ([`053cbab`](https://github.com/RedAtman/simplenote/commit/053cbabdb4413985a7acde1c4e78c646e2e7cbe3))
 
+## v0.2.8 (2024-07-13)
+
+### Feature
+
+* feat: refactor settings logic, replace hardcoded credentials with environment variables
+
+This change introduces environment variables for app ID, app key, and bucket, allowing users to configure them instead of using hardcoded values. The existing code has been updated to utilize these environment variables, making it more flexible and secure. ([`f6d8972`](https://github.com/RedAtman/simplenote/commit/f6d8972fbee4d5fd8f8bb485e97621f24a1adb23))
+
+* feat: add decorator utils
+
+Adds utility functions for timing function execution, creating class properties, and ensuring singleton instances. These decorators enhance code clarity and maintainability by encapsulating common patterns. ([`328b1cf`](https://github.com/RedAtman/simplenote/commit/328b1cf55c86aa8e818c1d5456976a70defd0a12))
+
+* feat: utils.request: Improve error handling in network requests, And support for content encoding
+
+More comprehensive logging of network request errors, including headers and data, for easier debugging. Additionally, a more robust error handling mechanism is in place to better identify and categorize various network request exceptions. This ensures more informative feedback and graceful error handling in the face of network issues. ([`bfb861b`](https://github.com/RedAtman/simplenote/commit/bfb861bb5d138019df832dcbadf0a9ed05e1ea1a))
+
+### Test
+
+* test: Add Singleton subclassing test ([`48bea8b`](https://github.com/RedAtman/simplenote/commit/48bea8bcaacdfb63c46952e18346b89fd9c5ac7b))
+
+### Unknown
+
 * Merge pull request #1 from RedAtman/dev
 
 refactor: refactor settings logic ([`aca1b37`](https://github.com/RedAtman/simplenote/commit/aca1b373531222ba06e4efad6ca8e7ddf60a1807))
 
-## v1.0.0 (2024-07-11)
+## v0.2.7 (2024-07-12)
 
 ### Chore
 
@@ -197,6 +199,18 @@ refactor: refactor settings logic ([`aca1b37`](https://github.com/RedAtman/simpl
 * chore: Remove unused code and dataclass definitions in api.py ([`1a59cd5`](https://github.com/RedAtman/simplenote/commit/1a59cd577f9e0ae0c2cd8645e1bf0b389b4f3eaf))
 
 ### Feature
+
+* feat: Add Simplenote settings file
+
+Adds a new settings file for configuring the Simplenote plugin, allowing users to customize credentials, sync behavior, and other preferences.  This enables users to tailor the plugin to their specific needs and workflow. ([`f66e19b`](https://github.com/RedAtman/simplenote/commit/f66e19be6865007a8f74b939f0e5edfc8567d92e))
+
+* feat: outline future development plans
+
+Adds a section to the README outlining planned features for the future. ([`90e72f5`](https://github.com/RedAtman/simplenote/commit/90e72f52179c70d03cc84068377e58d5e54a080a))
+
+* feat: Implement Red-Black Tree
+
+Adds a Red-Black Tree implementation with support for insertion, deletion, and basic search operations. The implementation is based on classic algorithms and adheres to Red-Black Tree invariants. Includes unit tests for verification. ([`b498f9c`](https://github.com/RedAtman/simplenote/commit/b498f9cb580df113e187e2f0c23861f7be79dae7))
 
 * feat: Remove SimplenoteManager dependency
 
