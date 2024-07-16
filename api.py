@@ -10,6 +10,7 @@ import os
 import pickle
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
+from uuid import uuid4
 
 from utils.patterns.singleton.base import Singleton
 from utils.request import Response, request
@@ -284,8 +285,10 @@ class Simplenote(Singleton):
         """
         if not isinstance(note, dict):
             raise ValueError("note should be a string or a dict, but got %s" % note)
-        if note_id is None:
-            raise ValueError("note_id should be a string, but got %s" % note_id)
+        if not note_id:
+            note_id = str(uuid4())
+            logger.info("note_id is None, using %s" % note_id)
+            # raise ValueError("note_id should be a string, but got %s" % note_id)
         try:
             response = request(
                 URL.modify(note_id, version),
