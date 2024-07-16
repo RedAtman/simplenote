@@ -8,13 +8,12 @@ from typing import Any, Dict, List
 # https://www.sublimetext.com/docs/api_reference.html
 import sublime
 
-from models import SIMPLENOTE_TEMP_PATH, Note
+from models import SIMPLENOTE_NOTES_DIR, Note
 from utils.patterns.singleton.base import Singleton
 from utils.sublime import close_view, open_view
 
 
-__all__ = [
-    "SIMPLENOTE_TEMP_PATH",
+__all__: List[str] = [
     "SIMPLENOTE_SETTINGS_FILE",
     "Local",
     "load_notes",
@@ -28,11 +27,10 @@ logger = logging.getLogger()
 
 
 SIMPLENOTE_PROJECT_NAME = "Simplenote"
-SIMPLENOTE_PACKAGE_PATH = os.path.join(sublime.packages_path(), SIMPLENOTE_PROJECT_NAME)
-SIMPLENOTE_TEMP_PATH = os.path.join(SIMPLENOTE_PACKAGE_PATH, "temp")
-SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, "note_cache.pkl")
+SIMPLENOTE_CACHE_DIR = os.path.join(sublime.cache_path(), SIMPLENOTE_PROJECT_NAME)
+os.makedirs(SIMPLENOTE_CACHE_DIR, exist_ok=True)
+SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_CACHE_DIR, "note_cache.pkl")
 SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
-# SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, _SIMPLENOTE_SETTINGS_FILE)
 
 
 class _BaseManager(Singleton):
@@ -104,11 +102,11 @@ def load_notes():
 
 def clear_orphaned_filepaths():
     list__filepath = [note.filename for note in Note.mapper_id_note.values()]
-    if not os.path.exists(SIMPLENOTE_TEMP_PATH):
-        os.makedirs(SIMPLENOTE_TEMP_PATH)
-    for filepath in os.listdir(SIMPLENOTE_TEMP_PATH):
+    if not os.path.exists(SIMPLENOTE_NOTES_DIR):
+        os.makedirs(SIMPLENOTE_NOTES_DIR)
+    for filepath in os.listdir(SIMPLENOTE_NOTES_DIR):
         if filepath not in list__filepath:
-            os.remove(os.path.join(SIMPLENOTE_TEMP_PATH, filepath))
+            os.remove(os.path.join(SIMPLENOTE_NOTES_DIR, filepath))
 
 
 def sort_notes(a_note: Note, b_note: Note):
