@@ -1,0 +1,55 @@
+name: Create Release and Tag on Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  create-release:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'master'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Get the latest tag
+      id: get_latest_tag
+      run: |
+        latest_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+        echo "::set-output name=latest_tag::$latest_tag"
+
+    - name: Calculate new version
+      id: calc_new_version
+      run: |
+        latest_tag=${{ steps.get_latest_tag.outputs.latest_tag }}
+        if [[ $latest_tag == "" ]]; then
+          new_version="v1.0.0"
+        else
+          new_version=$(echo $latest_tag | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+        fi
+        echo "::set-output name=new_version::$new_version"
+
+    - name: Create tag
+      run: git tag -a "${{ steps.calc_new_version.outputs.new_version }}" -m "Release ${{ steps.calc_new_version.outputs.new_version }}"
+
+    - name: Push tag to GitHub
+      run: git push origin "${{ steps.calc_new_version.outputs.new_version }}"
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.ACTION_TOKEN }}
+      with:
+        tag_name: "${{ steps.calc_new_version.outputs.new_version }}"
+        release_name: "Release ${{ steps.calc_new_version.outputs.new_version }}"
+        draft: false
+        prerelease: false
+        # body: |
+        #   ## Changes
+        #   - Description of changes in this release.
