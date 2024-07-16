@@ -23,7 +23,8 @@ logger = logging.getLogger()
 
 SIMPLENOTE_DEFAULT_NOTE_TITLE = "untitled"
 SIMPLENOTE_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-SIMPLENOTE_TEMP_PATH = os.path.join(SIMPLENOTE_BASE_DIR, "temp")
+SIMPLENOTE_NOTES_DIR = os.path.join(SIMPLENOTE_BASE_DIR, "notes")
+os.makedirs(SIMPLENOTE_NOTES_DIR, exist_ok=True)
 SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
 # SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_SETTINGS_FILE)
 
@@ -320,7 +321,7 @@ class Note:
 
     @staticmethod
     def get_filepath(filename: str):
-        return os.path.join(SIMPLENOTE_TEMP_PATH, filename)
+        return os.path.join(SIMPLENOTE_NOTES_DIR, filename)
 
     @staticmethod
     def write_content_to_path(filepath: str, content: str = ""):
@@ -361,7 +362,7 @@ class Note:
     def get_note_from_filepath(view_absolute_filepath: str):
         assert isinstance(view_absolute_filepath, str), "view_absolute_filepath must be a string"
         view_note_dir, view_note_filename = os.path.split(view_absolute_filepath)
-        if view_note_dir != SIMPLENOTE_TEMP_PATH:
+        if view_note_dir != SIMPLENOTE_NOTES_DIR:
             return
         pattern = re.compile(r"\((.*?)\)")
         for note in Note.mapper_id_note.values():
