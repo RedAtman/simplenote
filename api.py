@@ -8,6 +8,7 @@ import functools
 import logging
 import os
 import pickle
+import time
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 from uuid import uuid4
@@ -289,6 +290,7 @@ class Simplenote(Singleton):
             note_id = str(uuid4())
             logger.info("note_id is None, using %s" % note_id)
             # raise ValueError("note_id should be a string, but got %s" % note_id)
+        note["modificationDate"] = time.time()
         try:
             response = request(
                 URL.modify(note_id, version),
