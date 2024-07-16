@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from importlib import import_module
 import logging
 import os
@@ -13,7 +12,7 @@ from uuid import uuid4
 from api import Simplenote
 from settings import get_settings
 from utils.decorator import class_property
-from utils.sublime import show_message
+from utils.tree.redblacktree import rbtree as RedBlackTree
 
 
 # from typing_extensions import Unpack
@@ -33,18 +32,59 @@ SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
 VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
 
-@dataclass
 class _Note:
     """Data class for a note object"""
 
-    tags: List[str] = field(default_factory=list, repr=False)
-    deleted: bool = field(default_factory=bool, repr=False)
-    shareURL: str = field(default_factory=str, repr=False)
-    systemTags: List[str] = field(default_factory=list, repr=False)
-    content: str = field(default_factory=str)
-    publishURL: str = field(default_factory=str, repr=False)
-    modificationDate: float = field(default_factory=time.time, repr=False)
-    creationDate: float = field(default_factory=time.time, repr=False)
+    __serialize_fields = [
+        "tags",
+        "deleted",
+        "shareURL",
+        "systemTags",
+        "content",
+        "publishURL",
+        "modificationDate",
+        "creationDate",
+    ]
+
+    def __init__(
+        self,
+        _note: Optional[Note] = None,
+        tags: Optional[List[str]] = None,
+        deleted: bool = False,
+        shareURL: str = "",
+        systemTags: Optional[List[str]] = None,
+        content: str = "",
+        publishURL: str = "",
+        modificationDate: float = 0,
+        creationDate: float = 0,
+    ):
+        self._note: Optional[Note] = _note
+        self.tags: List[str] = tags or []
+        self.deleted: bool = deleted
+        self.shareURL: str = shareURL
+        self.systemTags: List[str] = systemTags or []
+        self.content: str = content
+        self.publishURL: str = publishURL
+        self._modificationDate: float = modificationDate or time.time()
+        self.creationDate: float = creationDate or time.time()
+        setattr(self, "modificationDate", self._modificationDate)
+
+    @property
+    def modificationDate(self) -> float:
+        return self._modificationDate
+
+    @modificationDate.setter
+    def modificationDate(self, value: float) -> None:
+        # TODO:
+        # logger.info(("@modificationDate.setter", value))
+        # note = getattr(self, "_note", None)
+        # if not isinstance(note, Note):
+        #     raise Exception("modificationDate can only be set on Note objects, not %s" % type(note))
+        # Note.tree.insert(value, note)
+        self._modificationDate = value
+
+    def _nest_dict(self) -> Dict[str, Any]:
+        return {filed: getattr(self, filed) for filed in self.__serialize_fields}
 
 
 class NoteType(TypedDict):
@@ -58,53 +98,65 @@ class NoteType(TypedDict):
     creationDate: float
 
 
-@dataclass
 class Note:
     mapper_id_note: ClassVar[Dict[str, "Note"]] = dict()
+    # TODO: use weakref
     # mapper_id_note: ClassVar[WeakValueDictionary[str, "Note"]] = WeakValueDictionary()
-
-    id: str = field(default_factory=lambda: uuid4().hex)
-    v: int = 0
-    d: _Note = field(default_factory=_Note)
-
-    _content: str = field(default_factory=str)
+    tree: ClassVar[RedBlackTree] = RedBlackTree()
 
     def __new__(cls, id: str = "", **kwargs):
         if id not in Note.mapper_id_note:
             instance = super().__new__(cls)
-            # Note.mapper_id_note[id] = instance
+            # TODO:
             kwargs["_content"] = kwargs.get("d", {}).get("content", "")
             instance.__dict__["__kwargs"] = kwargs
+
             return instance
         instance = Note.mapper_id_note[id]
-        kwargs["_content"] = getattr(instance, "_content", "")
-        instance.__dict__["__kwargs"] = kwargs
         return instance
 
-    def __post_init__(self):
-        Note.mapper_id_note[self.id] = self
-        if isinstance(self.d, dict):
-            d = _Note(**self.d)
-            self.d = d
-        self._add_extra_fields()
-
-    def _add_extra_fields(self):
+    # TODO:
+    def __run_once_after_created(self):
         self._content = self.__dict__["__kwargs"].get("_content", "")
 
-    def _nest_dict(self) -> Dict[str, Any]:
-        result = self.__dict__
-        result["d"] = self.d.__dict__
-        return result
+    def __init__(self, id: str = "", v: int = 0, d: Dict[str, Any] = {}, **kwargs):
+        if not isinstance(id, str) or len(id) != 36:
+            id = str(uuid4())
+        self.id: str = id
+        Note.mapper_id_note[self.id] = self
+        # Note.tree.remove(self.d.modificationDate)
+        self.v: int = v
+        _d = getattr(self, "d", None)
+        if isinstance(_d, _Note):
+            old_modificationDate = _d.modificationDate
+            logger.info(("old_modificationDate", old_modificationDate))
+            Note.tree.remove(old_modificationDate)
+        d["_note"] = self
+        self.d: _Note = _Note(**d)
+        Note.tree.insert(self.d.modificationDate, self)
+        # TODO:
+        self.__run_once_after_created()
+        # self._content = self.d.content
 
-    def __eq__(self, value: "Note") -> bool:
-        return self.id == value.id
+    # TODO:
+    # def __setattr__(self, name: str, value: Any) -> None:
+    #     if name == "d":
+    #         if isinstance(value, dict):
+    #             value["_note"] = self
+    #             value = _Note(**value)
+    #     super().__setattr__(name, value)
+
+    # TODO: use __eq__ to compare notes
+    # def __eq__(self, value: "Note") -> bool:
+    #     return self.d.modificationDate == value.d.modificationDate
+    #     return self.id == value.id
 
     @class_property
     def API(cls) -> Simplenote:
         username = get_settings("username")
         password = get_settings("password")
         if not isinstance(username, str) or not isinstance(password, str):
-            show_message("Missing username or password, Please configure Simplenote settings")
+            logger.info("Missing username or password, Please configure Simplenote settings")
             raise Exception("Missing username or password")
         return Simplenote(password, password)
 
@@ -126,14 +178,14 @@ class Note:
         return Note(**_note)
 
     def create(self) -> "Note":
-        status, msg, _note = self.API.modify(self.d.__dict__, self.id)
+        status, msg, _note = self.API.modify(self.d._nest_dict(), self.id)
         assert status == 0, msg
         assert isinstance(_note, dict)
         assert self.id == _note["id"]
         return self
 
     def modify(self, version: Optional[int] = None) -> "Note":
-        status, msg, _note = self.API.modify(self.d.__dict__, self.id, version)
+        status, msg, _note = self.API.modify(self.d._nest_dict(), self.id, version)
         assert status == 0, msg
         assert isinstance(_note, dict)
         self = Note(**_note)
@@ -154,7 +206,7 @@ class Note:
 
     def restore(self) -> "Note":
         self.d.deleted = False
-        status, msg, _note = self.API.modify(self.d.__dict__, self.id)
+        status, msg, _note = self.API.modify(self.d._nest_dict(), self.id)
         assert status == 0, "Error deleting note"
         assert isinstance(_note, dict)
         self = Note(**_note)
@@ -240,7 +292,7 @@ class Note:
     def get_filename(id: str, title: str) -> str:
         title_extension_map: List[Dict[str, str]] = get_settings("title_extension_map")
         if not isinstance(title_extension_map, list):
-            show_message(
+            logger.info(
                 "`title_extension_map` must be a list. Please check settings file: %s." % SIMPLENOTE_SETTINGS_FILE
             )
         base = "".join(c for c in title if c in VALID_CHARS)
@@ -339,15 +391,15 @@ if __name__ == "__main__":
         },
     }
     note = Note(**kwargs)
-    pprint(note.create())
+    # pprint(note.create())
     note.d.content = "new content"
-    pprint(note.modify())
-    pprint(note._nest_dict())
+    # pprint(note.modify())
+    # pprint(note._nest_dict())
     pprint(Note.__dict__)
-    empty_note = Note(v=1)
-    pprint(empty_note)
-    pprint(empty_note.__dict__)
-    pprint(empty_note._nest_dict())
+    # empty_note = Note(v=1)
+    # pprint(empty_note)
+    # pprint(empty_note.__dict__)
+    # pprint(empty_note._nest_dict())
     note = {
         # "id": "1",
         "v": 1,
@@ -369,6 +421,6 @@ if __name__ == "__main__":
     # print(note.d.__annotations__)
     # print(note.__annotations__)
     # print(note.d.__dataclass_fields__)
-    print(note.__dataclass_fields__)
+    # print(note.__dataclass_fields__)
     # print(note.d.__dataclass_params__)
     # note.d.tags = ["tag3", "tag4"]
