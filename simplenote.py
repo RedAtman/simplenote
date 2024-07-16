@@ -29,8 +29,11 @@ logger = logging.getLogger()
 
 SIMPLENOTE_PROJECT_NAME = "Simplenote"
 SIMPLENOTE_PACKAGE_PATH = os.path.join(sublime.packages_path(), SIMPLENOTE_PROJECT_NAME)
+os.makedirs(SIMPLENOTE_PACKAGE_PATH, exist_ok=True)
+SIMPLENOTE_CACHE_PATH = os.path.join(sublime.cache_path(), SIMPLENOTE_PROJECT_NAME)
+os.makedirs(SIMPLENOTE_CACHE_PATH, exist_ok=True)
 SIMPLENOTE_TEMP_PATH = os.path.join(SIMPLENOTE_PACKAGE_PATH, "temp")
-SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, "note_cache.pkl")
+SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_CACHE_PATH, "note_cache.pkl")
 SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
 # SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_PACKAGE_PATH, _SIMPLENOTE_SETTINGS_FILE)
 
