@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from importlib import import_module
 import logging
 import os
@@ -13,9 +12,7 @@ from uuid import uuid4
 from api import Simplenote
 from settings import get_settings
 from utils.decorator import class_property
-from utils.tree.redblack import Color
-from utils.tree.redblack import Node as _Node
-from utils.tree.redblack import RedBlackTree as _RedBlackTree
+from utils.tree.redblacktree import rbtree as RedBlackTree
 
 
 # from typing_extensions import Unpack
@@ -35,81 +32,59 @@ SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
 VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
 
-class Node(_Node):
-
-    def __init__(self, value, item, color, parent, left=None, right=None):
-        super().__init__(value, color, parent, left, right)
-        self.item = item
-
-    def __iter__(self):
-        if self.left.color != Color.NIL:
-            yield from self.left.__iter__()
-
-        yield self.item
-
-        if self.right.color != Color.NIL:
-            yield from self.right.__iter__()
-
-
-class RedBlackTree(_RedBlackTree):
-    NIL_LEAF = Node(value=None, item=None, color=Color.NIL, parent=None)
-
-    def add(self, value: float, item: Note):
-        if not self.root:
-            self.root = Node(value, item, color=Color.BLACK, parent=None, left=self.NIL_LEAF, right=self.NIL_LEAF)
-            self.count += 1
-            return
-        parent, node_dir = self._find_parent(value)
-        if node_dir is None:
-            return  # value is in the tree
-        if parent is None:
-            return
-        new_node = Node(value=value, item=item, color=Color.RED, parent=parent, left=self.NIL_LEAF, right=self.NIL_LEAF)
-        if node_dir == "L":
-            parent.left = new_node
-        else:
-            parent.right = new_node
-
-        self._try_rebalance(new_node)
-        self.count += 1
-
-    def find_item(self, value: float) -> Optional[Note]:
-        node = self.find_node(value)
-        if isinstance(node, Node):
-            return node.item
-
-
-note_tree = RedBlackTree()
-
-
-@dataclass
 class _Note:
     """Data class for a note object"""
 
-    tags: List[str] = field(default_factory=list, repr=False)
-    deleted: bool = field(default_factory=bool, repr=False)
-    shareURL: str = field(default_factory=str, repr=False)
-    systemTags: List[str] = field(default_factory=list, repr=False)
-    content: str = field(default_factory=str)
-    publishURL: str = field(default_factory=str, repr=False)
-    modificationDate: float = field(default_factory=time.time, repr=False)
-    creationDate: float = field(default_factory=time.time, repr=False)
+    __serialize_fields = [
+        "tags",
+        "deleted",
+        "shareURL",
+        "systemTags",
+        "content",
+        "publishURL",
+        "modificationDate",
+        "creationDate",
+    ]
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name == "modificationDate":
-            note = getattr(self, "note", None)
-            if isinstance(note, Note):
-                # TODO: need to be more robust
-                old_value = getattr(self, name, None)
+    def __init__(
+        self,
+        _note: Optional[Note] = None,
+        tags: Optional[List[str]] = None,
+        deleted: bool = False,
+        shareURL: str = "",
+        systemTags: Optional[List[str]] = None,
+        content: str = "",
+        publishURL: str = "",
+        modificationDate: float = 0,
+        creationDate: float = 0,
+    ):
+        self._note: Optional[Note] = _note
+        self.tags: List[str] = tags or []
+        self.deleted: bool = deleted
+        self.shareURL: str = shareURL
+        self.systemTags: List[str] = systemTags or []
+        self.content: str = content
+        self.publishURL: str = publishURL
+        self._modificationDate: float = modificationDate or time.time()
+        self.creationDate: float = creationDate or time.time()
+        setattr(self, "modificationDate", self._modificationDate)
 
-                note.tree.remove(old_value)
-                note.tree.add(value, note)
-        super().__setattr__(name, value)
+    @property
+    def modificationDate(self) -> float:
+        return self._modificationDate
+
+    @modificationDate.setter
+    def modificationDate(self, value: float) -> None:
+        # TODO:
+        # logger.info(("@modificationDate.setter", value))
+        # note = getattr(self, "_note", None)
+        # if not isinstance(note, Note):
+        #     raise Exception("modificationDate can only be set on Note objects, not %s" % type(note))
+        # Note.tree.insert(value, note)
+        self._modificationDate = value
 
     def _nest_dict(self) -> Dict[str, Any]:
-        result = self.__dict__
-        del result["note"]
-        return result
+        return {filed: getattr(self, filed) for filed in self.__serialize_fields}
 
 
 class NoteType(TypedDict):
@@ -123,53 +98,53 @@ class NoteType(TypedDict):
     creationDate: float
 
 
-@dataclass
 class Note:
     mapper_id_note: ClassVar[Dict[str, "Note"]] = dict()
     # TODO: use weakref
     # mapper_id_note: ClassVar[WeakValueDictionary[str, "Note"]] = WeakValueDictionary()
     tree: ClassVar[RedBlackTree] = RedBlackTree()
 
-    id: str = field(default_factory=lambda: uuid4().hex)
-    v: int = 0
-    d: _Note = field(default_factory=_Note)
-
-    _content: str = field(default_factory=str)
-
     def __new__(cls, id: str = "", **kwargs):
         if id not in Note.mapper_id_note:
             instance = super().__new__(cls)
+            # TODO:
             kwargs["_content"] = kwargs.get("d", {}).get("content", "")
             instance.__dict__["__kwargs"] = kwargs
+
             return instance
         instance = Note.mapper_id_note[id]
-        kwargs["_content"] = getattr(instance, "_content", "")
-        instance.__dict__["__kwargs"] = kwargs
         return instance
 
-    def __post_init__(self):
-        Note.mapper_id_note[self.id] = self
-        self._add_extra_fields()
-
-    def _add_extra_fields(self):
+    # TODO:
+    def __run_once_after_created(self):
         self._content = self.__dict__["__kwargs"].get("_content", "")
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if name == "d":
-            if isinstance(value, dict):
-                d = getattr(self, "d", None)
-                if isinstance(d, _Note):
-                    old_modificationDate = d.modificationDate
-                    self.tree.remove(old_modificationDate)
-                value = _Note(**value)
-                value.note = self
-                self.tree.add(value.modificationDate, self)
-        super().__setattr__(name, value)
+    def __init__(self, id: str = "", v: int = 0, d: Dict[str, Any] = {}, **kwargs):
+        if not isinstance(id, str) or len(id) != 36:
+            id = str(uuid4())
+        self.id: str = id
+        Note.mapper_id_note[self.id] = self
+        # Note.tree.remove(self.d.modificationDate)
+        self.v: int = v
+        _d = getattr(self, "d", None)
+        if isinstance(_d, _Note):
+            old_modificationDate = _d.modificationDate
+            logger.info(("old_modificationDate", old_modificationDate))
+            Note.tree.remove(old_modificationDate)
+        d["_note"] = self
+        self.d: _Note = _Note(**d)
+        Note.tree.insert(self.d.modificationDate, self)
+        # TODO:
+        self.__run_once_after_created()
+        # self._content = self.d.content
 
-    def _nest_dict(self) -> Dict[str, Any]:
-        result = self.__dict__
-        result["d"] = self.d._nest_dict()
-        return result
+    # TODO:
+    # def __setattr__(self, name: str, value: Any) -> None:
+    #     if name == "d":
+    #         if isinstance(value, dict):
+    #             value["_note"] = self
+    #             value = _Note(**value)
+    #     super().__setattr__(name, value)
 
     # TODO: use __eq__ to compare notes
     # def __eq__(self, value: "Note") -> bool:
