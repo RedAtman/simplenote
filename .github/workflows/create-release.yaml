@@ -18,13 +18,17 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Get the latest tag
-      id: get_latest_tag
+    - name: Set output
+      id: set_output
+      run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+
+    - name: Check output
+      id: check_output
+      env:
+        RELEASE_VERSION: ${{ steps.set_output.outputs.tag }}
       run: |
-        latest_tag=$(git describe --tags --abbrev=0)
-        echo "Latest tag: $latest_tag"
-        echo "::set-output name=latest_tag::$latest_tag"
-      shell: bash
+        echo $RELEASE_VERSION
+        echo ${{ steps.set_output.outputs.tag }}
 
     - name: Debug information
       run: |
@@ -36,7 +40,7 @@ jobs:
     - name: Calculate new version
       id: calc_new_version
       run: |
-        latest_tag=${{ steps.get_latest_tag.outputs.latest_tag }}
+        latest_tag=${{ steps.set_output.outputs.tag }}
         if [[ $latest_tag == "" ]]; then
           new_version="v1.0.0"
         else
