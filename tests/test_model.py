@@ -17,10 +17,11 @@ _note_kwargs: dict[str, Any] = {
     "deleted": False,
     "systemTags": [],
     "content": content,
+    "modificationDate": 0,
 }
 _d_kwargs: dict[str, Any] = {
     "d": _note_kwargs,
-    "id": "123abc",
+    "id": "c6efd3fb-1111-1111-1111-86e9441003d3",
     "v": 2,
 }
 
@@ -130,22 +131,28 @@ class TestNote(TestCase):
         # check same id
         note = Note(**_d_kwargs)
         assert Note.tree.count == 1
-        find_note1 = Note.tree.find_item(note.d.modificationDate)
+        find_note1 = Note.tree.find(note.d.modificationDate)
+        logger.info(find_note1)
+        logger.info(note.d.modificationDate)
+        logger.info([note.d.modificationDate for note in Note.tree.iter()])
+        logger.info(find_note1.d.modificationDate)
         assert note is find_note1
         assert note.d.modificationDate == find_note1.d.modificationDate
         # logger.info((note.d.modificationDate, find_note.d.modificationDate))
-        logger.info([note.d.modificationDate for note in Note.tree])
+        logger.info([note.d.modificationDate for note in Note.tree.iter()])
         logger.info("-" * 100)
         note2 = Note(**_d_kwargs)
+        logger.info((note.id, note, note2.id, note2))
         assert note is note2
-        find_note2 = Note.tree.find_item(note2.d.modificationDate)
+        find_note2 = Note.tree.find(note2.d.modificationDate)
+        logger.info((note.id, note, find_note2.id, find_note2))
         assert note is find_note2
         assert note.d.modificationDate == find_note2.d.modificationDate
         logger.info((note.d.modificationDate, find_note2.d.modificationDate))
         assert note2 is find_note2
         assert note2.d.modificationDate == find_note2.d.modificationDate
         logger.info((note2.d.modificationDate, find_note2.d.modificationDate))
-        logger.info([note.d.modificationDate for note in Note.tree])
+        logger.info([note.d.modificationDate for note in Note.tree.iter()])
         logger.info((len(Note.mapper_id_note), Note.tree.count))
         assert Note.tree.count == 1
         assert len(Note.mapper_id_note) == 1
@@ -154,13 +161,34 @@ class TestNote(TestCase):
         note3 = Note(**_d_kwargs)
         assert note is not note3
         # check note count
+        logger.info((len(Note.mapper_id_note), Note.tree.count))
+        logger.info([note.d.modificationDate for note in Note.tree.iter()])
         assert Note.tree.count == 2
         assert len(Note.mapper_id_note) == 2
         logger.info([note.d.modificationDate for note in Note.mapper_id_note.values()])
-        logger.info([note.d.modificationDate for note in Note.tree])
+        logger.info([note.d.modificationDate for note in Note.tree.iter()])
         # check order is restored after modificationDate is changed
         note3.d.modificationDate = 0
-        logger.info([note.d.modificationDate for note in Note.tree])
+        logger.info([note.d.modificationDate for note in Note.tree.iter()])
+
+    def test__note__nest_dict(self):
+        validate_result = {
+            "content": "# SimplenoteTitle\n\nSimplenoteBody",
+            "creationDate": 1721046315.18294,
+            "deleted": False,
+            "modificationDate": 1721046315.18294,
+            "publishURL": "",
+            "shareURL": "",
+            "systemTags": [],
+            "tags": [],
+        }
+        note = Note(**_d_kwargs)
+        from dataclasses import asdict
+
+        # logger.info(asdict(note.d))
+        logger.info(note.d._nest_dict())
+        assert validate_result.keys() == note.d._nest_dict().keys()
+        assert "_modificationDate" in note.d.__dict__
 
 
 if __name__ == "__main__":
