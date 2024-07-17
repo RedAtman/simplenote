@@ -42,7 +42,7 @@ jobs:
           tag_prefix: "st4-"
           # Template format based in which release tag is generated
           # tag_template: "v${{ steps.calc_new_version.outputs.new_version }}"
-          tag_template: 'i.i.i'
+          tag_template: 'yyyy.mm.dd.i'
           # Explicitly set the previous release tag
           previous_tag: # optional
 
