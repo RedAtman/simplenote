@@ -226,13 +226,10 @@ class Note:
 
     @content.setter
     def content(self, value: str):
-        # self._content = value
         self.d.content = value
 
     @property
     def _title(self):
-        # if self._content is None:
-        #     self._content = self.d.content
         try:
             content = self._content
         except Exception:
@@ -267,20 +264,6 @@ class Note:
     def filename(self) -> str:
         filename = self.get_filename(self.id, self.title)
         return filename
-        # if self._filename is None:
-        #     self._filename = filename
-        #     # TODO: self.open()
-        #     return self._filename
-        if self._filename != filename:
-            # self.on_open_filename_change()
-            self._close(self._filename)
-            self._filename = filename
-            self.write_content_to_path(filename, self.d.content)
-        return self._filename
-
-    # @filename.setter
-    # def filename(self, value: str):
-    #     self._filename = value
 
     @staticmethod
     def get_filename(id: str, title: str) -> str:
@@ -307,10 +290,6 @@ class Note:
     @property
     def filepath(self) -> str:
         return self.get_filepath(self.filename)
-        filename = self._filename
-        if not filename:
-            filename = self.filename
-        return self.get_filepath(filename)
 
     @staticmethod
     def get_filepath(filename: str):

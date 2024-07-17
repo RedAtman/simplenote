@@ -15,7 +15,6 @@ SETTINGS = None
 
 
 def get_settings(key: str, default=None):
-    "Returns value of given Emmet setting"
     global SETTINGS
     if SETTINGS is None:
         import sublime

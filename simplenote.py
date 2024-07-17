@@ -43,7 +43,6 @@ class Local(_BaseManager):
         super().__init__()
         self._notes: List[Dict[str, Any]] = []
         self._objects: List[Note] = []
-        # self.load_notes()
 
     @property
     def notes(self) -> List[Dict[str, Any]]:
@@ -66,7 +65,7 @@ class Local(_BaseManager):
         with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
             pickle.dump(objects, cache_file)
 
-    # @classmethod
+    @classmethod
     def save_objects(cls):
         return
         cls._save_objects(SIMPLENOTE_NOTE_CACHE_FILE, cls._objects)
