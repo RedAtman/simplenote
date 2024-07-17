@@ -1,14 +1,14 @@
 [
   {
-    "command": "note_list",
+    "command": "simplenote_list",
     "caption": "Simplenote: Note List"
   },
   {
-    "command": "note_create",
+    "command": "simplenote_create",
     "caption": "Simplenote: Create Note"
   },
   {
-    "command": "note_delete",
+    "command": "simplenote_delete",
     "caption": "Simplenote: Delete Current Note"
   }
 ]
