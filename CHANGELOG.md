@@ -1,5 +1,53 @@
 # CHANGELOG
 
+## v0.4.0 (2024-07-17)
+
+### Chore
+
+* chore: Remove unnecessary logging statement
+
+Removed a redundant logging statement within the `Note` class, simplifying the code and enhancing performance by eliminating unnecessary overhead. ([`b20fb9e`](https://github.com/RedAtman/simplenote/commit/b20fb9e8e9f5384ee5d79987b086e9e8e0913b15))
+
+* chore: Remove example settings file
+
+The example settings file is no longer needed, as the plugin now automatically creates a default settings file when first installed. This simplifies the setup process and ensures users always have a usable configuration. ([`4e407ee`](https://github.com/RedAtman/simplenote/commit/4e407ee65a37cad4d4c033f2f010495b716d74e2))
+
+### Feature
+
+* feat: Add autosave debounce setting
+
+Adds a configurable autosave debounce setting to avoid sending unnecessary save requests when the user is typing. The debounce time is now configurable in the &#34;simplenote.sublime-settings&#34; file. ([`215ea73`](https://github.com/RedAtman/simplenote/commit/215ea73db61d70253f207a439a90f2254c811bca))
+
+* feat: Add initial configuration settings
+
+Adds initial configuration settings for the SimpleNote plugin. These settings allow for customization of synchronization behavior, conflict resolution, and file extension support. The plugin now supports automatically synchronizing notes upon startup, syncing at regular intervals, and customizing the number of notes synced per session. Additionally, the plugin allows for managing file extension mapping based on note titles, which enables seamless integration with other plugins like PlainTasks. ([`3c0694e`](https://github.com/RedAtman/simplenote/commit/3c0694e2f3fdb117a02ca2e027b924b81d064fe3))
+
+### Unknown
+
+* Merge pull request #14 from RedAtman/dev
+
+Dev ([`4fb3682`](https://github.com/RedAtman/simplenote/commit/4fb36829735a5e8563c70b25c865f58a47de3b93))
+
+* Merge pull request #13 from RedAtman/dev
+
+Dev ([`9758d69`](https://github.com/RedAtman/simplenote/commit/9758d6909b2d483485c61292cafebc31b81ae078))
+
+* Fix: Remove redundant syntax file setting
+
+Removed redundant code that attempted to set the syntax file for new notes. This setting is already handled elsewhere in the plugin. ([`57a4546`](https://github.com/RedAtman/simplenote/commit/57a454648948409a30108ea65d16fb4dd420929d))
+
+* Refactor: Rename classes and commands for consistency
+
+Renamed classes and commands to use &#34;Simplenote&#34; prefix for better organization and consistency. This change ensures a clear distinction between internal and user-facing elements. ([`9864fc0`](https://github.com/RedAtman/simplenote/commit/9864fc00c10afe72324c845eeda634d55c569f1b))
+
+* Fix: Adjust ignored files
+
+Removed unnecessary ignored files and added new files that should be ignored. This ensures that only relevant files are tracked in the repository. ([`d705e56`](https://github.com/RedAtman/simplenote/commit/d705e56a217cc078d5e03353514ab67ad76c9da6))
+
+* Fix: Removed redundant keybindings
+
+Removed keybindings from `Default.sublime-keymap` for note-related commands as they were redundant and caused conflicts. ([`a3e4c77`](https://github.com/RedAtman/simplenote/commit/a3e4c7785921251956be6be6cc6da7f0eaa7ef11))
+
 ## v0.3.0 (2024-07-17)
 
 ### Feature
