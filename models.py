@@ -116,7 +116,8 @@ class Note:
         return instance
 
     def __init__(self, id: str = "", v: int = 0, d: Dict[str, Any] = {}, **kwargs):
-        if not isinstance(id, str) or len(id) != 36:
+        if not isinstance(id, str) or len(id) not in (32, 36):
+            logger.warning(("Note id %s is not a valid UUID", id, type(id), len(id)))
             id = str(uuid4())
         self.id: str = id
         Note.mapper_id_note[self.id] = self
