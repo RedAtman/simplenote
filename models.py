@@ -109,16 +109,11 @@ class Note:
         if id not in Note.mapper_id_note:
             instance = super().__new__(cls)
             # TODO:
-            kwargs["_content"] = kwargs.get("d", {}).get("content", "")
-            instance.__dict__["__kwargs"] = kwargs
+            instance.__dict__["_content"] = kwargs.get("d", {}).get("content", "")
 
             return instance
         instance = Note.mapper_id_note[id]
         return instance
-
-    # TODO:
-    def __run_once_after_created(self):
-        self._content = self.__dict__["__kwargs"].get("_content", "")
 
     def __init__(self, id: str = "", v: int = 0, d: Dict[str, Any] = {}, **kwargs):
         if not isinstance(id, str) or len(id) != 36:
@@ -135,8 +130,7 @@ class Note:
         self.d: _Note = _Note(**d)
         Note.tree.insert(self.d.modificationDate, self)
         # TODO:
-        self.__run_once_after_created()
-        # self._content = self.d.content
+        self._content = self.__dict__.get("_content", "")
 
     # TODO:
     # def __setattr__(self, name: str, value: Any) -> None:
@@ -232,13 +226,10 @@ class Note:
 
     @content.setter
     def content(self, value: str):
-        # self._content = value
         self.d.content = value
 
     @property
     def _title(self):
-        # if self._content is None:
-        #     self._content = self.d.content
         try:
             content = self._content
         except Exception:
@@ -273,20 +264,6 @@ class Note:
     def filename(self) -> str:
         filename = self.get_filename(self.id, self.title)
         return filename
-        # if self._filename is None:
-        #     self._filename = filename
-        #     # TODO: self.open()
-        #     return self._filename
-        if self._filename != filename:
-            # self.on_open_filename_change()
-            self._close(self._filename)
-            self._filename = filename
-            self.write_content_to_path(filename, self.d.content)
-        return self._filename
-
-    # @filename.setter
-    # def filename(self, value: str):
-    #     self._filename = value
 
     @staticmethod
     def get_filename(id: str, title: str) -> str:
@@ -313,10 +290,6 @@ class Note:
     @property
     def filepath(self) -> str:
         return self.get_filepath(self.filename)
-        filename = self._filename
-        if not filename:
-            filename = self.filename
-        return self.get_filepath(filename)
 
     @staticmethod
     def get_filepath(filename: str):
