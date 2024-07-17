@@ -1,11 +1,11 @@
 [
     {
-        "keys": ["super+shift+s", "super+shift+l"], "command": "note_list"
+        "keys": ["super+shift+s", "super+shift+l"], "command": "simplenote_list"
     },
     {
-        "keys": ["super+shift+s", "super+shift+c"], "command": "note_create"
+        "keys": ["super+shift+s", "super+shift+c"], "command": "simplenote_create"
     },
     {
-        "keys": ["super+shift+s", "super+shift+d"], "command": "note_delete"
+        "keys": ["super+shift+s", "super+shift+d"], "command": "simplenote_delete"
     }
 ]
