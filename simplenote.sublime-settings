@@ -23,7 +23,7 @@
     // --------------------------------
     // Activate autosave and tell how much (in seconds) to wait
     // after you stop typing to send the save
-    // ,"autosave_debounce_time": 1
+    ,"autosave_debounce_time": 1
     // --------------------------------
     // File extension support
     // --------------------------------
