@@ -1,3 +1,4 @@
+from functools import cached_property
 import logging
 from threading import Lock
 from typing import Any, Dict, List
@@ -36,6 +37,16 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
 
     waiting_to_save: List[Dict[str, Any]] = []
 
+    @cached_property
+    def autosave_debounce_time(self) -> int:
+        _autosave_debounce_time = get_settings("autosave_debounce_time", default=1)
+        if not isinstance(_autosave_debounce_time, int):
+            show_message(
+                "autosave_debounce_time is not an int: %s, Please check your settings" % type(autosave_debounce_time)
+            )
+            _autosave_debounce_time = 1
+        return _autosave_debounce_time * 1000
+
     def on_close(self, view: sublime.View):
         """
         A method that handles the closing of a view. Retrieves the file name from the view, gets the corresponding note using the file name, closes the note, removes the '_view' attribute from the note, and logs the note information.
@@ -51,13 +62,14 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
     def on_modified(self, view: sublime.View):
 
         def flush_saves():
-            assert isinstance(note, Note), "note is not a Note: %s" % type(note)
             if OperationManager().running:
-                sublime.set_timeout(flush_saves, 1000)
+                sublime.set_timeout(flush_saves, self.autosave_debounce_time)
+                return
+            if not isinstance(note, Note):
                 return
 
             for entry in SimplenoteViewCommand.waiting_to_save:
-                if entry["note_key"] == note.id:
+                if entry["note_id"] == note.id:
 
                     with entry["lock"]:
                         entry["count"] = entry["count"] - 1
@@ -72,28 +84,20 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
         if not isinstance(note, Note):
             return
 
-        autosave_debounce_time = get_settings("autosave_debounce_time")
-        if not isinstance(autosave_debounce_time, int):
-            show_message(
-                "autosave_debounce_time is not an int: %s, Please check your settings" % type(autosave_debounce_time)
-            )
-            return
-        debounce_time = autosave_debounce_time * 1000
-
         found = False
         for entry in SimplenoteViewCommand.waiting_to_save:
-            if entry["note_key"] == note.id:
+            if entry["note_id"] == note.id:
                 with entry["lock"]:
                     entry["count"] = entry["count"] + 1
                 found = True
                 break
         if not found:
             new_entry = {}
-            new_entry["note_key"] = note.id
+            new_entry["note_id"] = note.id
             new_entry["lock"] = Lock()
             new_entry["count"] = 1
             SimplenoteViewCommand.waiting_to_save.append(new_entry)
-        sublime.set_timeout(flush_saves, debounce_time)
+        sublime.set_timeout(flush_saves, self.autosave_debounce_time)
 
     # def on_load(self, view: sublime.View):
     #     note_syntax = get_settings("note_syntax")
