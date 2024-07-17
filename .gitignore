@@ -1,5 +1,8 @@
 .DS_Store
-*.sublime-settings
+sublime_api.py
+# *.sublime-settings
+*.sublime-settings.example
+Markdown.tmLanguage
 *.pkl
 tmp/
 notes/
