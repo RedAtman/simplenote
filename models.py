@@ -109,16 +109,11 @@ class Note:
         if id not in Note.mapper_id_note:
             instance = super().__new__(cls)
             # TODO:
-            kwargs["_content"] = kwargs.get("d", {}).get("content", "")
-            instance.__dict__["__kwargs"] = kwargs
+            instance.__dict__["_content"] = kwargs.get("d", {}).get("content", "")
 
             return instance
         instance = Note.mapper_id_note[id]
         return instance
-
-    # TODO:
-    def __run_once_after_created(self):
-        self._content = self.__dict__["__kwargs"].get("_content", "")
 
     def __init__(self, id: str = "", v: int = 0, d: Dict[str, Any] = {}, **kwargs):
         if not isinstance(id, str) or len(id) != 36:
@@ -135,8 +130,7 @@ class Note:
         self.d: _Note = _Note(**d)
         Note.tree.insert(self.d.modificationDate, self)
         # TODO:
-        self.__run_once_after_created()
-        # self._content = self.d.content
+        self._content = self.__dict__.get("_content", "")
 
     # TODO:
     # def __setattr__(self, name: str, value: Any) -> None:
