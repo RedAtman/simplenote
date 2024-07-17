@@ -95,12 +95,12 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
             SimplenoteViewCommand.waiting_to_save.append(new_entry)
         sublime.set_timeout(flush_saves, debounce_time)
 
-    def on_load(self, view: sublime.View):
-        note_syntax = get_settings("note_syntax")
-        if not isinstance(note_syntax, str):
-            show_message("`note_syntax` must be a string. Please check settings file.")
-            return
-        view.set_syntax_file(note_syntax)
+    # def on_load(self, view: sublime.View):
+    #     note_syntax = get_settings("note_syntax")
+    #     if not isinstance(note_syntax, str):
+    #         show_message("`note_syntax` must be a string. Please check settings file.")
+    #         return
+    #     view.set_syntax_file(note_syntax)
 
     def on_post_save(self, view: sublime.View):
         view_filepath = view.file_name()
