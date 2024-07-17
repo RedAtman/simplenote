@@ -2,21 +2,22 @@ import logging
 from threading import Lock
 from typing import Any, Dict, List
 
+import sublime
+import sublime_plugin
+
 from models import Note
 from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from settings import get_settings
 from simplenote import clear_orphaned_filepaths, on_note_changed
-import sublime
-import sublime_plugin
 from utils.sublime import close_view, open_view, show_message
 
 
 __all__ = [
-    "HandleNoteViewCommand",
-    "NoteListCommand",
-    "NoteSyncCommand",
-    "NoteCreateCommand",
-    "NoteDeleteCommand",
+    "SimplenoteViewCommand",
+    "SimplenoteListCommand",
+    "SimplenoteSyncCommand",
+    "SimplenoteCreateCommand",
+    "SimplenoteDeleteCommand",
     "sync",
     "start",
     "reload_if_needed",
@@ -31,7 +32,7 @@ SIMPLENOTE_RELOAD_CALLS = -1
 SIMPLENOTE_STARTED = False
 
 
-class HandleNoteViewCommand(sublime_plugin.EventListener):
+class SimplenoteViewCommand(sublime_plugin.EventListener):
 
     waiting_to_save: List[Dict[str, Any]] = []
 
@@ -55,7 +56,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
                 sublime.set_timeout(flush_saves, 1000)
                 return
 
-            for entry in HandleNoteViewCommand.waiting_to_save:
+            for entry in SimplenoteViewCommand.waiting_to_save:
                 if entry["note_key"] == note.id:
 
                     with entry["lock"]:
@@ -80,7 +81,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         debounce_time = autosave_debounce_time * 1000
 
         found = False
-        for entry in HandleNoteViewCommand.waiting_to_save:
+        for entry in SimplenoteViewCommand.waiting_to_save:
             if entry["note_key"] == note.id:
                 with entry["lock"]:
                     entry["count"] = entry["count"] + 1
@@ -91,15 +92,15 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
             new_entry["note_key"] = note.id
             new_entry["lock"] = Lock()
             new_entry["count"] = 1
-            HandleNoteViewCommand.waiting_to_save.append(new_entry)
+            SimplenoteViewCommand.waiting_to_save.append(new_entry)
         sublime.set_timeout(flush_saves, debounce_time)
 
-    def on_load(self, view: sublime.View):
-        note_syntax = get_settings("note_syntax")
-        if not isinstance(note_syntax, str):
-            show_message("`note_syntax` must be a string. Please check settings file.")
-            return
-        view.set_syntax_file(note_syntax)
+    # def on_load(self, view: sublime.View):
+    #     note_syntax = get_settings("note_syntax")
+    #     if not isinstance(note_syntax, str):
+    #         show_message("`note_syntax` must be a string. Please check settings file.")
+    #         return
+    #     view.set_syntax_file(note_syntax)
 
     def on_post_save(self, view: sublime.View):
         view_filepath = view.file_name()
@@ -118,7 +119,7 @@ class HandleNoteViewCommand(sublime_plugin.EventListener):
         OperationManager().add_operation(note_updater)
 
 
-class NoteListCommand(sublime_plugin.ApplicationCommand):
+class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
 
     def on_select(self, selected_index: int):
         note_id = self.list__modificationDate[selected_index]
@@ -152,7 +153,7 @@ class NoteListCommand(sublime_plugin.ApplicationCommand):
         )
 
 
-class NoteSyncCommand(sublime_plugin.ApplicationCommand):
+class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
 
     def merge_note(self, updated_notes: List[Note]):
         for note in updated_notes:
@@ -170,7 +171,7 @@ class NoteSyncCommand(sublime_plugin.ApplicationCommand):
         OperationManager().add_operation(note_indicator)
 
 
-class NoteCreateCommand(sublime_plugin.ApplicationCommand):
+class SimplenoteCreateCommand(sublime_plugin.ApplicationCommand):
 
     def handle_new_note(self, note: Note):
         view = open_view(note.filepath)
@@ -181,7 +182,7 @@ class NoteCreateCommand(sublime_plugin.ApplicationCommand):
         OperationManager().add_operation(note_creator)
 
 
-class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
+class SimplenoteDeleteCommand(sublime_plugin.ApplicationCommand):
 
     def handle_deletion(self, note: Note, view: sublime.View):
         close_view(view)
@@ -205,7 +206,7 @@ class NoteDeleteCommand(sublime_plugin.ApplicationCommand):
 def sync():
     manager = OperationManager()
     if not manager.running:
-        sublime.run_command("note_sync")
+        sublime.run_command("simplenote_sync")
     else:
         logger.debug("Sync omitted")
 

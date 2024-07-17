@@ -5,16 +5,14 @@
 	"username": ""
     ,"password": ""
     // --------------------------------
-    // Simplenote global syntax setting:
-    // --------------------------------
-    ,"note_syntax": "Packages/Simplenote/Markdown.tmLanguage"
-    // --------------------------------
     // Sync settings:
     // --------------------------------
     // Sync when sublime text starts:
     ,"autostart": true
     // Sync automatically (in seconds)
     ,"sync_every": 30
+    // Number of notes synchronized each time
+    ,"sync_note_number": 1000
     // Conflict resolution (If a file was edited on another client and also here, on sync..)
     // Server Wins (Same as selecting 'Overwrite')
     ,"on_conflict_use_server": false
@@ -32,9 +30,13 @@
     // Which file extension should the temporal files use?
     // This allows you to interact with other plugins such as
     // PlainTasks defining an extension for certain note title
-    // ,"title_extension_map": [{
-    	// "title_regex": "\\[ST\\]",
-    	// "extension": "todo"
-    // }]
-
+    ,"title_extension_map": [{
+    	"title_regex": "\\[ST\\]"
+        ,"extension": "todo"
+    },
+    {
+    	"title_regex": "\\# "
+        ,"extension": "md"
+        ,"systemTags": ["markdown"]
+    }]
 }

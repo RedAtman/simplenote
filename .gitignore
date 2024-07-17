@@ -1,9 +1,8 @@
 .DS_Store
 *.sublime-settings
-note_cache
 *.pkl
 tmp/
-temp/
+notes/
 logs/
 
 # IDE
