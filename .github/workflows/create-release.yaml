@@ -10,111 +10,111 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Git
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      # - name: Set up Git
+      #   run: |
+      #     git config --global user.name "github-actions[bot]"
+      #     git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-    # - name: Set output
-    #   id: set_output
-    #   run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+      # - name: Set output
+      #   id: set_output
+      #   run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
 
-    # - name: Check output
-    #   id: check_output
-    #   env:
-    #     RELEASE_VERSION: ${{ steps.set_output.outputs.tag }}
-    #   run: |
-    #     echo $RELEASE_VERSION
-    #     echo ${{ steps.set_output.outputs.tag }}
+      # - name: Check output
+      #   id: check_output
+      #   env:
+      #     RELEASE_VERSION: ${{ steps.set_output.outputs.tag }}
+      #   run: |
+      #     echo $RELEASE_VERSION
+      #     echo ${{ steps.set_output.outputs.tag }}
 
-    - name: Auto Generate Next Release Tag
-      id: generate_release_tag
-      # You may pin to the exact commit or the version.
-      # uses: amitsingh-007/next-release-tag@d3025f8b2148fb519af1bcf81b1571d7c6db09df
-      uses: amitsingh-007/next-release-tag@v6.0.0
-      with:
-        # Github secrets token
-        github_token: ${{ secrets.ACTION_TOKEN }}
-        # Prefix added to the generated release tag
-        tag_prefix: "st4-"
-        # Template format based in which release tag is generated
-        # tag_template: "v${{ steps.calc_new_version.outputs.new_version }}"
-        tag_template: 'yyyy.mm.dd.i'
-        # Explicitly set the previous release tag
-        previous_tag: # optional
+      - name: Auto Generate Next Release Tag
+        id: generate_release_tag
+        # You may pin to the exact commit or the version.
+        # uses: amitsingh-007/next-release-tag@d3025f8b2148fb519af1bcf81b1571d7c6db09df
+        uses: amitsingh-007/next-release-tag@v6.0.0
+        with:
+          # Github secrets token
+          github_token: ${{ secrets.ACTION_TOKEN }}
+          # Prefix added to the generated release tag
+          tag_prefix: "st4-"
+          # Template format based in which release tag is generated
+          # tag_template: "v${{ steps.calc_new_version.outputs.new_version }}"
+          tag_template: 'i.i.i'
+          # Explicitly set the previous release tag
+          previous_tag: # optional
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        name: Release ${{ steps.generate_release_tag.outputs.next_release_tag }}
-        tag_name: ${{ steps.generate_release_tag.outputs.next_release_tag }}
-        token: ${{secrets.ACTION_TOKEN}}
-        generate_release_notes: true
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ steps.generate_release_tag.outputs.next_release_tag }}
+          tag_name: ${{ steps.generate_release_tag.outputs.next_release_tag }}
+          token: ${{secrets.ACTION_TOKEN}}
+          generate_release_notes: true
 
-    # - name: bump-everywhere
-    #   # You may pin to the exact commit or the version.
-    #   # uses: undergroundwires/bump-everywhere@5d9c038bc3ecc5648eadbf49ca6c66c6f67b0cf6
-    #   uses: undergroundwires/bump-everywhere@1.4.0
-    #   with:
-    #   #   # Repository name with owner to bump & release. For example, undergroundwires/bump-everywhere
-    #   #   repository: # optional, default is ${{ github.repository }}
-    #   #   # Name of the user who will do the bump commit
-    #   #   user: # optional, default is ${{ github.actor }}
-    #   #   # Commit message that will be used in the bump commit
-    #   #   commit-message: # optional, default is ⬆️ bump everywhere to {{version}}
-    #   #   # Personal access token (PAT) used to clone & push to the repository.
-    #     git-token: ${{ secrets.ACTION_TOKEN }} # optional, default is ${{ github.token }}
-    #   #   # The type of the GitHub release
-    #   #   release-type: # optional, default is release
-    #   #   # Personal access token (PAT) used to release to GitHub.
-    #     release-token: ${{ secrets.ACTION_TOKEN }} # optional, default is ${{ github.token }}
+      # - name: bump-everywhere
+      #   # You may pin to the exact commit or the version.
+      #   # uses: undergroundwires/bump-everywhere@5d9c038bc3ecc5648eadbf49ca6c66c6f67b0cf6
+      #   uses: undergroundwires/bump-everywhere@1.4.0
+      #   with:
+      #   #   # Repository name with owner to bump & release. For example, undergroundwires/bump-everywhere
+      #   #   repository: # optional, default is ${{ github.repository }}
+      #   #   # Name of the user who will do the bump commit
+      #   #   user: # optional, default is ${{ github.actor }}
+      #   #   # Commit message that will be used in the bump commit
+      #   #   commit-message: # optional, default is ⬆️ bump everywhere to {{version}}
+      #   #   # Personal access token (PAT) used to clone & push to the repository.
+      #     git-token: ${{ secrets.ACTION_TOKEN }} # optional, default is ${{ github.token }}
+      #   #   # The type of the GitHub release
+      #   #   release-type: # optional, default is release
+      #   #   # Personal access token (PAT) used to release to GitHub.
+      #     release-token: ${{ secrets.ACTION_TOKEN }} # optional, default is ${{ github.token }}
 
-    # - name: Debug information
-    #   run: |
-    #     git status
-    #     git log -1
-    #     git remote -v
-    #   shell: bash
+      # - name: Debug information
+      #   run: |
+      #     git status
+      #     git log -1
+      #     git remote -v
+      #   shell: bash
 
-    # - name: Calculate new version
-    #   id: calc_new_version
-    #   run: |
-    #     latest_tag=${{ steps.set_output.outputs.tag }}
-    #     if [[ $latest_tag == "" ]]; then
-    #       new_version="v1.0.0"
-    #     else
-    #       new_version=$(echo $latest_tag | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
-    #     fi
-    #     echo "New version: $new_version"
-    #     echo "::set-output name=new_version::$new_version"
-    #   shell: bash
+      # - name: Calculate new version
+      #   id: calc_new_version
+      #   run: |
+      #     latest_tag=${{ steps.set_output.outputs.tag }}
+      #     if [[ $latest_tag == "" ]]; then
+      #       new_version="v1.0.0"
+      #     else
+      #       new_version=$(echo $latest_tag | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+      #     fi
+      #     echo "New version: $new_version"
+      #     echo "::set-output name=new_version::$new_version"
+      #   shell: bash
 
-    # - name: Create tag
-    #   run: |
-    #     new_version=${{ steps.calc_new_version.outputs.new_version }}
-    #     echo "Creating tag $new_version"
-    #     git tag -a "$new_version" -m "Release $new_version"
-    #   shell: bash
+      # - name: Create tag
+      #   run: |
+      #     new_version=${{ steps.calc_new_version.outputs.new_version }}
+      #     echo "Creating tag $new_version"
+      #     git tag -a "$new_version" -m "Release $new_version"
+      #   shell: bash
 
-    # - name: Push tag to GitHub
-    #   run: |
-    #     new_version=${{ steps.calc_new_version.outputs.new_version }}
-    #     echo "Pushing tag $new_version"
-    #     git push origin "$new_version"
-    #   shell: bash
+      # - name: Push tag to GitHub
+      #   run: |
+      #     new_version=${{ steps.calc_new_version.outputs.new_version }}
+      #     echo "Pushing tag $new_version"
+      #     git push origin "$new_version"
+      #   shell: bash
 
-    # - name: Create GitHub Release
-    #   uses: actions/create-release@v1
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.ACTION_TOKEN }}
-    #   with:
-    #     tag_name: "${{ steps.calc_new_version.outputs.new_version }}"
-    #     release_name: "Release ${{ steps.calc_new_version.outputs.new_version }}"
-    #     draft: false
-    #     prerelease: false
-    #     # body: |
-    #     #   ## Changes
-    #     #   - Description of changes in this release.
+      # - name: Create GitHub Release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.ACTION_TOKEN }}
+      #   with:
+      #     tag_name: "${{ steps.calc_new_version.outputs.new_version }}"
+      #     release_name: "Release ${{ steps.calc_new_version.outputs.new_version }}"
+      #     draft: false
+      #     prerelease: false
+      #     # body: |
+      #     #   ## Changes
+      #     #   - Description of changes in this release.
