@@ -130,7 +130,6 @@ class Note:
         _d = getattr(self, "d", None)
         if isinstance(_d, _Note):
             old_modificationDate = _d.modificationDate
-            logger.info(("old_modificationDate", old_modificationDate))
             Note.tree.remove(old_modificationDate)
         d["_note"] = self
         self.d: _Note = _Note(**d)
