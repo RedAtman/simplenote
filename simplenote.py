@@ -102,8 +102,6 @@ def load_notes():
 def clear_orphaned_filepaths(list__filepath: List[str] = []):
     if not list__filepath:
         list__filepath = [note.filename for note in Note.mapper_id_note.values()]
-    if not os.path.exists(SIMPLENOTE_NOTES_DIR):
-        os.makedirs(SIMPLENOTE_NOTES_DIR)
     for filepath in os.listdir(SIMPLENOTE_NOTES_DIR):
         if filepath not in list__filepath:
             os.remove(os.path.join(SIMPLENOTE_NOTES_DIR, filepath))
