@@ -150,10 +150,11 @@ class Note:
     def API(cls) -> Simplenote:
         username = get_settings("username")
         password = get_settings("password")
-        if not isinstance(username, str) or not isinstance(password, str):
-            logger.info("Missing username or password, Please configure Simplenote settings")
+        if not all([username, password]):
             raise Exception("Missing username or password")
-        return Simplenote(password, password)
+        if not isinstance(username, str) or not isinstance(password, str):
+            raise Exception("username and password must be strings")
+        return Simplenote(username, password)
 
     @classmethod
     def index(cls, limit: int = 1000, data: bool = True) -> List["Note"]:
