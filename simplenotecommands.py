@@ -163,6 +163,8 @@ class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
         for note in updated_notes:
             if note.need_flush:
                 on_note_changed(note)
+        # TODO: Maybe doesn't need to run every time
+        clear_orphaned_filepaths()
 
     def run(self):
         show_message(self.__class__.__name__)
@@ -252,7 +254,6 @@ def reload_if_needed():
 def plugin_loaded():
     # load_notes()
     logger.debug(("Loaded notes number: ", len(Note.mapper_id_note)))
-    clear_orphaned_filepaths()
 
     # logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
     # logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
