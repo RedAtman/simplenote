@@ -10,6 +10,7 @@ import urllib.parse
 import urllib.request
 import zlib
 
+
 __all__ = [
     "request",
     "Response",

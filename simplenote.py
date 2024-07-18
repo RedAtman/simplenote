@@ -99,8 +99,9 @@ def load_notes():
             logger.debug((f"Created new objects cache file: {SIMPLENOTE_NOTE_CACHE_FILE}"))
 
 
-def clear_orphaned_filepaths():
-    list__filepath = [note.filename for note in Note.mapper_id_note.values()]
+def clear_orphaned_filepaths(list__filepath: List[str] = []):
+    if not list__filepath:
+        list__filepath = [note.filename for note in Note.mapper_id_note.values()]
     if not os.path.exists(SIMPLENOTE_NOTES_DIR):
         os.makedirs(SIMPLENOTE_NOTES_DIR)
     for filepath in os.listdir(SIMPLENOTE_NOTES_DIR):
