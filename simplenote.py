@@ -99,12 +99,12 @@ def load_notes():
             logger.debug((f"Created new objects cache file: {SIMPLENOTE_NOTE_CACHE_FILE}"))
 
 
-def clear_orphaned_filepaths(list__filepath: List[str] = []):
-    if not list__filepath:
-        list__filepath = [note.filename for note in Note.mapper_id_note.values()]
-    for filepath in os.listdir(SIMPLENOTE_NOTES_DIR):
-        if filepath not in list__filepath:
-            os.remove(os.path.join(SIMPLENOTE_NOTES_DIR, filepath))
+def clear_orphaned_filepaths(list__filename: List[str] = []):
+    if not list__filename:
+        list__filename = [note.filename for note in Note.mapper_id_note.values()]
+    for filename in os.listdir(SIMPLENOTE_NOTES_DIR):
+        if filename not in list__filename:
+            os.remove(os.path.join(SIMPLENOTE_NOTES_DIR, filename))
 
 
 def sort_notes(a_note: Note, b_note: Note):

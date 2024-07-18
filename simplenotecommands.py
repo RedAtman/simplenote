@@ -142,7 +142,7 @@ class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
 
         self.list__modificationDate: List[float] = []
         self.list__title: List[str] = []
-        list__filepath: List[str] = []
+        list__filename: List[str] = []
         for note in Note.tree.iter(reverse=True):
             if not isinstance(note, Note):
                 raise Exception("note is not a Note: %s" % type(note))
@@ -150,10 +150,10 @@ class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
                 continue
             self.list__modificationDate.append(note.d.modificationDate)
             self.list__title.append(note.title)
-            list__filepath.append(note.filepath)
+            list__filename.append(note.filename)
 
         # TODO: Maybe doesn't need to run every time
-        clear_orphaned_filepaths(list__filepath)
+        clear_orphaned_filepaths(list__filename)
 
         def show_panel():
             sublime.active_window().show_quick_panel(
