@@ -150,15 +150,15 @@ class Note:
     def API(cls) -> Simplenote:
         username = get_settings("username")
         password = get_settings("password")
-        if not isinstance(username, str) or not isinstance(password, str):
-            logger.info("Missing username or password, Please configure Simplenote settings")
+        if not all([username, password]):
             raise Exception("Missing username or password")
-        return Simplenote(password, password)
+        if not isinstance(username, str) or not isinstance(password, str):
+            raise Exception("username and password must be strings")
+        return Simplenote(username, password)
 
     @classmethod
     def index(cls, limit: int = 1000, data: bool = True) -> List["Note"]:
-        status, msg, result = cls.API.index(limit, data)
-        assert status == 0, msg
+        result = cls.API.index(limit, data)
         assert isinstance(result, dict)
         assert "index" in result
         _notes = result.get("index", [])
@@ -167,29 +167,25 @@ class Note:
 
     @classmethod
     def retrieve(cls, note_id: str) -> "Note":
-        status, msg, _note = cls.API.retrieve(note_id)
-        assert status == 0, msg
+        _note = cls.API.retrieve(note_id)
         assert isinstance(_note, dict)
         return Note(**_note)
 
     def create(self) -> "Note":
-        status, msg, _note = self.API.modify(self.d._nest_dict(), self.id)
-        assert status == 0, msg
+        _note = self.API.modify(self.d._nest_dict(), self.id)
         assert isinstance(_note, dict)
         assert self.id == _note["id"]
         return self
 
     def modify(self, version: Optional[int] = None) -> "Note":
-        status, msg, _note = self.API.modify(self.d._nest_dict(), self.id, version)
-        assert status == 0, msg
+        _note = self.API.modify(self.d._nest_dict(), self.id, version)
         assert isinstance(_note, dict)
         self = Note(**_note)
         return self
 
     @classmethod
     def _trash(cls, note_id: str) -> Dict[str, Any]:
-        status, msg, _note = cls.API.trash(note_id)
-        assert status == 0, msg
+        _note = cls.API.trash(note_id)
         assert isinstance(_note, dict)
         if note_id in Note.mapper_id_note:
             del Note.mapper_id_note[note_id]
@@ -201,15 +197,13 @@ class Note:
 
     def restore(self) -> "Note":
         self.d.deleted = False
-        status, msg, _note = self.API.modify(self.d._nest_dict(), self.id)
-        assert status == 0, "Error deleting note"
+        _note = self.API.modify(self.d._nest_dict(), self.id)
         assert isinstance(_note, dict)
         self = Note(**_note)
         return self
 
     def delete(self) -> "Note":
-        status, msg, _note = self.API.delete(self.id)
-        assert status == 0, "Error deleting note"
+        _note = self.API.delete(self.id)
         assert isinstance(_note, dict)
         self = Note(**_note)
         return self

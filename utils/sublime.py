@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Optional
 
 import sublime
@@ -12,6 +13,10 @@ __all__ = [
     "remove_status",
     "close_view",
 ]
+
+SIMPLENOTE_PACKAGE_DIR = sublime.packages_path()
+SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
+SIMPLENOTE_BASE_DIR = os.path.join(SIMPLENOTE_PACKAGE_DIR, "Simplenote")
 
 
 def show_message(message: str):

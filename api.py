@@ -7,7 +7,6 @@ import base64
 import functools
 import logging
 import os
-import pickle
 import time
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
@@ -30,9 +29,10 @@ SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_TOKEN_FILE
 
 
 class URL:
-    BASE: str = "https://api.simperium.com/1"
-    DATA = f"{BASE}/{SIMPLENOTE_APP_ID}/{SIMPLENOTE_BUCKET}"
-    __auth = f"{BASE}/{SIMPLENOTE_APP_ID}/authorize/"
+    BASE: str = "simperium.com/1"
+    AUTH = f"https://auth.{BASE}"
+    DATA = f"https://api.{BASE}/{SIMPLENOTE_APP_ID}/{SIMPLENOTE_BUCKET}"
+    __auth = f"{AUTH}/{SIMPLENOTE_APP_ID}/authorize/"
     __index = DATA + "/index"
     __retrieve = DATA + "/i/%s"
     __modify = __retrieve
@@ -81,7 +81,9 @@ class URL:
 
 
 class SimplenoteLoginFailed(Exception):
-    pass
+    def __init__(self, message):
+        # Call the base class constructor with the parameters it needs
+        super().__init__(message)
 
 
 class Simplenote(Singleton):
@@ -110,25 +112,20 @@ class Simplenote(Singleton):
         """
         headers = {"X-Simperium-API-Key": SIMPLENOTE_APP_KEY}
         request_data = {"username": username, "password": password}
-        logger.debug(("request_data:", request_data, "headers:", headers))
         response = request(URL.auth(), method="POST", headers=headers, data=request_data, data_as_json=False)
-        assert response.status == 200, SimplenoteLoginFailed("response.status is not 200: %s" % response.status)
-        result = response.json()
-        assert isinstance(result, dict), "result is not a dict: %s" % result
-        if "access_token" not in result.keys():
+        if not response.status == 200:
+            msg = "Simplenote login failed, Please check username and password: %s" % response.body
+            raise SimplenoteLoginFailed(msg)
+        result = response.data
+        if not isinstance(result, dict):
             raise SimplenoteLoginFailed("access_token not in result: %s" % result)
-        assert "access_token" in result, "access_token not in result: %s" % result
-        token = result["access_token"]
-        if isinstance(token, bytes):
-            try:
-                token = str(token, "utf-8")
-            except TypeError as err:
-                logger.exception(err)
-                raise err
-        assert isinstance(token, str), "token is not a string: %s" % token
-        assert len(token) == 32, "token length is not 32: %s" % token
+        token = result.get("access_token")
+        if not isinstance(token, str):
+            raise SimplenoteLoginFailed("access_token is not a string: %s" % token)
+
+        # assert len(token) == 32, "token length is not 32: %s" % token
         with open(SIMPLENOTE_TOKEN_FILE, "wb") as fh:
-            pickle.dump(token, fh)
+            fh.write(token.encode("utf-8"))
         return token
 
     @functools.cached_property
@@ -144,10 +141,11 @@ class Simplenote(Singleton):
         if not self._token:
             try:
                 with open(SIMPLENOTE_TOKEN_FILE, "rb") as fh:
-                    token = pickle.load(fh, encoding="utf-8")
+                    token = fh.read().decode("utf-8")
+                    if not token:
+                        raise ValueError("token is empty")
                     self._token = token
-            except FileNotFoundError as err:
-                logger.exception(err)
+            except (FileNotFoundError, ValueError) as err:
                 self._token = self.authenticate(self.username, self.password)
             except (EOFError, Exception) as err:
                 logger.exception(err)
@@ -155,24 +153,13 @@ class Simplenote(Singleton):
         return self._token
 
     def _parse_response(self, note_id: str, response: Response):
-        msg = "OK"
-        try:
-            assert isinstance(response, Response), "response is not a Response: %s" % response
-            assert response.status == 200, "response.status is not 200: %s" % response
-            _version: str | None = response.headers.get("X-Simperium-Version")
-            logger.debug(("status:", response.status, "version:", _version))
-            assert isinstance(_version, str), "version is not a string: %s" % _version
-            assert _version.isdigit(), "version is not a number: %s" % _version
-            return 0, msg, {"id": note_id, "v": int(_version), "d": response.data}
-        except AssertionError as err:
-            logger.exception(err)
-            logger.error(response)
-            msg = err
-        except TypeError as err:
-            logger.exception(err)
-            logger.error(response)
-            msg = err
-        return -1, msg, {}
+        assert isinstance(response, Response), "response is not a Response: %s" % response
+        assert response.status == 200, "response.status is not 200: %s" % response
+        _version: str | None = response.headers.get("X-Simperium-Version")
+        logger.debug(("status:", response.status, "version:", _version))
+        assert isinstance(_version, str), "version is not a string: %s" % _version
+        assert _version.isdigit(), "version is not a number: %s" % _version
+        return {"id": note_id, "v": int(_version), "d": response.data}
 
     def index(
         self,
@@ -186,14 +173,12 @@ class Simplenote(Singleton):
         of all notes is returned.
 
         Arguments:
+            - limit (int): number of notes to return
+            - data (bool): whether to return the note data or not
             - tags=[] list of tags as string: return notes that have
               at least one of these tags
 
         Returns:
-            A tuple `(status, notes)`
-
-            - status (int): 0 on success and -1 otherwise
-            - msg (string): "OK" or an error message
             - notes (list): A list of note objects with all properties set except `content`.
             {
                 'current': '666e8b00a5cc2b14e5c85722',
@@ -223,56 +208,41 @@ class Simplenote(Singleton):
         if data:
             params["data"] = "true"
 
-        try:
-            response = request(
-                URL.index(**params),
-                method="GET",
-                params=params,
-                headers={self.header: self.token},
-            )
-            return 0, "OK", response.data
-        except IOError as err:
-            logger.exception(err)
-            return -1, err, []
+        response = request(
+            URL.index(**params),
+            method="GET",
+            params=params,
+            headers={self.header: self.token},
+        )
+        return response.data
 
     def retrieve(self, note_id: str, version: Optional[int] = None):
         """Method to get a specific note
 
         Arguments:
-            - note_id (string): ID of the note to get
-            - version (int): optional version of the note to get
+            - note_id (string): ID of the note
+            - version (int): optional version of the note
 
         Returns:
-            A tuple `(status, note)`
-
-            - status (int): 0 on success and -1 otherwise
-            - msg (string): "OK" or an error message
             - note (dict): note object
         """
-        try:
-            response = request(
-                URL.retrieve(note_id, version),
-                method="GET",
-                headers={self.header: self.token},
-            )
-            return self._parse_response(note_id, response)
-        except IOError as err:
-            logger.exception(err)
-            return -1, err, {}
+
+        response = request(
+            URL.retrieve(note_id, version),
+            method="GET",
+            headers={self.header: self.token},
+        )
+        return self._parse_response(note_id, response)
 
     def modify(self, note: Dict[str, Any], note_id: Optional[str] = None, version: Optional[int] = None):
         """Method to modify or create a note
 
         Arguments:
-            - note (dict): note object to modify
-            - note_id (string): ID of the note to modify
-            - version (int): optional version of the note to modify
+            - note (dict): note object
+            - note_id (string): optional ID of the note
+            - version (int): optional version of the note
 
         Returns:
-            A tuple `(status, note)`
-
-            - status (int): 0 on success and -1 otherwise
-            - msg (string): "OK" or an error message
             - note (dict): note object
         """
         if not isinstance(note, dict):
@@ -282,61 +252,43 @@ class Simplenote(Singleton):
             logger.info("note_id is None, using %s" % note_id)
             # raise ValueError("note_id should be a string, but got %s" % note_id)
         note["modificationDate"] = time.time()
-        try:
-            response = request(
-                URL.modify(note_id, version),
-                method="POST",
-                headers={self.header: self.token},
-                data=note,
-            )
-            return self._parse_response(note_id, response)
-        except IOError as err:
-            logger.exception(err)
-            return -1, err, {}
+
+        response = request(
+            URL.modify(note_id, version),
+            method="POST",
+            headers={self.header: self.token},
+            data=note,
+        )
+        return self._parse_response(note_id, response)
 
     def delete(self, note_id: str, version: Optional[int] = None):
         """Method to permanently delete a note
 
         Arguments:
-            - note_id (string): key of the note to trash
+            - note_id (string): key of the note
+            - version (int): optional version of the note
 
         Returns:
-            A tuple `(status, note)`
-
-            - status (int): 0 on success and -1 otherwise
-            - msg (string): "OK" or an error message
             - note (dict): an empty dict or an error message
         """
-        try:
-            response = request(
-                URL.delete(note_id, version),
-                method="DELETE",
-                headers={self.header: self.token},
-            )
-            return self._parse_response(note_id, response)
-        except IOError as err:
-            logger.exception(err)
-            return -1, err, {}
+        response = request(
+            URL.delete(note_id, version),
+            method="DELETE",
+            headers={self.header: self.token},
+        )
+        return self._parse_response(note_id, response)
 
     def trash(self, note_id: str, version: Optional[int] = None):
         """Method to move a note to the trash
 
         Arguments:
-            - note_id (string): key of the note to trash
+            - note_id (string): key of the note
+            - version (int): optional version of the note
 
         Returns:
-            A tuple `(status, note)`
-
-            - status (int): 0 on success and -1 otherwise
-            - msg (string): "OK" or an error message
             - note (dict): the newly created note or an error message
         """
-        status, msg, note = self.retrieve(note_id, version)
-        if status == -1:
-            return status, msg, note
-        assert isinstance(note, dict), "note is not a dict: %s" % note
-        assert "deleted" in note, "deleted not in note: %s" % note
-        assert isinstance(note["deleted"], bool), "note['deleted'] is not a bool: %s" % note["deleted"]
+        note = self.retrieve(note_id, version)
         note["deleted"] = True
         return self.modify(note, note_id, version)
 

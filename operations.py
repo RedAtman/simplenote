@@ -1,5 +1,6 @@
 from collections import deque
 import logging
+import os
 from threading import Event, Lock, Semaphore, Thread
 from typing import Any, Callable, Dict, List, Optional
 
@@ -7,7 +8,7 @@ import sublime
 
 from models import Note
 from utils.patterns.singleton.base import Singleton
-from utils.sublime import remove_status, show_message
+from utils.sublime import SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE, open_view, remove_status, show_message
 
 
 __all__ = [
@@ -66,6 +67,8 @@ class NotesIndicator(Operation):
             self.result = result
         except Exception as err:
             logger.exception(err)
+            sublime.message_dialog(str(err))
+            open_view(os.path.join(SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE))
             self.result = err
 
 
@@ -74,10 +77,12 @@ class NoteCreator(Operation):
     def run(self):
         try:
             note = Note()
-            saved_note = note.create()
-            assert isinstance(saved_note, Note), "Expected Note got %s" % type(saved_note)
+            note.create()
             self.result = note
         except Exception as err:
+            logger.exception(err)
+            sublime.message_dialog(str(err))
+            open_view(os.path.join(SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE))
             self.result = err
 
 
@@ -94,6 +99,8 @@ class NoteUpdater(Operation):
             self.result = note
         except Exception as err:
             logger.exception(err)
+            sublime.message_dialog(str(err))
+            open_view(os.path.join(SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE))
             self.result = err
 
 
@@ -108,6 +115,9 @@ class NoteDeleter(Operation):
             self.note.trash()
             self.result = self.note
         except Exception as err:
+            logger.exception(err)
+            sublime.message_dialog(str(err))
+            open_view(os.path.join(SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE))
             self.result = err
 
 

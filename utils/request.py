@@ -15,9 +15,9 @@ __all__ = [
     "request",
     "Response",
 ]
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __author__ = "redatman"
-__date__ = "2024-07-12"
+__date__ = "2024-07-19"
 
 
 logger = logging.getLogger()
@@ -99,7 +99,8 @@ def request(
     headers = headers or {}
     data = data or {}
     params = params or {}
-    headers = dict(DEFAULT_HEADERS, **headers)
+    # headers = dict(DEFAULT_HEADERS, **headers)
+    headers = headers or DEFAULT_HEADERS
 
     if method == "GET":
         params = dict(params, **data)
@@ -118,8 +119,8 @@ def request(
     logger.debug(f"url: {url}, method: {method}, headers: {headers}, data: {data}")
     httprequest = urllib.request.Request(url, data=request_data, headers=headers, method=method)
 
-    with urllib.request.urlopen(httprequest) as httpresponse:
-        try:
+    try:
+        with urllib.request.urlopen(httprequest) as httpresponse:
             # content_encoding = httpresponse.getheader("Content-Encoding", "default")
             content_encoding = httpresponse.info().get("content-encoding", "default")
             logger.debug(content_encoding)
@@ -129,25 +130,25 @@ def request(
                 status=httpresponse.status,
                 body=body,
             )
-        except Exception as err:
-            logger.error((method, url, headers, data))
-            logger.exception(err)
-            _body = str(err)
-            _headers = Message()
-            _status = 500
-            error_count += 1
-            if isinstance(err, urllib.error.HTTPError):
-                _body = str(err.reason)
-                _headers = err.headers
-                _status = err.code
-            elif isinstance(err, urllib.error.URLError):
-                _body = str(err.reason)
+    except Exception as err:
+        logger.error((method, url, headers, data))
+        logger.exception(err)
+        _body = str(err)
+        _headers = Message()
+        _status = 500
+        error_count += 1
+        if isinstance(err, urllib.error.HTTPError):
+            _body = str(err.reason)
+            _headers = err.headers
+            _status = err.code
+        elif isinstance(err, urllib.error.URLError):
+            _body = str(err.reason)
 
-            response = Response(
-                body=_body,
-                headers=_headers,
-                status=_status,
-                error_count=error_count,
-            )
+        response = Response(
+            body=_body,
+            headers=_headers,
+            status=_status,
+            error_count=error_count,
+        )
 
     return response
