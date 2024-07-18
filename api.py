@@ -7,7 +7,6 @@ import base64
 import functools
 import logging
 import os
-import pickle
 import time
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
@@ -30,9 +29,10 @@ SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_TOKEN_FILE
 
 
 class URL:
-    BASE: str = "https://api.simperium.com/1"
-    DATA = f"{BASE}/{SIMPLENOTE_APP_ID}/{SIMPLENOTE_BUCKET}"
-    __auth = f"{BASE}/{SIMPLENOTE_APP_ID}/authorize/"
+    BASE: str = "simperium.com/1"
+    AUTH = f"https://auth.{BASE}"
+    DATA = f"https://api.{BASE}/{SIMPLENOTE_APP_ID}/{SIMPLENOTE_BUCKET}"
+    __auth = f"{AUTH}/{SIMPLENOTE_APP_ID}/authorize/"
     __index = DATA + "/index"
     __retrieve = DATA + "/i/%s"
     __modify = __retrieve
@@ -81,7 +81,9 @@ class URL:
 
 
 class SimplenoteLoginFailed(Exception):
-    pass
+    def __init__(self, message):
+        # Call the base class constructor with the parameters it needs
+        super().__init__(message)
 
 
 class Simplenote(Singleton):
@@ -110,25 +112,20 @@ class Simplenote(Singleton):
         """
         headers = {"X-Simperium-API-Key": SIMPLENOTE_APP_KEY}
         request_data = {"username": username, "password": password}
-        logger.debug(("request_data:", request_data, "headers:", headers))
         response = request(URL.auth(), method="POST", headers=headers, data=request_data, data_as_json=False)
-        assert response.status == 200, SimplenoteLoginFailed("response.status is not 200: %s" % response.status)
-        result = response.json()
-        assert isinstance(result, dict), "result is not a dict: %s" % result
-        if "access_token" not in result.keys():
+        if not response.status == 200:
+            msg = "Simplenote login failed, Please check username and password: %s" % response.body
+            raise SimplenoteLoginFailed(msg)
+        result = response.data
+        if not isinstance(result, dict):
             raise SimplenoteLoginFailed("access_token not in result: %s" % result)
-        assert "access_token" in result, "access_token not in result: %s" % result
-        token = result["access_token"]
-        if isinstance(token, bytes):
-            try:
-                token = str(token, "utf-8")
-            except TypeError as err:
-                logger.exception(err)
-                raise err
-        assert isinstance(token, str), "token is not a string: %s" % token
-        assert len(token) == 32, "token length is not 32: %s" % token
+        token = result.get("access_token")
+        if not isinstance(token, str):
+            raise SimplenoteLoginFailed("access_token is not a string: %s" % token)
+
+        # assert len(token) == 32, "token length is not 32: %s" % token
         with open(SIMPLENOTE_TOKEN_FILE, "wb") as fh:
-            pickle.dump(token, fh)
+            fh.write(token.encode("utf-8"))
         return token
 
     @functools.cached_property
@@ -144,10 +141,11 @@ class Simplenote(Singleton):
         if not self._token:
             try:
                 with open(SIMPLENOTE_TOKEN_FILE, "rb") as fh:
-                    token = pickle.load(fh, encoding="utf-8")
+                    token = fh.read().decode("utf-8")
+                    if not token:
+                        raise ValueError("token is empty")
                     self._token = token
-            except FileNotFoundError as err:
-                logger.exception(err)
+            except (FileNotFoundError, ValueError) as err:
                 self._token = self.authenticate(self.username, self.password)
             except (EOFError, Exception) as err:
                 logger.exception(err)
