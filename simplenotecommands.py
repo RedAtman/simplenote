@@ -6,11 +6,10 @@ from typing import Any, Dict, List
 import sublime
 import sublime_plugin
 
+from gui import close_view, get_settings, open_view, show_message
 from models import Note
 from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
-from settings import get_settings
 from simplenote import clear_orphaned_filepaths, on_note_changed
-from utils.sublime import close_view, open_view, show_message
 
 
 __all__ = [

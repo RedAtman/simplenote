@@ -10,7 +10,7 @@ from typing import Any, ClassVar, Dict, List, Optional, TypedDict
 from uuid import uuid4
 
 from api import Simplenote
-from settings import get_settings
+from gui import get_settings
 from utils.decorator import class_property
 from utils.tree.redblacktree import rbtree as RedBlackTree
 

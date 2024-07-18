@@ -6,9 +6,9 @@ from typing import Any, Callable, Dict, List, Optional
 
 import sublime
 
+from gui import SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE, open_view, remove_status, show_message
 from models import Note
 from utils.patterns.singleton.base import Singleton
-from utils.sublime import SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE, open_view, remove_status, show_message
 
 
 __all__ = [

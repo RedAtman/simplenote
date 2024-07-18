@@ -294,7 +294,7 @@ class Simplenote(Singleton):
 
 
 if __name__ == "__main__":
-    from settings import get_settings
+    from gui import get_settings
 
     username = get_settings("username")
     password = get_settings("password")
