@@ -8,9 +8,9 @@ from typing import Any, Dict, List
 # https://www.sublimetext.com/docs/api_reference.html
 import sublime
 
+from gui import close_view, open_view
 from models import SIMPLENOTE_NOTES_DIR, Note
 from utils.patterns.singleton.base import Singleton
-from utils.sublime import close_view, open_view
 
 
 __all__: List[str] = [
