@@ -126,6 +126,8 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
 class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
 
     def on_select(self, selected_index: int):
+        if selected_index == -1:
+            return
         note_id = self.list__modificationDate[selected_index]
         selected_note = Note.tree.find(note_id)
         filepath = selected_note.open()
@@ -153,13 +155,16 @@ class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
         # TODO: Maybe doesn't need to run every time
         clear_orphaned_filepaths(list__filepath)
 
-        sublime.active_window().show_quick_panel(
-            self.list__title,
-            self.on_select,
-            flags=sublime.KEEP_OPEN_ON_FOCUS_LOST,
-            # on_highlight=self.on_select,
-            placeholder="Select Note press key 'enter' to open",
-        )
+        def show_panel():
+            sublime.active_window().show_quick_panel(
+                self.list__title,
+                self.on_select,
+                flags=sublime.KEEP_OPEN_ON_FOCUS_LOST,
+                # on_highlight=self.on_select,
+                placeholder="Select Note press key 'enter' to open",
+            )
+
+        sublime.set_timeout(show_panel, 50)
 
 
 class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
