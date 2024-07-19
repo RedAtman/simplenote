@@ -10,7 +10,7 @@ on:
 
 jobs:
   pre-commit:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.event.pull_request.merged == false
     runs-on: ubuntu-latest
 
     steps:
