@@ -5,6 +5,7 @@
 
 import base64
 import functools
+import json
 import logging
 import os
 import time
@@ -24,7 +25,7 @@ SIMPLENOTE_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SIMPLENOTE_APP_ID: str = "chalk-bump-f49"
 SIMPLENOTE_APP_KEY: str = base64.b64decode("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=").decode("utf-8")
 SIMPLENOTE_BUCKET: str = "note"
-_SIMPLENOTE_TOKEN_FILE = "simplenote_token.pkl"
+_SIMPLENOTE_TOKEN_FILE = "token.json"
 SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_TOKEN_FILE)
 
 
@@ -99,8 +100,9 @@ class Simplenote(Singleton):
         self.mark = "mark"
         self._token: str = ""
 
-    @classmethod
-    def authenticate(cls, username: str, password: str):
+    @staticmethod
+    @functools.lru_cache(maxsize=2)
+    def authenticate(username: str, password: str):
         """Method to get simplenote auth token
 
         Arguments:
@@ -124,8 +126,6 @@ class Simplenote(Singleton):
             raise SimplenoteLoginFailed("access_token is not a string: %s" % token)
 
         # assert len(token) == 32, "token length is not 32: %s" % token
-        with open(SIMPLENOTE_TOKEN_FILE, "wb") as fh:
-            fh.write(token.encode("utf-8"))
         return token
 
     @functools.cached_property
@@ -140,16 +140,23 @@ class Simplenote(Singleton):
         """
         if not self._token:
             try:
-                with open(SIMPLENOTE_TOKEN_FILE, "rb") as fh:
-                    token = fh.read().decode("utf-8")
+                with open(SIMPLENOTE_TOKEN_FILE, "r") as fh:
+                    _token = json.load(fh)
+                    token = _token.get(self.username)
+                    logger.info(("token: ", token))
                     if not token:
                         raise ValueError("token is empty")
-                    self._token = token
-            except (FileNotFoundError, ValueError) as err:
+                    return token
+            except Exception as err:
+                logger.info("Do not have token cache for %s, requesting new one. Error: %s" % (self.username, err))
                 self._token = self.authenticate(self.username, self.password)
-            except (EOFError, Exception) as err:
-                logger.exception(err)
-                raise err
+                with open(SIMPLENOTE_TOKEN_FILE, "w+") as fh:
+                    try:
+                        _token = json.load(fh)
+                    except Exception as err:
+                        _token = {}
+                    _token[self.username] = token
+                    json.dump(_token, fh)
         return self._token
 
     def _parse_response(self, note_id: str, response: Response):
