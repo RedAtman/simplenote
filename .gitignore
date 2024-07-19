@@ -4,6 +4,7 @@ sublime_api.py
 *.sublime-settings.example
 Markdown.tmLanguage
 *.pkl
+token.json
 tmp/
 notes/
 logs/
