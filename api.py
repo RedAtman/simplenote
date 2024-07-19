@@ -112,9 +112,13 @@ class Simplenote(Singleton):
         Returns:
             Simplenote API token as string
         """
-        headers = {"X-Simperium-API-Key": SIMPLENOTE_APP_KEY}
-        request_data = {"username": username, "password": password}
-        response = request(URL.auth(), method="POST", headers=headers, data=request_data, data_as_json=False)
+        response = request(
+            URL.auth(),
+            method="POST",
+            headers={"X-Simperium-API-Key": SIMPLENOTE_APP_KEY},
+            data={"username": username, "password": password},
+            data_as_json=False,
+        )
         if not response.status == 200:
             msg = "Simplenote login failed, Please check username and password: %s" % response.body
             raise SimplenoteLoginFailed(msg)
@@ -128,7 +132,7 @@ class Simplenote(Singleton):
         # assert len(token) == 32, "token length is not 32: %s" % token
         return token
 
-    @functools.cached_property
+    @property
     def token(self):
         """Method to retrieve an auth token.
 
@@ -143,7 +147,6 @@ class Simplenote(Singleton):
                 with open(SIMPLENOTE_TOKEN_FILE, "r") as fh:
                     _token = json.load(fh)
                     token = _token.get(self.username)
-                    logger.info(("token: ", token))
                     if not token:
                         raise ValueError("token is empty")
                     return token
@@ -155,7 +158,7 @@ class Simplenote(Singleton):
                         _token = json.load(fh)
                     except Exception as err:
                         _token = {}
-                    _token[self.username] = token
+                    _token[self.username] = self._token
                     json.dump(_token, fh)
         return self._token
 
