@@ -18,3 +18,18 @@
 # # Set the merge tool for certain file types
 # *.txt merge=
 # *.json merge=
+
+# Exclude all image files from the package
+*.png export-ignore
+*.jpg export-ignore
+*.jpeg export-ignore
+*.gif export-ignore
+*.svg export-ignore
+
+# Exclude test files and directories from the package
+tests/* export-ignore
+test/* export-ignore
+
+# Exclude Sublime Text project and workspace files from the package
+*.sublime-project export-ignore
+*.sublime-workspace export-ignore
