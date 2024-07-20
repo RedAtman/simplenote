@@ -1,0 +1,20 @@
+# Set the text encoding for all files in the project
+* text=auto
+
+# Set the line endings for all files in the project
+* eol=lf
+# *.sh        text eol=lf
+# *.py        eol=lf
+# *.yaml      eol=lf
+
+# # Set the merge strategy for certain file types
+# *.txt merge=union
+# *.json merge=union
+
+# # Set the diff tool for certain file types
+# *.txt diff=
+# *.json diff=
+
+# # Set the merge tool for certain file types
+# *.txt merge=
+# *.json merge=
