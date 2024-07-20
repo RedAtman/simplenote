@@ -19,7 +19,7 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.2
         with:
           tag_prefix: "st4-"
-          default_bump: patch
+          default_bump: "patch"
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check release output
