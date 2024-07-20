@@ -29,5 +29,6 @@ jobs:
         id: create-release
         uses: undergroundwires/bump-everywhere@1.4.0
         with:
+          version_regex: "st4-(MAJOR).(MINOR).(PATCH)"
           git-token: ${{ secrets.ACTION_TOKEN }}
           release-token: ${{ secrets.ACTION_TOKEN }}
