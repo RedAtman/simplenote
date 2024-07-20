@@ -14,30 +14,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Extract current version
-        id: extract_version
-        run: |
-          # Extract the current version from the VERSION file
-          VERSION=$(cat VERSION)
-          echo "Current version: $VERSION"
-          echo "::set-output name=current_version::$VERSION"
-
-      - uses: paulhatch/semantic-version@v5.3.0
-        id: generate-version
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
         with:
           tag_prefix: "st4-"
-          major_pattern: "(MAJOR)"
-          minor_pattern: "(MINOR)"
-          version_format: "st4-${major}.${minor}.${patch}"
-
-      - name: Create Release
-        id: create-release
-        uses: undergroundwires/bump-everywhere@1.4.0
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create a GitHub release
+        uses: ncipollo/release-action@v1
         with:
-          git-token: ${{ secrets.ACTION_TOKEN }}
-          release-token: ${{ secrets.ACTION_TOKEN }}
+          tag_prefix: "st4-"
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+
+      # - name: Set up Git
+      #   run: |
+      #     git config --global user.name "github-actions[bot]"
+      #     git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      # - uses: paulhatch/semantic-version@v5.3.0
+      #   id: generate-version
+      #   with:
+      #     tag_prefix: "st4-"
+      #     major_pattern: "(MAJOR)"
+      #     minor_pattern: "(MINOR)"
+      #     version_format: "st4-${major}.${minor}.${patch}"
+
+      # - name: Create Release
+      #   id: create-release
+      #   uses: undergroundwires/bump-everywhere@1.4.0
+      #   with:
+      #     git-token: ${{ secrets.ACTION_TOKEN }}
+      #     release-token: ${{ secrets.ACTION_TOKEN }}
