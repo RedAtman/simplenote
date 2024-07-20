@@ -20,7 +20,6 @@ jobs:
         with:
           tag_prefix: "st4-"
           default_bump: patch
-          release_type: patch
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check release output
