@@ -1,13 +1,13 @@
 name: Create Release and Tag on Merge
 
 on:
-  push:
-  # pull_request:
-  #   types: [closed]
+  # push:
+  pull_request:
+    types: [closed]
 
 jobs:
   create-release:
-    # if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'master'
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'master'
     runs-on: ubuntu-latest
 
     steps:
@@ -19,6 +19,7 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.2
         with:
           tag_prefix: "st4-"
+          default_bump: patch
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check release output
