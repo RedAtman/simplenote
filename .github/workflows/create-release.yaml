@@ -24,7 +24,12 @@ jobs:
 
       - name: Check release output
         run: |
-          echo tag_version.output: "${{ steps.tag_version.outputs }}"
+          echo tag_version.output.new_tag: "${{ steps.tag_version.outputs.new_tag }}"
+          echo tag_version.output.new_version: "${{ steps.tag_version.outputs.new_version }}"
+          echo tag_version.output.previous_tag: "${{ steps.tag_version.outputs.previous_tag }}"
+          echo tag_version.output.previous_version: "${{ steps.tag_version.outputs.previous_version }}"
+          echo tag_version.output.release_type: "${{ steps.tag_version.outputs.release_type }}"
+          echo tag_version.output.changelog: "${{ steps.tag_version.outputs.changelog }}"
 
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
