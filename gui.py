@@ -12,7 +12,6 @@ __all__ = [
     "SIMPLENOTE_PACKAGE_DIR",
     "SIMPLENOTE_SETTINGS_FILE",
     "SIMPLENOTE_BASE_DIR",
-    "get_settings",
     "show_message",
     "remove_status",
     "get_view_window",
@@ -23,7 +22,6 @@ __all__ = [
 SIMPLENOTE_PACKAGE_DIR = sublime.packages_path()
 SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
 SIMPLENOTE_BASE_DIR = os.path.join(SIMPLENOTE_PACKAGE_DIR, "Simplenote")
-SETTINGS = None
 
 
 # def init_settings(reload_if_needed: Optional(Callable) = None):
@@ -39,13 +37,13 @@ SETTINGS = None
 #         SETTINGS.add_on_change("password", reload_if_needed)
 
 
-def get_settings(key: str, default=None):
-    global SETTINGS
-    if SETTINGS is None:
-        import sublime
+# def get_settings(key: str, default=None):
+#     global SETTINGS
+#     if SETTINGS is None:
+#         import sublime
 
-        SETTINGS = sublime.load_settings("simplenote.sublime-settings")
-    return SETTINGS.get(key, default)
+#         SETTINGS = sublime.load_settings("simplenote.sublime-settings")
+#     return SETTINGS.get(key, default)
 
 
 def show_message(message: str):

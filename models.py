@@ -9,8 +9,9 @@ import time
 from typing import Any, ClassVar, Dict, List, Optional, TypedDict
 from uuid import uuid4
 
+from sublime import load_settings
+
 from api import Simplenote
-from gui import get_settings
 from utils.decorator import class_property
 from utils.tree.redblacktree import rbtree as RedBlackTree
 
@@ -148,8 +149,9 @@ class Note:
 
     @class_property
     def API(cls) -> Simplenote:
-        username = get_settings("username")
-        password = get_settings("password")
+        settings = load_settings(SIMPLENOTE_SETTINGS_FILE)
+        username = settings.get("username")
+        password = settings.get("password")
         if not all([username, password]):
             raise Exception("Missing username or password")
         if not isinstance(username, str) or not isinstance(password, str):
@@ -262,7 +264,8 @@ class Note:
 
     @staticmethod
     def get_filename(id: str, title: str) -> str:
-        title_extension_map: List[Dict[str, str]] = get_settings("title_extension_map")
+        settings = load_settings(SIMPLENOTE_SETTINGS_FILE)
+        title_extension_map: List[Dict[str, str]] = settings.get("title_extension_map")
         if not isinstance(title_extension_map, list):
             logger.info(
                 "`title_extension_map` must be a list. Please check settings file: %s." % SIMPLENOTE_SETTINGS_FILE

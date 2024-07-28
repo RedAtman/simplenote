@@ -301,15 +301,3 @@ class Simplenote(Singleton):
         note = self.retrieve(note_id, version)
         note["deleted"] = True
         return self.modify(note, note_id, version)
-
-
-if __name__ == "__main__":
-    from gui import get_settings
-
-    username = get_settings("username")
-    password = get_settings("password")
-    if not isinstance(username, str) or not isinstance(password, str):
-        raise Exception("Missing username or password")
-    simplenote = Simplenote(password, password)
-    token = simplenote.token
-    print("token: %s" % token)
