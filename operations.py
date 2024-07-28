@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import sublime
 
-from gui import SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE, open_view, remove_status, show_message
+from gui import SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE, _show_message, open_view, remove_status
 from models import Note
 from utils.patterns.singleton.base import Singleton
 
@@ -209,7 +209,7 @@ class OperationManager(Singleton):
                 self.running = False
                 sublime.set_timeout(remove_status, 1000)
 
-        show_message(text)
+        _show_message(text)
         if self.running:
             sublime.set_timeout(self.check_operations, 1000)
 

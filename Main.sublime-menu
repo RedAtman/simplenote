@@ -24,29 +24,21 @@
                             },
                             { "caption": "-" },
                             {
-                                "command": "open_file",
-                                "args": {"file": "${packages}/Simplenote/simplenote.sublime-settings"},
-                                "caption": "Settings – Default"
-                            },
-                            {
-                                "command": "open_file",
-                                "args": {"file": "${packages}/User/simplenote.sublime-settings"},
-                                "caption": "Settings – User"
+                                "caption": "Settings",
+                                "command": "edit_settings",
+                                "args": {
+                                    "base_file": "${packages}/Simplenote/simplenote.sublime-settings",
+									"default": "// Simplenote Settings - User\n{\n\t$0\n}\n"
+                                },
                             },
                             { "caption": "-" },
                             {
+                                "caption": "Key Bindings",
+                                "command": "edit_settings",
                                 "args": {
-                                    "file": "${packages}/Simplenote/Default.sublime-keymap",
+                                    "base_file": "${packages}/Simplenote/Default.sublime-keymap",
+									"default": "// Simplenote Key Bindings - User\n{\n\t$0\n}\n"
                                 },
-                                "caption": "Key Bindings – Default",
-                                "command": "open_file"
-                            },
-                            {
-                                "args": {
-                                    "file": "${packages}/User/Default.sublime-keymap",
-                                },
-                                "caption": "Key Bindings – User",
-                                "command": "open_file"
                             }
                         ]
                     }

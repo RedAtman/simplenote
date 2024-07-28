@@ -1,14 +1,30 @@
 [
   {
+    "caption": "Simplenote: Note List",
     "command": "simplenote_list",
-    "caption": "Simplenote: Note List"
   },
   {
+    "caption": "Simplenote: Create Note",
     "command": "simplenote_create",
-    "caption": "Simplenote: Create Note"
   },
   {
+    "caption": "Simplenote: Delete Current Note",
     "command": "simplenote_delete",
-    "caption": "Simplenote: Delete Current Note"
-  }
+  },
+  {
+		"caption": "Preferences: Simplenote Settings",
+		"command": "edit_settings",
+		"args": {
+      "base_file": "${packages}/Simplenote/simplenote.sublime-settings",
+			"default": "// Settings in here override those in \"Simplenote/simplenote.sublime-settings\",\n// and are overridden in turn by syntax-specific settings.\n{\n\t$0\n}\n"
+		}
+	},
+	{
+		"caption": "Preferences: Simplenote Key Bindings",
+		"command": "edit_settings",
+		"args": {
+			"base_file": "${packages}/Simplenote/Default.sublime-keymap",
+			"default": "// Bindings in here override those in \"Simplenote/Default.sublime-keymap\"\n[\n\t$0\n]\n"
+		}
+	}
 ]
