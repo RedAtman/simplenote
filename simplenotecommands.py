@@ -131,6 +131,9 @@ class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
             return
         note_id = self.list__modificationDate[selected_index]
         selected_note = Note.tree.find(note_id)
+        if not isinstance(selected_note, Note):
+            show_message("Note not found: note id(%s), Please restart simplenote or sublime text." % note_id)
+            return
         filepath = selected_note.open()
         selected_note.flush()
         view = open_view(filepath)
@@ -176,7 +179,6 @@ class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
                 on_note_changed(note)
 
     def run(self):
-        show_message(self.__class__.__name__)
         settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
         sync_note_number = settings.get("sync_note_number", 1000)
         if not isinstance(sync_note_number, int):

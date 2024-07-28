@@ -46,16 +46,24 @@ SIMPLENOTE_BASE_DIR = os.path.join(SIMPLENOTE_PACKAGE_DIR, "Simplenote")
 #     return SETTINGS.get(key, default)
 
 
-def show_message(message: str):
-    if not message:
-        message = ""
+def _show_message(message: str = ""):
+    if not isinstance(message, str):
+        try:
+            message = str(message)
+        except Exception:
+            message = ""
     for window in sublime.windows():
         for currentView in window.views():
             currentView.set_status("Simplenote", message)
 
 
+def show_message(message: str):
+    _show_message(message)
+    sublime.message_dialog(message)
+
+
 def remove_status():
-    show_message(None)
+    _show_message()
 
 
 def get_view_window(view: Optional[sublime.View] = None) -> sublime.Window:
