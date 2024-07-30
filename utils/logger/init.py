@@ -10,7 +10,7 @@ ENV = os.getenv("ENV")
 BASE_DIR: str = os.getenv("BASE_DIR", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
-LOG_DIR: str = os.path.join(BASE_DIR, "logs")
+# LOG_DIR: str = os.path.join(BASE_DIR, "logs")
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "WARNING")
 LOG_BACKUP_COUNT: int = int(os.getenv("LOG_BACKUP_COUNT", 5))
 LOG_FORMATTER = "standard"
@@ -56,13 +56,13 @@ LOG_CONFIG = {
         "default": {
             # Default is stderr
             # 'stream': 'ext://sys.stdout',
-            # 'class': 'logging.StreamHandler',
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": f"{LOG_DIR}/default.log",
-            "when": "midnight",
+            "class": "logging.StreamHandler",
+            # "class": "logging.handlers.TimedRotatingFileHandler",
+            # "filename": f"{LOG_DIR}/default.log",
+            # "when": "midnight",
             # "interval": 1,
-            "backupCount": LOG_BACKUP_COUNT,
-            "encoding": "utf8",
+            # "backupCount": LOG_BACKUP_COUNT,
+            # "encoding": "utf8",
             # "delay": False,
             # "utc": False,
             # "atTime": None,
@@ -74,13 +74,13 @@ LOG_CONFIG = {
         "info": {
             # Default is stderr
             # 'stream': 'ext://sys.stdout',
-            # 'class': 'logging.StreamHandler',
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": f"{LOG_DIR}/info.log",
-            "when": "midnight",
+            "class": "logging.StreamHandler",
+            # "class": "logging.handlers.TimedRotatingFileHandler",
+            # "filename": f"{LOG_DIR}/info.log",
+            # "when": "midnight",
             # "interval": 1,
-            "backupCount": LOG_BACKUP_COUNT,
-            "encoding": "utf8",
+            # "backupCount": LOG_BACKUP_COUNT,
+            # "encoding": "utf8",
             # "delay": False,
             # "utc": False,
             # "atTime": None,
@@ -93,13 +93,13 @@ LOG_CONFIG = {
         "warning": {
             # Default is stderr
             # 'stream': 'ext://sys.stdout',
-            # 'class': 'logging.StreamHandler',
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": f"{LOG_DIR}/warning.log",
-            "when": "midnight",
+            "class": "logging.StreamHandler",
+            # "class": "logging.handlers.TimedRotatingFileHandler",
+            # "filename": f"{LOG_DIR}/warning.log",
+            # "when": "midnight",
             # "interval": 1,
-            "backupCount": LOG_BACKUP_COUNT,
-            "encoding": "utf8",
+            # "backupCount": LOG_BACKUP_COUNT,
+            # "encoding": "utf8",
             # "delay": False,
             # "utc": False,
             # "atTime": None,
@@ -112,13 +112,13 @@ LOG_CONFIG = {
         "error": {
             # Default is stderr
             # 'stream': 'ext://sys.stdout',
-            # 'class': 'logging.StreamHandler',
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": f"{LOG_DIR}/error.log",
-            "when": "midnight",
+            "class": "logging.StreamHandler",
+            # "class": "logging.handlers.TimedRotatingFileHandler",
+            # "filename": f"{LOG_DIR}/error.log",
+            # "when": "midnight",
             # "interval": 1,
-            "backupCount": LOG_BACKUP_COUNT,
-            "encoding": "utf8",
+            # "backupCount": LOG_BACKUP_COUNT,
+            # "encoding": "utf8",
             # "delay": False,
             # "utc": False,
             # "atTime": None,
@@ -132,13 +132,13 @@ LOG_CONFIG = {
             "level": "CRITICAL",
             # Default is stderr
             # 'stream': 'ext://sys.stdout',
-            # 'class': 'logging.StreamHandler',
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "filename": f"{LOG_DIR}/critical.log",
-            "when": "midnight",
+            "class": "logging.StreamHandler",
+            # "class": "logging.handlers.TimedRotatingFileHandler",
+            # "filename": f"{LOG_DIR}/critical.log",
+            # "when": "midnight",
             # "interval": 1,
-            "backupCount": LOG_BACKUP_COUNT,
-            "encoding": "utf8",
+            # "backupCount": LOG_BACKUP_COUNT,
+            # "encoding": "utf8",
             # "delay": False,
             # "utc": False,
             # "atTime": None,
