@@ -92,7 +92,6 @@ for attr in dir(CONFIG):
         # print("set %s: %s" % (attr, getattr(CONFIG, attr)))
 
 
-from importlib import import_module
-
-
-import_module("utils.logger.init")
+if __name__ == "Simplenote._config":
+    print("__name__", __name__)
+    from .utils.logger import init

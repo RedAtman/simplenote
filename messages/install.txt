@@ -1,0 +1,20 @@
+Sublime Text 3/4 plugin for Simplenote. Use Sublime Text as a Simplenote client.
+
+First time use, To configure your Simplenote account username and password in the settings file, follow these general steps:
+
+1. **Open the Settings File:**: Sublime Text > Settings > Package Control > Simplenote > Settings
+
+2. **Configure Username and Password**
+   - Look for the configuration section and add or modify your username and password. For example, if the configuration file is in JSON format, you might add the following content:
+     ```json
+     {
+       "username": "your_username",
+       "password": "your_password"
+     }
+     ```
+   - Make sure to replace "your_username" and "your_password" with your actual username and password.
+
+3. **Save the File**
+
+5. **Restart the Application**
+   - Sometimes you need to restart Simplenote or the related application for the new settings to take effect.
