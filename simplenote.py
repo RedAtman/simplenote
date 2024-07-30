@@ -10,7 +10,8 @@ import sublime
 
 from gui import close_view, open_view
 from models import SIMPLENOTE_NOTES_DIR, Note
-from utils.patterns.singleton.base import Singleton
+
+from .utils.patterns.singleton.base import Singleton
 
 
 __all__: List[str] = [
