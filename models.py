@@ -12,11 +12,12 @@ from uuid import uuid4
 
 import_module("utils.logger.init")
 
-from sublime import load_settings
+import sublime
 
 from api import Simplenote
-from utils.decorator import class_property
-from utils.tree.redblacktree import rbtree as RedBlackTree
+
+from .utils.decorator import class_property
+from .utils.tree.redblacktree import rbtree as RedBlackTree
 
 
 # from typing_extensions import Unpack
@@ -152,7 +153,7 @@ class Note:
 
     @class_property
     def API(cls) -> Simplenote:
-        settings = load_settings(SIMPLENOTE_SETTINGS_FILE)
+        settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
         username = settings.get("username")
         password = settings.get("password")
         if not all([username, password]):
@@ -267,7 +268,7 @@ class Note:
 
     @staticmethod
     def get_filename(id: str, title: str) -> str:
-        settings = load_settings(SIMPLENOTE_SETTINGS_FILE)
+        settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
         title_extension_map: List[Dict[str, str]] = settings.get("title_extension_map")
         if not isinstance(title_extension_map, list):
             logger.info(
