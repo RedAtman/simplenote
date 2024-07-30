@@ -2,19 +2,21 @@
 
 =============
 
-Sublime Text 3/4 plugin for Simplenote.
+Sublime Text 3/4 plugin for Simplenote. Use Sublime Text as a Simplenote client.
 
 * Forked from [quick_simplenote](https://github.com/sickmartian/quick_simplenote)
 * UPDATES:
-  * Python 3.8 compatibility
-  * Sublime Text 4 compatibility
-  * Bug fixes
+    * Python 3.8 compatibility
+    * Sublime Text 4 compatibility
+    * Bug fixes
 
 Planned features:
 
 * Replace the existing RESTful API with WebSocket to reduce network I/O.
 * Add a new note list display mode.
 * Automatically detect whether a note is in Markdown format and apply system tags to inform other platform clients.
+* Using sqlite as the database as notes local cache.
+* Maybe adding APIs for other notebook providers.
 ...
 
 ## Installation
@@ -84,15 +86,17 @@ You need to set up your Simplenote credentials before using the plugin. You can 
 | Create Note         | ["super+shift+s", "super+shift+c"] | ["super+shift+s", "super+shift+c"] | ["super+shift+s", "super+shift+c"] |
 | Delete Current Note | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] |
 
+![Alt Key Map](asssets/images/keymap.png "keymap files")
+
 ## Overview
 
 ---------
-Hit Command+Shift+S (OSX) or Windows+Shift+S (Windows) twice to start. First time it will open the settings to setup the credentials.
+Hit Command+Shift+S (OSX) and then Command+Shift+L (OSX) or Windows+Shift+S (Windows) and then Windows+Shift+L (Windows) to start. First time it will open the settings to setup the credentials.
 After setting them it will download the notes.
-![Alt Settings](http://i.imgur.com/q6elJOi.png "Settings files")
+![Alt Settings](asssets/images/settings.png "Settings files")
 
 Hit the shortcut again after the download is done (check the message bar) and it will **show a list of the notes**:
-![Alt Notes](http://i.imgur.com/YTcngPw.png "Note List")
+![Alt Notes](asssets/images/note_list.png "Note List")
 
 It will download notes every time sublime text is launched and every now and then if the _sync_every_ configuration is enabled (has a positive value), so take a look at the bar to check the status.
 
@@ -104,14 +108,17 @@ After the next sync it will be updated on sublime as well
 If you change something on sublime the note will be updated after you save the file:
 ![Alt Sublime Update](http://i.imgur.com/FZVEoef.png "Sublime Update")
 
-You can **create a note** with Command+Shift+S and then Command+Shift+N (OSX) or Windows+Shift+S and then Windows+Shift+N (Windows), a name is assigned according to the first line of the note (remember to save!)
+You can **create a note** with Command+Shift+S and then Command+Shift+C (OSX) or Windows+Shift+S and then Windows+Shift+C (Windows), a name is assigned according to the first line of the note (remember to save!)
 ![Alt Sublime New Note on List](http://i.imgur.com/vH5POCU.png "Sublime New Note on List")
+
+> Markdown syntax support: If your note begins with "# ", it will automatically be marked as markdown format and displayed accordingly.
+![Alt Sublime Note displayed in markdown format](asssets/images/note_markdown.png "Sublime New Note on List")
 
 You can **delete notes** with Command+Shift+S and then Command+Shift+D (OSX) or Windows+Shift+S and then Windows+Shift+D (Windows) while seeing the note
 ![Alt Sublime Delete Note](http://i.imgur.com/3htEmBm.png "Sublime Delete Note")
 
 All those commands are also accesible from the command palette:
-![Alt Command Palette](http://i.imgur.com/n0tROSK.png "Command Palette")
+![Alt Command Palette](asssets/images/command_palette.png "Command Palette")
 
 ## Conflict Resolution
 

@@ -9,6 +9,9 @@ import time
 from typing import Any, ClassVar, Dict, List, Optional, TypedDict
 from uuid import uuid4
 
+
+import_module("utils.logger.init")
+
 from sublime import load_settings
 
 from api import Simplenote
