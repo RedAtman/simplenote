@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from importlib import import_module
 import logging
 import os
 import re
@@ -8,9 +7,6 @@ import string
 import time
 from typing import Any, ClassVar, Dict, List, Optional, TypedDict
 from uuid import uuid4
-
-
-import_module("utils.logger.init")
 
 import sublime
 
@@ -351,6 +347,7 @@ class Note:
 
 
 if __name__ == "__main__":
+    from importlib import import_module
     from pprint import pprint
 
     import_module("_config")
