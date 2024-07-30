@@ -20,10 +20,12 @@ from .utils.tree.redblacktree import rbtree as RedBlackTree
 
 logger = logging.getLogger()
 
-
+SIMPLENOTE_PROJECT_NAME = "Simplenote"
+SIMPLENOTE_CACHE_DIR = os.path.join(sublime.cache_path(), SIMPLENOTE_PROJECT_NAME)
+os.makedirs(SIMPLENOTE_CACHE_DIR, exist_ok=True)
 SIMPLENOTE_DEFAULT_NOTE_TITLE = "untitled"
 SIMPLENOTE_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-SIMPLENOTE_NOTES_DIR = os.path.join(SIMPLENOTE_BASE_DIR, "notes")
+SIMPLENOTE_NOTES_DIR = os.path.join(SIMPLENOTE_CACHE_DIR, "notes")
 os.makedirs(SIMPLENOTE_NOTES_DIR, exist_ok=True)
 SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
 # SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_SETTINGS_FILE)
