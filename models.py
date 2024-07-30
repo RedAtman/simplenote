@@ -14,8 +14,7 @@ import_module("utils.logger.init")
 
 import sublime
 
-from api import Simplenote
-
+from .api import Simplenote
 from .utils.decorator import class_property
 from .utils.tree.redblacktree import rbtree as RedBlackTree
 

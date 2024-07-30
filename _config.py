@@ -31,8 +31,8 @@ class _BaseConfig:
 
     DEBUG: bool = False
     TESTING: bool = False
-    # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    BASE_DIR: str = os.path.abspath(os.path.dirname(__file__))
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # BASE_DIR: str = os.path.abspath(os.path.dirname(__file__))
     sys.path.insert(0, BASE_DIR)
     LOG_DIR: str = os.path.join(BASE_DIR, "logs")
     os.makedirs(LOG_DIR, exist_ok=True)

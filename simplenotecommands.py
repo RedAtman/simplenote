@@ -7,10 +7,10 @@ from typing import Any, Dict, List
 import sublime
 import sublime_plugin
 
-from gui import SIMPLENOTE_PACKAGE_DIR, SIMPLENOTE_SETTINGS_FILE, close_view, open_view, remove_status, show_message
-from models import Note
-from operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
-from simplenote import clear_orphaned_filepaths, on_note_changed
+from .gui import SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE, close_view, open_view, remove_status, show_message
+from .models import Note
+from .operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
+from .simplenote import clear_orphaned_filepaths, on_note_changed
 
 
 __all__ = [
@@ -251,8 +251,7 @@ def start():
         sync()
         SIMPLENOTE_STARTED = True
     else:
-        filepath = os.path.join(SIMPLENOTE_PACKAGE_DIR, SIMPLENOTE_SETTINGS_FILE)
-        sublime.active_window().open_file(filepath)
+        sublime.active_window().open_file(os.path.join(SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE))
         show_message("Simplenote: Please configure username/password")
         sublime.set_timeout(remove_status, 2000)
         SIMPLENOTE_STARTED = False
