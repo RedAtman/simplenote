@@ -145,6 +145,10 @@ class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
             if not start():
                 return
 
+        if Note.tree.count <= 0:
+            show_message(
+                "No notes found. Please wait for the synchronization to complete, or press [super+s+c] to create a note."
+            )
         self.list__modificationDate: List[float] = []
         self.list__title: List[str] = []
         list__filename: List[str] = []
