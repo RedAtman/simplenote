@@ -21,11 +21,19 @@ __all__ = [
 
 
 def edit_settings():
+    installed_package_settings_file = os.path.join(
+        CONFIG.SIMPLENOTE_INSTALLED_PACKAGE_DIR, CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
+    )
+    package_settings_file = os.path.join(CONFIG.SIMPLENOTE_PACKAGE_DIR, CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+    if os.path.exists(installed_package_settings_file):
+        settings_file = installed_package_settings_file
+    else:
+        settings_file = package_settings_file
     # sublime.run_command("open_file", {"file": CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH})
     sublime.run_command(
         "edit_settings",
         {
-            "base_file": os.path.join(CONFIG.SIMPLENOTE_PACKAGE_DIR, CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH),
+            "base_file": settings_file,
             "default": "// Simplenote Settings - User\n{\n\t$0\n}\n",
         },
     )
