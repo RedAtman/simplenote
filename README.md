@@ -2,12 +2,11 @@
 
 =============
 
-Sublime Text 3/4 plugin for Simplenote. Use Sublime Text as a Simplenote client.
+Sublime Text plugin for Simplenote. Use Sublime Text as a Simplenote client.
 
 * Forked from [quick_simplenote](https://github.com/sickmartian/quick_simplenote)
 * UPDATES:
-    * Python 3.8 compatibility
-    * Sublime Text 4 compatibility
+    * Sublime Text 3 & 4 compatibility: Adapt to latest version of Sublime Text's default Python interpreter(Python 3.8)
     * Bug fixes
 
 Planned features:
