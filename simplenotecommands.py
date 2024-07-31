@@ -1,13 +1,19 @@
 from functools import cached_property
 import logging
-import os
 from threading import Lock
 from typing import Any, Dict, List
 
 import sublime
 import sublime_plugin
 
-from .gui import SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE, close_view, open_view, remove_status, show_message
+from .gui import (
+    SIMPLENOTE_SETTINGS_FILE,
+    SIMPLENOTE_SETTINGS_FILE_PATH,
+    close_view,
+    open_view,
+    remove_status,
+    show_message,
+)
 from .models import Note
 from .operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from .simplenote import clear_orphaned_filepaths, on_note_changed
@@ -255,7 +261,7 @@ def start():
         sync()
         SIMPLENOTE_STARTED = True
     else:
-        sublime.active_window().open_file(os.path.join(SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE))
+        sublime.active_window().open_file(SIMPLENOTE_SETTINGS_FILE_PATH)
         show_message("Simplenote: Please configure username/password")
         sublime.set_timeout(remove_status, 2000)
         SIMPLENOTE_STARTED = False
