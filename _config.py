@@ -3,7 +3,7 @@ import os
 import sys
 import typing
 
-from sublime import cache_path, packages_path
+from sublime import cache_path, installed_packages_path, packages_path
 
 
 # try:
@@ -58,6 +58,7 @@ class _BaseConfig:
     SIMPLENOTE_DEFAULT_NOTE_TITLE: str = "untitled"
     SIMPLENOTE_SETTINGS_FILE: str = "Simplenote.sublime-settings"
 
+    SIMPLENOTE_INSTALLED_PACKAGE_DIR = os.path.join(installed_packages_path(), SIMPLENOTE_PROJECT_NAME)
     SIMPLENOTE_PACKAGE_DIR = os.path.join(packages_path(), SIMPLENOTE_PROJECT_NAME)
     os.makedirs(SIMPLENOTE_PACKAGE_DIR, exist_ok=True)
 
