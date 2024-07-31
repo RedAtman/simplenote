@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 from uuid import uuid4
 
+from .gui import SIMPLENOTE_CACHE_DIR
 from .utils.patterns.singleton.base import Singleton
 from .utils.request import Response, request
 
@@ -21,12 +22,11 @@ logger = logging.getLogger()
 
 __all__ = ["Simplenote"]
 
-SIMPLENOTE_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
 SIMPLENOTE_APP_ID: str = "chalk-bump-f49"
 SIMPLENOTE_APP_KEY: str = base64.b64decode("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=").decode("utf-8")
 SIMPLENOTE_BUCKET: str = "note"
-_SIMPLENOTE_TOKEN_FILE = "token.json"
-SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_TOKEN_FILE)
+SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_CACHE_DIR, "token.json")
 
 
 class URL:
