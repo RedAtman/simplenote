@@ -5,7 +5,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 import sublime
 
-from .gui import SIMPLENOTE_SETTINGS_FILE_PATH, _show_message, open_view, remove_status
+from ._config import CONFIG
+from .gui import _show_message, open_view, remove_status
 from .models import Note
 from .utils.patterns.singleton.base import Singleton
 
@@ -67,7 +68,7 @@ class NotesIndicator(Operation):
         except Exception as err:
             logger.exception(err)
             sublime.message_dialog(str(err))
-            open_view(SIMPLENOTE_SETTINGS_FILE_PATH)
+            open_view(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
             self.result = err
 
 
@@ -81,7 +82,7 @@ class NoteCreator(Operation):
         except Exception as err:
             logger.exception(err)
             sublime.message_dialog(str(err))
-            open_view(SIMPLENOTE_SETTINGS_FILE_PATH)
+            open_view(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
             self.result = err
 
 
@@ -99,7 +100,7 @@ class NoteUpdater(Operation):
         except Exception as err:
             logger.exception(err)
             sublime.message_dialog(str(err))
-            open_view(SIMPLENOTE_SETTINGS_FILE_PATH)
+            open_view(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
             self.result = err
 
 
@@ -116,7 +117,7 @@ class NoteDeleter(Operation):
         except Exception as err:
             logger.exception(err)
             sublime.message_dialog(str(err))
-            open_view(SIMPLENOTE_SETTINGS_FILE_PATH)
+            open_view(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
             self.result = err
 
 

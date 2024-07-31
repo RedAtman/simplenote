@@ -10,8 +10,8 @@ from uuid import uuid4
 
 import sublime
 
+from ._config import CONFIG
 from .api import Simplenote
-from .gui import SIMPLENOTE_NOTES_DIR, SIMPLENOTE_SETTINGS_FILE
 from .utils.decorator import class_property
 from .utils.tree.redblacktree import rbtree as RedBlackTree
 
@@ -20,9 +20,6 @@ from .utils.tree.redblacktree import rbtree as RedBlackTree
 
 
 logger = logging.getLogger()
-
-
-SIMPLENOTE_DEFAULT_NOTE_TITLE = "untitled"
 
 
 # Take out invalid characters from title and use that as base for the name
@@ -144,13 +141,18 @@ class Note:
 
     @class_property
     def API(cls) -> Simplenote:
-        settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+        settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         username = settings.get("username")
         password = settings.get("password")
         if not all([username, password]):
-            raise Exception("Missing username or password")
+            raise Exception(
+                "Missing username or password, Please check settings file: %s" % CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
+            )
         if not isinstance(username, str) or not isinstance(password, str):
-            raise Exception("username and password must be strings")
+            raise Exception(
+                "username and password must be strings, Please check settings file: %s"
+                % CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
+            )
         return Simplenote(username, password)
 
     @classmethod
@@ -225,7 +227,7 @@ class Note:
         try:
             content = self._content
         except Exception:
-            return SIMPLENOTE_DEFAULT_NOTE_TITLE
+            return CONFIG.SIMPLENOTE_DEFAULT_NOTE_TITLE
         return self.get_title(content)
 
     @property
@@ -233,7 +235,7 @@ class Note:
         try:
             content = self.d.content
         except Exception:
-            return SIMPLENOTE_DEFAULT_NOTE_TITLE
+            return CONFIG.SIMPLENOTE_DEFAULT_NOTE_TITLE
         return self.get_title(content)
 
     @staticmethod
@@ -242,7 +244,7 @@ class Note:
         if index > -1:
             title = content[:index]
         else:
-            title = content or SIMPLENOTE_DEFAULT_NOTE_TITLE
+            title = content or CONFIG.SIMPLENOTE_DEFAULT_NOTE_TITLE
         return title
 
     @property
@@ -256,11 +258,12 @@ class Note:
 
     @staticmethod
     def get_filename(id: str, title: str) -> str:
-        settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+        settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         title_extension_map: List[Dict[str, str]] = settings.get("title_extension_map")
         if not isinstance(title_extension_map, list):
             logger.info(
-                "`title_extension_map` must be a list. Please check settings file: %s." % SIMPLENOTE_SETTINGS_FILE
+                "`title_extension_map` must be a list. Please check settings file: %s."
+                % CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
             )
         base = "".join(c for c in title if c in VALID_CHARS)
         # Determine extension based on title
@@ -283,7 +286,7 @@ class Note:
 
     @staticmethod
     def get_filepath(filename: str):
-        return os.path.join(SIMPLENOTE_NOTES_DIR, filename)
+        return os.path.join(CONFIG.SIMPLENOTE_NOTES_DIR, filename)
 
     @staticmethod
     def write_content_to_path(filepath: str, content: str = ""):
@@ -324,7 +327,7 @@ class Note:
     def get_note_from_filepath(view_absolute_filepath: str):
         assert isinstance(view_absolute_filepath, str), "view_absolute_filepath must be a string"
         view_note_dir, view_note_filename = os.path.split(view_absolute_filepath)
-        if view_note_dir != SIMPLENOTE_NOTES_DIR:
+        if view_note_dir != CONFIG.SIMPLENOTE_NOTES_DIR:
             return
         pattern = re.compile(r"\((.*?)\)")
         for note in Note.mapper_id_note.values():

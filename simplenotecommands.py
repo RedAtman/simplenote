@@ -6,14 +6,8 @@ from typing import Any, Dict, List
 import sublime
 import sublime_plugin
 
-from .gui import (
-    SIMPLENOTE_SETTINGS_FILE,
-    SIMPLENOTE_SETTINGS_FILE_PATH,
-    close_view,
-    open_view,
-    remove_status,
-    show_message,
-)
+from ._config import CONFIG
+from .gui import close_view, open_view, remove_status, show_message
 from .models import Note
 from .operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from .simplenote import clear_orphaned_filepaths, on_note_changed
@@ -45,7 +39,7 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
 
     @cached_property
     def autosave_debounce_time(self) -> int:
-        settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+        settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         _autosave_debounce_time = settings.get("autosave_debounce_time", 1)
         if not isinstance(_autosave_debounce_time, int):
             show_message(
@@ -107,7 +101,7 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
         sublime.set_timeout(flush_saves, self.autosave_debounce_time)
 
     # def on_load(self, view: sublime.View):
-    #     settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+    #     settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
     #     note_syntax = settings.get("note_syntax")
     #     if not isinstance(note_syntax, str):
     #         show_message("`note_syntax` must be a string. Please check settings file.")
@@ -190,7 +184,7 @@ class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
                 on_note_changed(note)
 
     def run(self):
-        settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+        settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         sync_note_number = settings.get("sync_note_number", 1000)
         if not isinstance(sync_note_number, int):
             show_message("`sync_note_number` must be an integer. Please check settings file.")
@@ -239,7 +233,7 @@ def sync():
     else:
         logger.debug("Sync omitted")
 
-    settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
     sync_every = settings.get("sync_every", 0)
     logger.debug(("Simplenote sync_every", sync_every))
     if not isinstance(sync_every, int):
@@ -253,7 +247,8 @@ def sync():
 def start():
     global SIMPLENOTE_STARTED
 
-    settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+    logger.info(("SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
     username = settings.get("username")
     password = settings.get("password")
 
@@ -261,8 +256,11 @@ def start():
         sync()
         SIMPLENOTE_STARTED = True
     else:
-        sublime.active_window().open_file(SIMPLENOTE_SETTINGS_FILE_PATH)
-        show_message("Simplenote: Please configure username/password")
+        sublime.active_window().open_file(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+        show_message(
+            "Simplenote: Please configure username/password, Please check settings file: %s"
+            % CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
+        )
         sublime.set_timeout(remove_status, 2000)
         SIMPLENOTE_STARTED = False
     return SIMPLENOTE_STARTED
@@ -277,7 +275,7 @@ def reload_if_needed():
         logger.debug("Simplenote Reload call %s" % SIMPLENOTE_RELOAD_CALLS)
         return
 
-    settings = sublime.load_settings(SIMPLENOTE_SETTINGS_FILE)
+    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
     autostart = settings.get("autostart")
     if bool(autostart):
         autostart = True

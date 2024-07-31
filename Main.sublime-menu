@@ -26,7 +26,7 @@
                                 "caption": "Settings",
                                 "command": "edit_settings",
                                 "args": {
-                                    "base_file": "${packages}/Simplenote/Default.sublime-settings",
+                                    "base_file": "${packages}/Simplenote/Simplenote.sublime-settings",
 									"default": "// Simplenote Settings - User\n{\n\t$0\n}\n"
                                 },
                             },

@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import Optional
 
 import sublime
@@ -9,29 +8,12 @@ logger = logging.getLogger()
 
 
 __all__ = [
-    "SIMPLENOTE_PACKAGE_DIR",
-    "SIMPLENOTE_SETTINGS_FILE",
-    "SIMPLENOTE_BASE_DIR",
     "show_message",
     "remove_status",
     "get_view_window",
     "open_view",
     "close_view",
 ]
-
-SIMPLENOTE_PROJECT_NAME = "Simplenote"
-SIMPLENOTE_SETTINGS_FILE = "Default.sublime-settings"
-
-SIMPLENOTE_PACKAGE_DIR = sublime.packages_path()
-SIMPLENOTE_BASE_DIR = os.path.join(SIMPLENOTE_PACKAGE_DIR, "Simplenote")
-
-SIMPLENOTE_CACHE_DIR = os.path.join(sublime.cache_path(), SIMPLENOTE_PROJECT_NAME)
-os.makedirs(SIMPLENOTE_CACHE_DIR, exist_ok=True)
-
-SIMPLENOTE_NOTES_DIR = os.path.join(SIMPLENOTE_CACHE_DIR, "notes")
-os.makedirs(SIMPLENOTE_NOTES_DIR, exist_ok=True)
-
-SIMPLENOTE_SETTINGS_FILE_PATH = os.path.join(SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE)
 
 
 # def init_settings(reload_if_needed: Optional(Callable) = None):

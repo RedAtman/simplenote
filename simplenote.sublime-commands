@@ -15,8 +15,8 @@
 		"caption": "Preferences: Simplenote Settings",
 		"command": "edit_settings",
 		"args": {
-      "base_file": "${packages}/Simplenote/Default.sublime-settings",
-			"default": "// Settings in here override those in \"Simplenote/Default.sublime-settings\",\n// and are overridden in turn by syntax-specific settings.\n{\n\t$0\n}\n"
+      "base_file": "${packages}/Simplenote/Simplenote.sublime-settings",
+			"default": "// Settings in here override those in \"Simplenote/Simplenote.sublime-settings\",\n// and are overridden in turn by syntax-specific settings.\n{\n\t$0\n}\n"
 		}
 	},
 	{
