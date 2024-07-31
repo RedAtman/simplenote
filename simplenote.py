@@ -8,8 +8,9 @@ from typing import Any, Dict, List
 # https://www.sublimetext.com/docs/api_reference.html
 import sublime
 
-from .gui import SIMPLENOTE_CACHE_DIR, close_view, open_view
-from .models import SIMPLENOTE_NOTES_DIR, Note
+from ._config import CONFIG
+from .gui import close_view, open_view
+from .models import Note
 from .utils.patterns.singleton.base import Singleton
 
 
@@ -23,9 +24,6 @@ __all__: List[str] = [
 
 
 logger = logging.getLogger()
-
-
-SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_CACHE_DIR, "note_cache.pkl")
 
 
 class _BaseManager(Singleton):
@@ -56,14 +54,14 @@ class Local(_BaseManager):
         self._objects = value
 
     @staticmethod
-    def _save_objects(SIMPLENOTE_NOTE_CACHE_FILE: str, objects: List[Note]):
-        with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
+    def _save_objects(SIMPLENOTE_NOTE_CACHE_FILE_PATH: str, objects: List[Note]):
+        with open(SIMPLENOTE_NOTE_CACHE_FILE_PATH, "w+b") as cache_file:
             pickle.dump(objects, cache_file)
 
     @classmethod
     def save_objects(cls):
         return
-        cls._save_objects(SIMPLENOTE_NOTE_CACHE_FILE, cls._objects)
+        cls._save_objects(CONFIG.SIMPLENOTE_NOTE_CACHE_FILE_PATH, cls._objects)
 
     @staticmethod
     def dict_to_model(note: Dict[str, Any]) -> Note:
@@ -85,21 +83,21 @@ class Local(_BaseManager):
 
 def load_notes():
     try:
-        with open(SIMPLENOTE_NOTE_CACHE_FILE, "rb") as cache_file:
+        with open(CONFIG.SIMPLENOTE_NOTE_CACHE_FILE_PATH, "rb") as cache_file:
             Note.mapper_id_note = pickle.load(cache_file, encoding="utf-8")
     except (EOFError, IOError, FileNotFoundError) as err:
         logger.exception(err)
-        with open(SIMPLENOTE_NOTE_CACHE_FILE, "w+b") as cache_file:
+        with open(CONFIG.SIMPLENOTE_NOTE_CACHE_FILE_PATH, "w+b") as cache_file:
             pickle.dump(Note.mapper_id_note, cache_file)
-            logger.debug((f"Created new objects cache file: {SIMPLENOTE_NOTE_CACHE_FILE}"))
+            logger.debug((f"Created new objects cache file: {CONFIG.SIMPLENOTE_NOTE_CACHE_FILE_PATH}"))
 
 
 def clear_orphaned_filepaths(list__filename: List[str] = []):
     if not list__filename:
         list__filename = [note.filename for note in Note.mapper_id_note.values()]
-    for filename in os.listdir(SIMPLENOTE_NOTES_DIR):
+    for filename in os.listdir(CONFIG.SIMPLENOTE_NOTES_DIR):
         if filename not in list__filename:
-            os.remove(os.path.join(SIMPLENOTE_NOTES_DIR, filename))
+            os.remove(os.path.join(CONFIG.SIMPLENOTE_NOTES_DIR, filename))
 
 
 def sort_notes(a_note: Note, b_note: Note):

@@ -7,12 +7,12 @@ import base64
 import functools
 import json
 import logging
-import os
 import time
 from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 from uuid import uuid4
 
+from ._config import CONFIG
 from .utils.patterns.singleton.base import Singleton
 from .utils.request import Response, request
 
@@ -21,12 +21,10 @@ logger = logging.getLogger()
 
 __all__ = ["Simplenote"]
 
-SIMPLENOTE_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
 SIMPLENOTE_APP_ID: str = "chalk-bump-f49"
 SIMPLENOTE_APP_KEY: str = base64.b64decode("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=").decode("utf-8")
 SIMPLENOTE_BUCKET: str = "note"
-_SIMPLENOTE_TOKEN_FILE = "token.json"
-SIMPLENOTE_TOKEN_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_TOKEN_FILE)
 
 
 class URL:
@@ -144,7 +142,7 @@ class Simplenote(Singleton):
         """
         if not self._token:
             try:
-                with open(SIMPLENOTE_TOKEN_FILE, "r") as fh:
+                with open(CONFIG.SIMPLENOTE_TOKEN_FILE_PATH, "r") as fh:
                     _token = json.load(fh)
                     token = _token.get(self.username)
                     if not token:
@@ -153,7 +151,7 @@ class Simplenote(Singleton):
             except Exception as err:
                 logger.info("Do not have token cache for %s, requesting new one. Error: %s" % (self.username, err))
                 self._token = self.authenticate(self.username, self.password)
-                with open(SIMPLENOTE_TOKEN_FILE, "w+") as fh:
+                with open(CONFIG.SIMPLENOTE_TOKEN_FILE_PATH, "w+") as fh:
                     try:
                         _token = json.load(fh)
                     except Exception as err:

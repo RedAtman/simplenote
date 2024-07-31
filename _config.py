@@ -3,6 +3,8 @@ import os
 import sys
 import typing
 
+from sublime import cache_path, packages_path
+
 
 # try:
 #     from dotenv import load_dotenv
@@ -15,6 +17,7 @@ import typing
 #     load_dotenv()
 # else:
 #     load_dotenv()
+
 
 __all__ = [
     "CONFIG",
@@ -40,9 +43,8 @@ class _BaseConfig:
 
     SIMPLENOTE_PROJECT_NAME: str = "Simplenote"
     SIMPLENOTE_PROJECT_VERSION: str = "0.0.1"
-    SIMPLENOTE_PROJECT_DESCRIPTION: str = "Sublime Text 3/4 plugin for Simplenote."
+    SIMPLENOTE_PROJECT_DESCRIPTION: str = "Sublime Text 3 & 4 plugin for Simplenote."
 
-    SIMPLENOTE_BASE_DIR: str = BASE_DIR
     SIMPLENOTE_APP_ID: str = os.getenv("SIMPLENOTE_APP_ID", "chalk-bump-f49")
     __SIMPLENOTE_APP_KEY: str = os.getenv("SIMPLENOTE_APP_KEY", "YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=")
     # There is no way for us to hide this key, only obfuscate it.
@@ -53,13 +55,29 @@ class _BaseConfig:
     SIMPLENOTE_BUCKET: str = os.getenv("SIMPLENOTE_BUCKET", "note")
     SIMPLENOTE_USERNAME: str = os.getenv("SIMPLENOTE_USERNAME", "")
     SIMPLENOTE_PASSWORD: str = os.getenv("SIMPLENOTE_PASSWORD", "")
-    SIMPLENOTE_SETTINGS_FILE: str = "Default.sublime-settings"
-    SIMPLENOTE_TOKEN_FILE: str = os.getenv("SIMPLENOTE_TOKEN_FILE", "simplenote_token.pkl")
-    SIMPLENOTE_STARTED: bool = False
-    SIMPLENOTE_RELOAD_CALLS: int = -1
-    SIMPLENOTE_NOTE_FETCH_LENGTH: int = 1
-    SIMPLENOTE_NOTE_CACHE_FILE: str = "note_cache.pkl"
     SIMPLENOTE_DEFAULT_NOTE_TITLE: str = "untitled"
+    SIMPLENOTE_SETTINGS_FILE: str = "Simplenote.sublime-settings"
+
+    SIMPLENOTE_PACKAGE_DIR = os.path.join(packages_path(), SIMPLENOTE_PROJECT_NAME)
+    os.makedirs(SIMPLENOTE_PACKAGE_DIR, exist_ok=True)
+
+    SUBLIME_USER_DIR = os.path.join(packages_path(), "User")
+    SIMPLENOTE_SETTINGS_FILE_PATH = os.path.join(SUBLIME_USER_DIR, SIMPLENOTE_SETTINGS_FILE)
+    if not os.path.exists(SIMPLENOTE_SETTINGS_FILE_PATH):
+        import shutil
+
+        default_settings = os.path.join(os.path.dirname(__file__), SIMPLENOTE_SETTINGS_FILE)
+        shutil.copy(default_settings, SIMPLENOTE_SETTINGS_FILE_PATH)
+
+    SIMPLENOTE_CACHE_DIR = os.path.join(cache_path(), SIMPLENOTE_PROJECT_NAME)
+    os.makedirs(SIMPLENOTE_CACHE_DIR, exist_ok=True)
+    SIMPLENOTE_TOKEN_FILE_PATH = os.path.join(SIMPLENOTE_CACHE_DIR, "token.json")
+    SIMPLENOTE_NOTE_CACHE_FILE_PATH = os.path.join(SIMPLENOTE_CACHE_DIR, "note_cache.pkl")
+    SIMPLENOTE_NOTES_DIR = os.path.join(SIMPLENOTE_CACHE_DIR, "notes")
+    os.makedirs(SIMPLENOTE_NOTES_DIR, exist_ok=True)
+
+    # SIMPLENOTE_STARTED: bool = False
+    # SIMPLENOTE_RELOAD_CALLS: int = -1
 
 
 class Development(_BaseConfig):
