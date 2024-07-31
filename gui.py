@@ -37,15 +37,6 @@ SIMPLENOTE_BASE_DIR = os.path.join(SIMPLENOTE_PACKAGE_DIR, "Simplenote")
 #         SETTINGS.add_on_change("password", reload_if_needed)
 
 
-# def get_settings(key: str, default=None):
-#     global SETTINGS
-#     if SETTINGS is None:
-#         import sublime
-
-#         SETTINGS = sublime.load_settings("simplenote.sublime-settings")
-#     return SETTINGS.get(key, default)
-
-
 def _show_message(message: str = ""):
     if not isinstance(message, str):
         try:
