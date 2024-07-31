@@ -1,13 +1,17 @@
 import logging
+import os
 from typing import Optional
 
 import sublime
+
+from ._config import CONFIG
 
 
 logger = logging.getLogger()
 
 
 __all__ = [
+    "edit_settings",
     "show_message",
     "remove_status",
     "get_view_window",
@@ -27,6 +31,17 @@ __all__ = [
 #         SETTINGS.clear_on_change("password")
 #         SETTINGS.add_on_change("username", reload_if_needed)
 #         SETTINGS.add_on_change("password", reload_if_needed)
+
+
+def edit_settings():
+    # sublime.run_command("open_file", {"file": CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH})
+    sublime.run_command(
+        "edit_settings",
+        {
+            "base_file": os.path.join(CONFIG.SIMPLENOTE_PACKAGE_DIR, CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH),
+            "default": "// Simplenote Settings - User\n{\n\t$0\n}\n",
+        },
+    )
 
 
 def _show_message(message: str = ""):
