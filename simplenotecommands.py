@@ -283,13 +283,14 @@ def reload_if_needed():
 
 def plugin_loaded():
     # load_notes()
-    logger.debug(("Loaded notes number: ", len(Note.mapper_id_note)))
+    logger.debug(("Loaded notes number: ", Note.tree.count))
 
+    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
     # logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
     # logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
-    # SETTINGS.clear_on_change("username")
-    # SETTINGS.clear_on_change("password")
-    # SETTINGS.add_on_change("username", reload_if_needed)
-    # SETTINGS.add_on_change("password", reload_if_needed)
+    settings.clear_on_change("username")
+    settings.clear_on_change("password")
+    settings.add_on_change("username", reload_if_needed)
+    settings.add_on_change("password", reload_if_needed)
 
     reload_if_needed()
