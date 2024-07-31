@@ -3,8 +3,6 @@ import logging.config
 import os
 import sys
 
-from . import lexers
-
 
 ENV = os.getenv("ENV")
 BASE_DIR: str = os.getenv("BASE_DIR", os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -15,31 +13,41 @@ LOG_LEVEL: str = os.getenv("LOG_LEVEL", "WARNING")
 LOG_BACKUP_COUNT: int = int(os.getenv("LOG_BACKUP_COUNT", 5))
 LOG_FORMATTER = "standard"
 LOG_FILTERS = []
+formatters = {
+    "simple": {
+        "format": "%(asctime)s: [%(levelname)s]: %(name)s: %(message)s",
+    },
+    "standard": {
+        "format": "%(asctime)s:[%(levelname)s]:%(pathname)s:%(lineno)d:%(funcName)s: %(message)s",
+    },
+    "relpath": {
+        "format": "%(asctime)s: [%(levelname)s]: %(name)s: %(message)s",
+    },
+}
+filters = {
+    "default": {"()": logging.Filter},
+    "relpath": {"()": logging.Filter},
+    "json": {"()": logging.Filter},
+    "color": {"()": logging.Filter},
+    "debug": {"()": logging.Filter},
+    "info": {"()": logging.Filter},
+    "warning": {"()": logging.Filter},
+    "error": {"()": logging.Filter},
+    "critical": {"()": logging.Filter},
+}
 if ENV == "development":
+    from . import lexers
+
     LOG_FORMATTER = "relpath"
     LOG_FILTERS = [
         "relpath",
         "json",
         "color",
     ]
-
-
-LOG_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": True,
-    "formatters": {
-        "simple": {
-            "format": "%(asctime)s: [%(levelname)s]: %(name)s: %(message)s",
-        },
-        "standard": {
-            "format": "%(asctime)s:[%(levelname)s]:%(pathname)s:%(lineno)d:%(funcName)s: %(message)s",
-        },
-        "relpath": {
-            "format": "[%(levelname)s]%(relpath)s:%(lineno)d:%(funcName)s: %(message)s",
-        },
-    },
-    "filters": {
-        "default": {"()": logging.Filter},
+    formatters["relpath"] = {
+        "format": "[%(levelname)s]%(relpath)s:%(lineno)d:%(funcName)s: %(message)s",
+    }
+    _filters = {
         "relpath": {"()": "utils.logger.filters.RelPathFilter"},
         "json": {
             "()": "utils.logger.filters.JsonFilter",
@@ -51,7 +59,15 @@ LOG_CONFIG = {
         "warning": {"()": "utils.logger.filters.LevelMatchFilter", "level": "warning", "operator": "eq"},
         "error": {"()": "utils.logger.filters.LevelMatchFilter", "level": "error", "operator": "eq"},
         "critical": {"()": "utils.logger.filters.LevelMatchFilter", "level": "critical", "operator": "eq"},
-    },
+    }
+    filters = dict(filters, **_filters)
+
+
+LOG_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": True,
+    "formatters": formatters,
+    "filters": filters,
     "handlers": {
         "default": {
             # Default is stderr
