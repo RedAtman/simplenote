@@ -25,10 +25,13 @@ def edit_settings():
         CONFIG.SIMPLENOTE_INSTALLED_PACKAGE_DIR, CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
     )
     package_settings_file = os.path.join(CONFIG.SIMPLENOTE_PACKAGE_DIR, CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+    logger.warning(os.path.exists(installed_package_settings_file), os.path.exists(package_settings_file))
     if os.path.exists(installed_package_settings_file):
         settings_file = installed_package_settings_file
-    else:
+    elif os.path.exists(package_settings_file):
         settings_file = package_settings_file
+    else:
+        settings_file = CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
     # sublime.run_command("open_file", {"file": CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH})
     sublime.run_command(
         "edit_settings",
