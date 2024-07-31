@@ -112,5 +112,4 @@ for attr in dir(CONFIG):
 
 
 if __name__ == "Simplenote._config":
-    print("__name__", __name__)
     from .utils.logger import init
