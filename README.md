@@ -1,7 +1,8 @@
 # Simplenote for Sublime Text
 ========================
+
 Sublime Text 3 & 4 plugin of Simplenote, Use Sublime Text as a Simplenote client.
---------
+
 ```sh
      _                 _                  _
  ___(_)_ __ ___  _ __ | | ___ _ __   ___ | |_ ___
