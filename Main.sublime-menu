@@ -22,7 +22,6 @@
                                 "caption": "README",
                                 "command": "open_file"
                             },
-                            { "caption": "-" },
                             {
                                 "caption": "Settings",
                                 "command": "edit_settings",
@@ -31,7 +30,6 @@
 									"default": "// Simplenote Settings - User\n{\n\t$0\n}\n"
                                 },
                             },
-                            { "caption": "-" },
                             {
                                 "caption": "Key Bindings",
                                 "command": "edit_settings",
