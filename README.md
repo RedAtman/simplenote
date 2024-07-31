@@ -1,13 +1,18 @@
-# Simplenote
-
-=============
-
-Sublime Text 3/4 plugin for Simplenote. Use Sublime Text as a Simplenote client.
+# Simplenote for Sublime Text
+========================
+Sublime Text 3 & 4 plugin of Simplenote, Use Sublime Text as a Simplenote client.
+--------
+     _                 _                  _
+ ___(_)_ __ ___  _ __ | | ___ _ __   ___ | |_ ___
+/ __| | '_ ` _ \| '_ \| |/ _ \ '_ \ / _ \| __/ _ \
+\__ \ | | | | | | |_) | |  __/ | | | (_) | ||  __/
+|___/_|_| |_| |_| .__/|_|\___|_| |_|\___/ \__\___| for Sublime Text
+                |_|
+--------
 
 * Forked from [quick_simplenote](https://github.com/sickmartian/quick_simplenote)
 * UPDATES:
-    * Python 3.8 compatibility
-    * Sublime Text 4 compatibility
+    * Sublime Text 3 & 4 compatibility: Adapt to latest version of Sublime Text's default Python interpreter(Python 3.8)
     * Bug fixes
 
 Planned features:
@@ -86,7 +91,8 @@ You need to set up your Simplenote credentials before using the plugin. You can 
 | Create Note         | ["super+shift+s", "super+shift+c"] | ["super+shift+s", "super+shift+c"] | ["super+shift+s", "super+shift+c"] |
 | Delete Current Note | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] |
 
-![Alt Key Map](asssets/images/keymap.png "keymap files")
+You can customize it: Sublime Text > Settings > Package Control > Simplenote > Key Bindings
+![Alt Key Bindings](asssets/images/keybindings.png "Keybindings files")
 
 ## Overview
 
