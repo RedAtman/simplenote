@@ -1,6 +1,6 @@
-Sublime Text 3/4 plugin for Simplenote
+Simplenote for Sublime Text
 ========================
-Use Sublime Text as a Simplenote client.
+Sublime Text 3/4 plugin of Simplenote, Use Sublime Text as a Simplenote client.
 --------
      _                 _                  _
  ___(_)_ __ ___  _ __ | | ___ _ __   ___ | |_ ___
