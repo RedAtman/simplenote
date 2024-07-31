@@ -62,12 +62,13 @@ class _BaseConfig:
     os.makedirs(SIMPLENOTE_PACKAGE_DIR, exist_ok=True)
 
     SUBLIME_USER_DIR = os.path.join(packages_path(), "User")
-    SIMPLENOTE_SETTINGS_FILE_PATH = os.path.join(SUBLIME_USER_DIR, SIMPLENOTE_SETTINGS_FILE)
-    if not os.path.exists(SIMPLENOTE_SETTINGS_FILE_PATH):
-        import shutil
+    SIMPLENOTE_SETTINGS_FILE_PATH = SIMPLENOTE_SETTINGS_FILE
+    # SIMPLENOTE_SETTINGS_FILE_PATH = os.path.join(SUBLIME_USER_DIR, SIMPLENOTE_SETTINGS_FILE)
+    # if not os.path.exists(SIMPLENOTE_SETTINGS_FILE_PATH):
+    #     import shutil
 
-        default_settings = os.path.join(os.path.dirname(__file__), SIMPLENOTE_SETTINGS_FILE)
-        shutil.copy(default_settings, SIMPLENOTE_SETTINGS_FILE_PATH)
+    #     default_settings = os.path.join(os.path.dirname(__file__), SIMPLENOTE_SETTINGS_FILE)
+    #     shutil.copy(default_settings, SIMPLENOTE_SETTINGS_FILE_PATH)
 
     SIMPLENOTE_CACHE_DIR = os.path.join(cache_path(), SIMPLENOTE_PROJECT_NAME)
     os.makedirs(SIMPLENOTE_CACHE_DIR, exist_ok=True)
