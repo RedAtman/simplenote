@@ -3,7 +3,6 @@
 :doc: https://simperium.com/docs/reference/http/#auth
 """
 
-import base64
 import functools
 import json
 import logging
@@ -22,16 +21,11 @@ logger = logging.getLogger()
 __all__ = ["Simplenote"]
 
 
-SIMPLENOTE_APP_ID: str = "chalk-bump-f49"
-SIMPLENOTE_APP_KEY: str = base64.b64decode("YzhjMmI4NjMzNzE1NGNkYWJjOTg5YjIzZTMwYzZiZjQ=").decode("utf-8")
-SIMPLENOTE_BUCKET: str = "note"
-
-
 class URL:
     BASE: str = "simperium.com/1"
     AUTH = f"https://auth.{BASE}"
-    DATA = f"https://api.{BASE}/{SIMPLENOTE_APP_ID}/{SIMPLENOTE_BUCKET}"
-    __auth = f"{AUTH}/{SIMPLENOTE_APP_ID}/authorize/"
+    DATA = f"https://api.{BASE}/{CONFIG.SIMPLENOTE_APP_ID}/{CONFIG.SIMPLENOTE_BUCKET}"
+    __auth = f"{AUTH}/{CONFIG.SIMPLENOTE_APP_ID}/authorize/"
     __index = DATA + "/index"
     __retrieve = DATA + "/i/%s"
     __modify = __retrieve
@@ -113,7 +107,7 @@ class Simplenote(Singleton):
         response = request(
             URL.auth(),
             method="POST",
-            headers={"X-Simperium-API-Key": SIMPLENOTE_APP_KEY},
+            headers={"X-Simperium-API-Key": CONFIG.SIMPLENOTE_APP_KEY},
             data={"username": username, "password": password},
             data_as_json=False,
         )
