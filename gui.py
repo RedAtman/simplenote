@@ -20,19 +20,6 @@ __all__ = [
 ]
 
 
-# def init_settings(reload_if_needed: Optional(Callable) = None):
-#     global SETTINGS
-#     if SETTINGS is None:
-#         SETTINGS = sublime.load_settings("SIMPLENOTE_SETTINGS_FILE")
-#         # logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
-#         # logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
-#     if reload_if_needed:
-#         SETTINGS.clear_on_change("username")
-#         SETTINGS.clear_on_change("password")
-#         SETTINGS.add_on_change("username", reload_if_needed)
-#         SETTINGS.add_on_change("password", reload_if_needed)
-
-
 def edit_settings():
     # sublime.run_command("open_file", {"file": CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH})
     sublime.run_command(
