@@ -19,15 +19,25 @@ __all__ = [
     "close_view",
 ]
 
+SIMPLENOTE_PROJECT_NAME = "Simplenote"
+SIMPLENOTE_SETTINGS_FILE = "Default.sublime-settings"
+
 SIMPLENOTE_PACKAGE_DIR = sublime.packages_path()
-SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
 SIMPLENOTE_BASE_DIR = os.path.join(SIMPLENOTE_PACKAGE_DIR, "Simplenote")
+
+SIMPLENOTE_CACHE_DIR = os.path.join(sublime.cache_path(), SIMPLENOTE_PROJECT_NAME)
+os.makedirs(SIMPLENOTE_CACHE_DIR, exist_ok=True)
+
+SIMPLENOTE_NOTES_DIR = os.path.join(SIMPLENOTE_CACHE_DIR, "notes")
+os.makedirs(SIMPLENOTE_NOTES_DIR, exist_ok=True)
+
+SIMPLENOTE_SETTINGS_FILE_PATH = os.path.join(SIMPLENOTE_BASE_DIR, SIMPLENOTE_SETTINGS_FILE)
 
 
 # def init_settings(reload_if_needed: Optional(Callable) = None):
 #     global SETTINGS
 #     if SETTINGS is None:
-#         SETTINGS = sublime.load_settings("simplenote.sublime-settings")
+#         SETTINGS = sublime.load_settings("SIMPLENOTE_SETTINGS_FILE")
 #         # logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
 #         # logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
 #     if reload_if_needed:
@@ -35,15 +45,6 @@ SIMPLENOTE_BASE_DIR = os.path.join(SIMPLENOTE_PACKAGE_DIR, "Simplenote")
 #         SETTINGS.clear_on_change("password")
 #         SETTINGS.add_on_change("username", reload_if_needed)
 #         SETTINGS.add_on_change("password", reload_if_needed)
-
-
-# def get_settings(key: str, default=None):
-#     global SETTINGS
-#     if SETTINGS is None:
-#         import sublime
-
-#         SETTINGS = sublime.load_settings("simplenote.sublime-settings")
-#     return SETTINGS.get(key, default)
 
 
 def _show_message(message: str = ""):

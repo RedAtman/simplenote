@@ -8,13 +8,12 @@ from typing import Any, Dict, List
 # https://www.sublimetext.com/docs/api_reference.html
 import sublime
 
-from .gui import close_view, open_view
+from .gui import SIMPLENOTE_CACHE_DIR, close_view, open_view
 from .models import SIMPLENOTE_NOTES_DIR, Note
 from .utils.patterns.singleton.base import Singleton
 
 
 __all__: List[str] = [
-    "SIMPLENOTE_SETTINGS_FILE",
     "Local",
     "load_notes",
     "clear_orphaned_filepaths",
@@ -26,11 +25,7 @@ __all__: List[str] = [
 logger = logging.getLogger()
 
 
-SIMPLENOTE_PROJECT_NAME = "Simplenote"
-SIMPLENOTE_CACHE_DIR = os.path.join(sublime.cache_path(), SIMPLENOTE_PROJECT_NAME)
-os.makedirs(SIMPLENOTE_CACHE_DIR, exist_ok=True)
 SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_CACHE_DIR, "note_cache.pkl")
-SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
 
 
 class _BaseManager(Singleton):

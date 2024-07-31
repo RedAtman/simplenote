@@ -11,6 +11,7 @@ from uuid import uuid4
 import sublime
 
 from .api import Simplenote
+from .gui import SIMPLENOTE_NOTES_DIR, SIMPLENOTE_SETTINGS_FILE
 from .utils.decorator import class_property
 from .utils.tree.redblacktree import rbtree as RedBlackTree
 
@@ -20,15 +21,8 @@ from .utils.tree.redblacktree import rbtree as RedBlackTree
 
 logger = logging.getLogger()
 
-SIMPLENOTE_PROJECT_NAME = "Simplenote"
-SIMPLENOTE_CACHE_DIR = os.path.join(sublime.cache_path(), SIMPLENOTE_PROJECT_NAME)
-os.makedirs(SIMPLENOTE_CACHE_DIR, exist_ok=True)
+
 SIMPLENOTE_DEFAULT_NOTE_TITLE = "untitled"
-SIMPLENOTE_BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-SIMPLENOTE_NOTES_DIR = os.path.join(SIMPLENOTE_CACHE_DIR, "notes")
-os.makedirs(SIMPLENOTE_NOTES_DIR, exist_ok=True)
-SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
-# SIMPLENOTE_SETTINGS_FILE = os.path.join(SIMPLENOTE_BASE_DIR, _SIMPLENOTE_SETTINGS_FILE)
 
 
 # Take out invalid characters from title and use that as base for the name
@@ -248,10 +242,7 @@ class Note:
         if index > -1:
             title = content[:index]
         else:
-            if content:
-                title = content
-            else:
-                title = SIMPLENOTE_DEFAULT_NOTE_TITLE
+            title = content or SIMPLENOTE_DEFAULT_NOTE_TITLE
         return title
 
     @property
