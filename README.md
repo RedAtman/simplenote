@@ -86,7 +86,8 @@ You need to set up your Simplenote credentials before using the plugin. You can 
 | Create Note         | ["super+shift+s", "super+shift+c"] | ["super+shift+s", "super+shift+c"] | ["super+shift+s", "super+shift+c"] |
 | Delete Current Note | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] |
 
-![Alt Key Map](asssets/images/keymap.png "keymap files")
+You can customize it: Sublime Text > Settings > Package Control > Simplenote > Key Bindings
+![Alt Key Bindings](asssets/images/keybindings.png "Keybindings files")
 
 ## Overview
 
