@@ -20,14 +20,14 @@ __all__ = [
 ]
 
 SIMPLENOTE_PACKAGE_DIR = sublime.packages_path()
-SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
+SIMPLENOTE_SETTINGS_FILE = "Default.sublime-settings"
 SIMPLENOTE_BASE_DIR = os.path.join(SIMPLENOTE_PACKAGE_DIR, "Simplenote")
 
 
 # def init_settings(reload_if_needed: Optional(Callable) = None):
 #     global SETTINGS
 #     if SETTINGS is None:
-#         SETTINGS = sublime.load_settings("simplenote.sublime-settings")
+#         SETTINGS = sublime.load_settings("SIMPLENOTE_SETTINGS_FILE")
 #         # logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
 #         # logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
 #     if reload_if_needed:

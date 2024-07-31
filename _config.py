@@ -53,7 +53,7 @@ class _BaseConfig:
     SIMPLENOTE_BUCKET: str = os.getenv("SIMPLENOTE_BUCKET", "note")
     SIMPLENOTE_USERNAME: str = os.getenv("SIMPLENOTE_USERNAME", "")
     SIMPLENOTE_PASSWORD: str = os.getenv("SIMPLENOTE_PASSWORD", "")
-    SIMPLENOTE_SETTINGS_FILE: str = "simplenote.sublime-settings"
+    SIMPLENOTE_SETTINGS_FILE: str = "Default.sublime-settings"
     SIMPLENOTE_TOKEN_FILE: str = os.getenv("SIMPLENOTE_TOKEN_FILE", "simplenote_token.pkl")
     SIMPLENOTE_STARTED: bool = False
     SIMPLENOTE_RELOAD_CALLS: int = -1

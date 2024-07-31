@@ -14,7 +14,6 @@ from .utils.patterns.singleton.base import Singleton
 
 
 __all__: List[str] = [
-    "SIMPLENOTE_SETTINGS_FILE",
     "Local",
     "load_notes",
     "clear_orphaned_filepaths",
@@ -30,7 +29,6 @@ SIMPLENOTE_PROJECT_NAME = "Simplenote"
 SIMPLENOTE_CACHE_DIR = os.path.join(sublime.cache_path(), SIMPLENOTE_PROJECT_NAME)
 os.makedirs(SIMPLENOTE_CACHE_DIR, exist_ok=True)
 SIMPLENOTE_NOTE_CACHE_FILE = os.path.join(SIMPLENOTE_CACHE_DIR, "note_cache.pkl")
-SIMPLENOTE_SETTINGS_FILE = "simplenote.sublime-settings"
 
 
 class _BaseManager(Singleton):
