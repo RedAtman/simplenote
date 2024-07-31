@@ -5,8 +5,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import sublime
 
-from ._config import CONFIG
-from .gui import _show_message, open_view, remove_status
+from .gui import _show_message, edit_settings, remove_status
 from .models import Note
 from .utils.patterns.singleton.base import Singleton
 
@@ -53,6 +52,10 @@ class Operation(Thread):
                 self.exception_callback(self.result)
             else:
                 logger.debug(str(self.result))
+        if isinstance(self.result, Exception):
+            logger.exception(self.result)
+            sublime.message_dialog(str(self.result))
+            edit_settings()
 
 
 class NotesIndicator(Operation):
@@ -66,9 +69,6 @@ class NotesIndicator(Operation):
             result: List[Note] = Note.index(limit=self.sync_note_number, data=True)
             self.result = result
         except Exception as err:
-            logger.exception(err)
-            sublime.message_dialog(str(err))
-            open_view(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
             self.result = err
 
 
@@ -80,9 +80,6 @@ class NoteCreator(Operation):
             note.create()
             self.result = note
         except Exception as err:
-            logger.exception(err)
-            sublime.message_dialog(str(err))
-            open_view(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
             self.result = err
 
 
@@ -98,9 +95,6 @@ class NoteUpdater(Operation):
             note: Note = self.note.modify()
             self.result = note
         except Exception as err:
-            logger.exception(err)
-            sublime.message_dialog(str(err))
-            open_view(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
             self.result = err
 
 
@@ -115,9 +109,6 @@ class NoteDeleter(Operation):
             self.note.trash()
             self.result = self.note
         except Exception as err:
-            logger.exception(err)
-            sublime.message_dialog(str(err))
-            open_view(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
             self.result = err
 
 
