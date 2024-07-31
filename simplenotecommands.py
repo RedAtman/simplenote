@@ -7,7 +7,7 @@ import sublime
 import sublime_plugin
 
 from ._config import CONFIG
-from .gui import close_view, open_view, remove_status, show_message
+from .gui import close_view, edit_settings, open_view, remove_status, show_message
 from .models import Note
 from .operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 from .simplenote import clear_orphaned_filepaths, on_note_changed
@@ -248,7 +248,6 @@ def start():
     global SIMPLENOTE_STARTED
 
     settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
-    logger.info(("SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
     username = settings.get("username")
     password = settings.get("password")
 
@@ -256,11 +255,8 @@ def start():
         sync()
         SIMPLENOTE_STARTED = True
     else:
-        sublime.active_window().open_file(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
-        show_message(
-            "Simplenote: Please configure username/password, Please check settings file: %s"
-            % CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
-        )
+        edit_settings()
+        show_message("Simplenote: Please configure username/password, Please check settings file.")
         sublime.set_timeout(remove_status, 2000)
         SIMPLENOTE_STARTED = False
     return SIMPLENOTE_STARTED
