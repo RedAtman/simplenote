@@ -7,6 +7,7 @@ import sublime
 import sublime_plugin
 
 from ._config import CONFIG
+from .lib.core import start
 from .lib.gui import clear_orphaned_filepaths, close_view, on_note_changed, open_view, show_message
 from .lib.models import Note
 from .lib.operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
