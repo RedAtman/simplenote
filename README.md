@@ -95,17 +95,17 @@ You need to set up your Simplenote credentials before using the plugin. You can 
 | Delete Current Note | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] | ["super+shift+s", "super+shift+d"] |
 
 You can customize it: Sublime Text > Settings > Package Control > Simplenote > Key Bindings
-![Alt Key Bindings](asssets/images/keybindings.png "Keybindings files")
+![Alt Key Bindings](assets/images/keybindings.png "Keybindings files")
 
 ## Overview
 
 ---------
 Hit Command+Shift+S (OSX) and then Command+Shift+L (OSX) or Windows+Shift+S (Windows) and then Windows+Shift+L (Windows) to start. First time it will open the settings to setup the credentials.
 After setting them it will download the notes.
-![Alt Settings](asssets/images/settings.png "Settings files")
+![Alt Settings](assets/images/settings.png "Settings files")
 
 Hit the shortcut again after the download is done (check the message bar) and it will **show a list of the notes**:
-![Alt Notes](asssets/images/note_list.png "Note List")
+![Alt Notes](assets/images/note_list.png "Note List")
 
 It will download notes every time sublime text is launched and every now and then if the _sync_every_ configuration is enabled (has a positive value), so take a look at the bar to check the status.
 
@@ -121,13 +121,13 @@ You can **create a note** with Command+Shift+S and then Command+Shift+C (OSX) or
 ![Alt Sublime New Note on List](http://i.imgur.com/vH5POCU.png "Sublime New Note on List")
 
 > Markdown syntax support: If your note begins with "# ", it will automatically be marked as markdown format and displayed accordingly.
-![Alt Sublime Note displayed in markdown format](asssets/images/note_markdown.png "Sublime New Note on List")
+![Alt Sublime Note displayed in markdown format](assets/images/note_markdown.png "Sublime New Note on List")
 
 You can **delete notes** with Command+Shift+S and then Command+Shift+D (OSX) or Windows+Shift+S and then Windows+Shift+D (Windows) while seeing the note
 ![Alt Sublime Delete Note](http://i.imgur.com/3htEmBm.png "Sublime Delete Note")
 
 All those commands are also accesible from the command palette:
-![Alt Command Palette](asssets/images/command_palette.png "Command Palette")
+![Alt Command Palette](assets/images/command_palette.png "Command Palette")
 
 ## Conflict Resolution
 
