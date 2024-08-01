@@ -1,4 +1,5 @@
 .DS_Store
+package-metadata.json
 sublime_api.py
 # *.sublime-settings
 *.sublime-settings.example
@@ -28,7 +29,7 @@ build/
 develop-eggs/
 dist/
 eggs/
-lib/
+# lib/
 lib64/
 parts/
 sdist/
