@@ -9,12 +9,12 @@ from .operations import OperationManager
 
 logger = logging.getLogger()
 SIMPLENOTE_STARTED = False
+manager = OperationManager()
 
 
-def sync():
-    manager = OperationManager()
+def sync(first_sync: bool = False):
     if not manager.running:
-        sublime.run_command("simplenote_sync")
+        sublime.run_command("simplenote_sync", {"first_sync": first_sync})
     else:
         logger.debug("Sync omitted")
 
@@ -36,11 +36,11 @@ def start():
     password = settings.get("password")
 
     if username and password:
-        sync()
+        sync(first_sync=True)
         SIMPLENOTE_STARTED = True
     else:
         edit_settings()
-        show_message("Simplenote: Please configure username/password, Please check settings file.")
+        show_message("Simplenote: Please configure username/password in settings file.")
         sublime.set_timeout(remove_status, 2000)
         SIMPLENOTE_STARTED = False
     return SIMPLENOTE_STARTED

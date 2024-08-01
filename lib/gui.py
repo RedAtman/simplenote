@@ -21,6 +21,7 @@ __all__ = [
     "close_view",
     "clear_orphaned_filepaths",
     "on_note_changed",
+    "show_quick_panel",
 ]
 
 
@@ -121,3 +122,53 @@ def on_note_changed(note: Note):
             old_window.focus_view(old_active_view)
 
     sublime.set_timeout(partial(new_view.run_command, "revert"), 0)
+
+
+def on_select(list__modificationDate: List[float], selected_index: int):
+    if selected_index == -1:
+        return
+    note_id = list__modificationDate[selected_index]
+    selected_note = Note.tree.find(note_id)
+    if not isinstance(selected_note, Note):
+        show_message("Note not found: note id(%s), Please restart simplenote or sublime text." % note_id)
+        return
+    filepath = selected_note.open()
+    selected_note.flush()
+    view = open_view(filepath)
+
+
+def show_quick_panel(first_sync: bool = False):
+    logger.warning("show_quick_panel")
+    if Note.tree.count <= 0:
+        show_message(
+            "No notes found. Please wait for the synchronization to complete, or press [super+shift+s, super+shift+c] to create a note."
+        )
+    list__modificationDate: List[float] = []
+    list__title: List[str] = []
+    list__filename: List[str] = []
+    for note in Note.tree.iter(reverse=True):
+        if not isinstance(note, Note):
+            raise Exception("note is not a Note: %s" % type(note))
+        if note.d.deleted == True:
+            continue
+        list__modificationDate.append(note.d.modificationDate)
+        list__title.append(note.title)
+        list__filename.append(note.filename)
+
+    # TODO: Maybe doesn't need to run every time
+    clear_orphaned_filepaths(list__filename)
+
+    placeholder = "Select Note press key 'enter' to open"
+    if first_sync:
+        placeholder = "Sync complete. Press [super+shift+s] [super+shift+l] to display the note list again."
+
+    def show_panel():
+        sublime.active_window().show_quick_panel(
+            list__title,
+            partial(on_select, list__modificationDate),
+            flags=sublime.MONOSPACE_FONT,
+            # on_highlight=self.on_select,
+            placeholder=placeholder,
+        )
+
+    sublime.set_timeout(show_panel, 500)
