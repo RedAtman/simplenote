@@ -55,19 +55,25 @@ The "Packages" directory is located at:
 * OS X:
 
 ```bash
-~/Library/Application Support/Sublime Text/Packages
+~/Library/Application Support/Sublime Text/Packages/
+# or
+~/Library/Application Support/Sublime Text/Installed Packages/
 ```
 
 * Linux:
 
 ```bash
 ~/.config/sublime-text/Packages/
+# or
+~/.config/sublime-text/Installed Packages/
 ```
 
 * Windows:
 
 ```bash
 %APPDATA%/Sublime Text/Packages/
+# or
+%APPDATA%/Sublime Text/Installed Packages/
 ```
 
 ## Configuration
