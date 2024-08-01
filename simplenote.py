@@ -1,25 +1,20 @@
 from datetime import datetime
-from functools import partial
 import logging
-import os
 import pickle
 from typing import Any, Dict, List
 
-# https://www.sublimetext.com/docs/api_reference.html
-import sublime
-
 from ._config import CONFIG
-from .gui import close_view, open_view
 from .models import Note
 from .utils.patterns.singleton.base import Singleton
+
+
+# https://www.sublimetext.com/docs/api_reference.html
 
 
 __all__: List[str] = [
     "Local",
     "load_notes",
-    "clear_orphaned_filepaths",
     "sort_notes",
-    "on_note_changed",
 ]
 
 
@@ -92,14 +87,6 @@ def load_notes():
             logger.debug((f"Created new objects cache file: {CONFIG.SIMPLENOTE_NOTE_CACHE_FILE_PATH}"))
 
 
-def clear_orphaned_filepaths(list__filename: List[str] = []):
-    if not list__filename:
-        list__filename = [note.filename for note in Note.mapper_id_note.values()]
-    for filename in os.listdir(CONFIG.SIMPLENOTE_NOTES_DIR):
-        if filename not in list__filename:
-            os.remove(os.path.join(CONFIG.SIMPLENOTE_NOTES_DIR, filename))
-
-
 def sort_notes(a_note: Note, b_note: Note):
     if "pinned" in a_note.d.systemTags:
         return 1
@@ -109,37 +96,3 @@ def sort_notes(a_note: Note, b_note: Note):
         date_a = datetime.fromtimestamp(float(a_note.d.modificationDate))
         date_b = datetime.fromtimestamp(float(b_note.d.modificationDate))
         return (date_a > date_b) - (date_a < date_b)
-
-
-def on_note_changed(note: Note):
-    old_window = sublime.active_window()
-    old_view = old_window.find_open_file(note._filepath)
-    # if note is not open in the current window
-    if not isinstance(old_view, sublime.View):
-        note.flush()
-        return
-
-    if note._filepath == note.filepath:
-        note.flush()
-        note.open()
-        return
-
-    note._close(note._filepath)
-    note.flush()
-    close_view(old_view)
-    note.open()
-    new_view = open_view(note.filepath, old_view)
-
-    # TODO: maybe not needed, or needed to be tested
-    old_active_view = old_window.active_view()
-    assert isinstance(old_active_view, sublime.View), "old_active_view is not a sublime.View"
-    if isinstance(old_active_view, sublime.View):
-        # old_window.focus_view(old_active_view)
-        if old_view.id() == old_active_view.id():
-            old_note_window = [window for window in sublime.windows() if window.id() == old_window.id()]
-            if old_note_window:
-                old_note_window[0].focus_view(new_view)
-        else:
-            old_window.focus_view(old_active_view)
-
-    sublime.set_timeout(partial(new_view.run_command, "revert"), 0)

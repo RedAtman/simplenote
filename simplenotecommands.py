@@ -7,10 +7,9 @@ import sublime
 import sublime_plugin
 
 from ._config import CONFIG
-from .gui import close_view, open_view, show_message
+from .gui import clear_orphaned_filepaths, close_view, on_note_changed, open_view, show_message
 from .models import Note
 from .operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
-from .simplenote import clear_orphaned_filepaths, on_note_changed
 
 
 __all__ = [
