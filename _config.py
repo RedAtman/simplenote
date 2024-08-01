@@ -60,7 +60,7 @@ class _BaseConfig:
 
     SIMPLENOTE_INSTALLED_PACKAGE_DIR = os.path.join(installed_packages_path(), SIMPLENOTE_PROJECT_NAME)
     SIMPLENOTE_PACKAGE_DIR = os.path.join(packages_path(), SIMPLENOTE_PROJECT_NAME)
-    os.makedirs(SIMPLENOTE_PACKAGE_DIR, exist_ok=True)
+    # os.makedirs(SIMPLENOTE_PACKAGE_DIR, exist_ok=True)
 
     SUBLIME_USER_DIR = os.path.join(packages_path(), "User")
     SIMPLENOTE_SETTINGS_FILE_PATH = SIMPLENOTE_SETTINGS_FILE
