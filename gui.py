@@ -33,6 +33,8 @@ def edit_settings():
         settings_file = package_settings_file
     else:
         settings_file = CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
+
+    logger.warning(("CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
     logger.warning(settings_file)
     # sublime.run_command("open_file", {"file": CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH})
     sublime.run_command(
