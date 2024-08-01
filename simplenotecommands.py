@@ -39,6 +39,7 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
 
     @cached_property
     def autosave_debounce_time(self) -> int:
+        logger.warning(("CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
         settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         _autosave_debounce_time = settings.get("autosave_debounce_time", 1)
         if not isinstance(_autosave_debounce_time, int):
@@ -246,8 +247,8 @@ def sync():
 
 def start():
     global SIMPLENOTE_STARTED
-
-    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+    logger.warning(("CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
+    settings = sublime.load_settings("Simplenote.sublime-settings")
     username = settings.get("username")
     password = settings.get("password")
 
@@ -271,7 +272,8 @@ def reload_if_needed():
         logger.debug("Simplenote Reload call %s" % SIMPLENOTE_RELOAD_CALLS)
         return
 
-    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+    logger.warning(("CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
+    settings = sublime.load_settings("Simplenote.sublime-settings")
     autostart = settings.get("autostart")
     if bool(autostart):
         autostart = True
@@ -285,7 +287,8 @@ def plugin_loaded():
     # load_notes()
     logger.debug(("Loaded notes number: ", Note.tree.count))
 
-    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+    logger.warning(("CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
+    settings = sublime.load_settings("Simplenote.sublime-settings")
     # logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
     # logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
     settings.clear_on_change("username")

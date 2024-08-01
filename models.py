@@ -141,6 +141,7 @@ class Note:
 
     @class_property
     def API(cls) -> Simplenote:
+        logger.warning(("CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
         settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         username = settings.get("username")
         password = settings.get("password")
