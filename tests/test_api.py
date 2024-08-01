@@ -4,7 +4,7 @@ from typing import Any
 from unittest import TestCase, main
 
 from _config import CONFIG
-from api import Simplenote
+from lib.api import Simplenote
 
 
 logger = logging.getLogger()

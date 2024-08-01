@@ -4,8 +4,8 @@ import pickle
 from typing import Any, Dict, List
 
 from .._config import CONFIG
-from .models import Note
 from ..utils.patterns.singleton.base import Singleton
+from .models import Note
 
 
 # https://www.sublimetext.com/docs/api_reference.html
