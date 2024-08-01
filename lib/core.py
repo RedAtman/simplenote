@@ -31,7 +31,6 @@ def sync():
 
 def start():
     global SIMPLENOTE_STARTED
-    logger.warning(("CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
     settings = sublime.load_settings("Simplenote.sublime-settings")
     username = settings.get("username")
     password = settings.get("password")
