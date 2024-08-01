@@ -10,10 +10,10 @@ from uuid import uuid4
 
 import sublime
 
-from ._config import CONFIG
+from .._config import CONFIG
+from ..utils.decorator import class_property
+from ..utils.tree.redblacktree import rbtree as RedBlackTree
 from .api import Simplenote
-from .utils.decorator import class_property
-from .utils.tree.redblacktree import rbtree as RedBlackTree
 
 
 # from typing_extensions import Unpack
@@ -141,7 +141,6 @@ class Note:
 
     @class_property
     def API(cls) -> Simplenote:
-        logger.warning(("CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
         settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         username = settings.get("username")
         password = settings.get("password")

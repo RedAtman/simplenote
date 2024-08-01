@@ -36,3 +36,7 @@ test/* export-ignore
 
 # Exclude github files from the package
 .github/ export-ignore
+.gitignore export-ignore
+
+# Exclude project files from the package
+pyproject.toml export-ignore

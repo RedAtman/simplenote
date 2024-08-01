@@ -3,7 +3,7 @@ import logging
 from typing import Any
 from unittest import TestCase, main
 
-from models import Note, _Note
+from lib.models import Note, _Note
 
 
 import_module("utils.logger.init")

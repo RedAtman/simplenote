@@ -7,10 +7,10 @@ import sublime
 import sublime_plugin
 
 from ._config import CONFIG
-from .gui import close_view, open_view, show_message
-from .models import Note
-from .operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
-from .simplenote import clear_orphaned_filepaths, on_note_changed
+from .lib.core import start
+from .lib.gui import clear_orphaned_filepaths, close_view, on_note_changed, open_view, show_message
+from .lib.models import Note
+from .lib.operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 
 
 __all__ = [
@@ -25,7 +25,6 @@ __all__ = [
 logger = logging.getLogger()
 
 
-SIMPLENOTE_RELOAD_CALLS = -1
 SIMPLENOTE_STARTED = False
 
 
