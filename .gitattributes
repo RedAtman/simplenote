@@ -33,3 +33,6 @@ test/* export-ignore
 # Exclude Sublime Text project and workspace files from the package
 *.sublime-project export-ignore
 *.sublime-workspace export-ignore
+
+# Exclude github files from the package
+.github/ export-ignore
