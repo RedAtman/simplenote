@@ -10,10 +10,10 @@ from uuid import uuid4
 
 import sublime
 
-from ._config import CONFIG
+from .._config import CONFIG
 from .api import Simplenote
-from .utils.decorator import class_property
-from .utils.tree.redblacktree import rbtree as RedBlackTree
+from ..utils.decorator import class_property
+from ..utils.tree.redblacktree import rbtree as RedBlackTree
 
 
 # from typing_extensions import Unpack

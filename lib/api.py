@@ -11,9 +11,9 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 from uuid import uuid4
 
-from ._config import CONFIG
-from .utils.patterns.singleton.base import Singleton
-from .utils.request import Response, request
+from .._config import CONFIG
+from ..utils.patterns.singleton.base import Singleton
+from ..utils.request import Response, request
 
 
 logger = logging.getLogger()

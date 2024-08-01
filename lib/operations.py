@@ -7,7 +7,7 @@ import sublime
 
 from .gui import _show_message, edit_settings, remove_status
 from .models import Note
-from .utils.patterns.singleton.base import Singleton
+from ..utils.patterns.singleton.base import Singleton
 
 
 __all__ = [

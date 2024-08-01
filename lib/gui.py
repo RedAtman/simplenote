@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import sublime
 
-from ._config import CONFIG
+from .._config import CONFIG
 from .models import Note
 
 
