@@ -133,8 +133,8 @@ class _BaseConfig:
     SIMPLENOTE_NOTES_DIR = os.path.join(SIMPLENOTE_CACHE_DIR, "notes")
     os.makedirs(SIMPLENOTE_NOTES_DIR, exist_ok=True)
 
-    # SIMPLENOTE_STARTED: bool = False
-    # SIMPLENOTE_RELOAD_CALLS: int = -1
+    SIMPLENOTE_STARTED_KEY: str = "simplenote_started"
+    SIMPLENOTE_SYNC_TIMES_KEY: str = "simplenote_sync_times"
 
 
 class Development(_BaseConfig):

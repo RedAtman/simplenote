@@ -3,13 +3,19 @@ import logging
 
 import sublime
 
-from .lib.core import start, sync
+from ._config import CONFIG
+from .lib.core import GlobalStorage, start, sync
 from .lib.models import Note
 
 
 logger = logging.getLogger()
 
 SIMPLENOTE_RELOAD_CALLS = -1
+
+
+global_storage = GlobalStorage()
+global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, False)
+global_storage.optimistic_update(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, 0)
 
 
 def reload_if_needed(autostart: bool = True):
