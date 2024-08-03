@@ -52,10 +52,12 @@ def sync(sync_interval: int = 30):
 
 
 def start():
+    global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, False)
+    global_storage.optimistic_update(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, 0)
+
     settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
     username = settings.get("username")
     password = settings.get("password")
-
     if username and password:
         if global_storage.get(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY) != 0:
             return
@@ -65,8 +67,10 @@ def start():
             return
         if sync_interval <= 0:
             return
+        logger.debug(("Loaded notes number: ", Note.tree.count))
         sync(sync_interval)
         return
+
     show_message("Simplenote: Please configure username/password in settings file.")
     edit_settings()
     sublime.set_timeout(remove_status, 2000)
