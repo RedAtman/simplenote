@@ -40,7 +40,7 @@ _SETTINGS_TEMPLATE = """
     // Sync when sublime text starts:
     ,"autostart": true
     // Sync automatically (in seconds)
-    ,"sync_every": 30
+    ,"sync_interval": 30
     // Number of notes synchronized each time
     ,"sync_note_number": 1000
     // Conflict resolution (If a file was edited on another client and also here, on sync..)

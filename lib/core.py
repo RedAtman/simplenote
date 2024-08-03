@@ -39,9 +39,9 @@ def sync_once():
         logger.debug("Sync omitted")
 
 
-def sync(sync_every: int = 30):
+def sync(sync_interval: int = 30):
     sync_once()
-    sublime.set_timeout(sync, sync_every * 1000)
+    sublime.set_timeout(sync, sync_interval * 1000)
 
 
 def start():
@@ -52,13 +52,13 @@ def start():
     if username and password:
         if global_storage.get(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY) != 0:
             return
-        sync_every = settings.get("sync_every", 0)
-        if not isinstance(sync_every, int):
-            show_message("`sync_every` must be an integer. Please check settings file.")
+        sync_interval = settings.get("sync_interval", 30)
+        if not isinstance(sync_interval, int):
+            show_message("`sync_interval` must be an integer. Please check settings file.")
             return
-        if sync_every <= 0:
+        if sync_interval <= 0:
             return
-        sync(sync_every)
+        sync(sync_interval)
         return
     show_message("Simplenote: Please configure username/password in settings file.")
     edit_settings()

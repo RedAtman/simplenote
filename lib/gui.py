@@ -138,7 +138,6 @@ def on_select(list__modificationDate: List[float], selected_index: int):
 
 
 def show_quick_panel(first_sync: bool = False):
-    logger.warning("show_quick_panel")
     if Note.tree.count <= 0:
         show_message(
             "No notes found. Please wait for the synchronization to complete, or press [super+shift+s, super+shift+c] to create a note."
