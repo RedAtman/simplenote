@@ -20,40 +20,45 @@ class GlobalStorage(Singleton, OptimisticLockingDict):
         if not _type is None:
             if not isinstance(new_value, _type):
                 raise TypeError("Value of %s must be type %s, got %s" % (key, _type, type(new_value)))
-        super().optimistic_update(key, new_value)
+
+        if key == CONFIG.SIMPLENOTE_SYNC_TIMES_KEY:
+            import time
+
+            logger.warning((time.time(), key, new_value))
+        return super().optimistic_update(key, new_value)
 
 
 manager = OperationManager()
+global_storage = GlobalStorage()
 
 
-def sync(first_sync: bool = False):
-
-    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
-    sync_note_number = settings.get("sync_note_number", 1000)
-    if not isinstance(sync_note_number, int):
-        show_message("`sync_note_number` must be an integer. Please check settings file.")
-        return
+def sync_once():
     if not manager.running:
-        sublime.run_command("simplenote_sync", {"first_sync": first_sync, "sync_note_number": sync_note_number})
+        sublime.run_command("simplenote_sync")
     else:
         logger.debug("Sync omitted")
 
-    sync_every = settings.get("sync_every", 0)
-    if not isinstance(sync_every, int):
-        show_message("`sync_every` must be an integer. Please check settings file.")
-        return
 
-    if sync_every > 0:
-        sublime.set_timeout(sync, sync_every * 1000)
+def sync(sync_every: int = 30):
+    sync_once()
+    sublime.set_timeout(sync, sync_every * 1000)
 
 
 def start():
-    settings = sublime.load_settings("Simplenote.sublime-settings")
+    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
     username = settings.get("username")
     password = settings.get("password")
 
     if username and password:
-        sync(first_sync=True)
+        if global_storage.get(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY) != 0:
+            return
+        sync_every = settings.get("sync_every", 0)
+        if not isinstance(sync_every, int):
+            show_message("`sync_every` must be an integer. Please check settings file.")
+            return
+        if sync_every <= 0:
+            return
+        sync(sync_every)
         return
     show_message("Simplenote: Please configure username/password in settings file.")
     edit_settings()

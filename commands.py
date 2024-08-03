@@ -7,7 +7,7 @@ import sublime
 import sublime_plugin
 
 from ._config import CONFIG
-from .lib.core import GlobalStorage, sync
+from .lib.core import GlobalStorage, sync_once
 from .lib.gui import close_view, on_note_changed, open_view, show_message, show_quick_panel
 from .lib.models import Note
 from .lib.operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
@@ -123,17 +123,10 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
 class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
 
     def run(self):
-        sync_times = global_storage.get(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY)
-        if not isinstance(sync_times, int):
-            raise TypeError(
-                "Value of %s must be type %s, got %s" % (CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, int, type(sync_times))
-            )
-        first_sync = sync_times == 0
         if Note.tree.count:
             show_quick_panel()
-            first_sync = False
         if not global_storage.get(CONFIG.SIMPLENOTE_STARTED_KEY):
-            sync(first_sync)
+            sync_once()
 
 
 class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
@@ -143,25 +136,32 @@ class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
             if note.need_flush:
                 on_note_changed(note)
 
-    def callback(self, updated_notes: List[Note], first_sync: bool = False):
+    def callback(self, updated_notes: List[Note]):
         self.merge_note(updated_notes)
-        if first_sync:
-            show_quick_panel(first_sync)
-        global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, False)
 
-    def run(self, first_sync: bool = False, sync_note_number: int = 1000):
-        if global_storage.get(CONFIG.SIMPLENOTE_STARTED_KEY):
-            return
-        global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, True)
         sync_times = global_storage.get(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY)
         if not isinstance(sync_times, int):
             raise TypeError(
                 "Value of %s must be type %s, got %s" % (CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, int, type(sync_times))
             )
-        sync_times += 1
-        sync_times = global_storage.optimistic_update(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, sync_times)
+        first_sync = sync_times == 0
+        if first_sync:
+            show_quick_panel(first_sync)
+        global_storage.optimistic_update(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, sync_times + 1)
+        global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, False)
+
+    def run(self):
+        if global_storage.get(CONFIG.SIMPLENOTE_STARTED_KEY):
+            return
+        global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, True)
+
+        settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+        sync_note_number = settings.get("sync_note_number", 1000)
+        if not isinstance(sync_note_number, int):
+            show_message("`sync_note_number` must be an integer. Please check settings file.")
+            return
         note_indicator = NotesIndicator(sync_note_number=sync_note_number)
-        note_indicator.set_callback(self.callback, {"first_sync": first_sync})
+        note_indicator.set_callback(self.callback)
         OperationManager().add_operation(note_indicator)
 
 
