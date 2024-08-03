@@ -1,3 +1,4 @@
+from datetime import datetime
 from functools import partial
 import logging
 import os
@@ -162,13 +163,13 @@ def on_note_changed(note: Note):
     sublime.set_timeout(partial(new_view.run_command, "revert"), 0)
 
 
-def on_select(list__modificationDate: List[float], selected_index: int):
+def on_select(list__item: List[float], selected_index: int, *args, **kwargs):
     if selected_index == -1:
         return
-    note_id = list__modificationDate[selected_index]
-    selected_note = Note.tree.find(note_id)
+    selected_item = list__item[selected_index]
+    selected_note = getattr(selected_item, "note", None)
     if not isinstance(selected_note, Note):
-        show_message("Note not found: note id(%s), Please restart simplenote or sublime text." % note_id)
+        show_message("Note not found: note id(%s), Please restart simplenote or sublime text." % selected_index)
         return
     filepath = selected_note.open()
     selected_note.flush()
@@ -191,6 +192,15 @@ class QuickPanelPlaceholder(str, Enum):
     FIRST_SYNC = "Sync complete. Press [super+shift+s] [super+shift+l] to display the note list again."
 
 
+class QuickPanelItem(sublime.QuickPanelItem):
+    def __init__(self, note: Note, trigger, details="", annotation="", kind=sublime.KIND_AMBIGUOUS):
+        super().__init__(trigger, details, annotation, kind)
+        self.note = note
+
+    def __repr__(self):
+        return "QuickPanelItem(%s)" % self.trigger
+
+
 def show_quick_panel(first_sync: bool = False):
     if Note.tree.count <= 0:
         show_message(
@@ -198,17 +208,24 @@ def show_quick_panel(first_sync: bool = False):
         )
         return
 
-    list__modificationDate: List[float] = []
-    list__title: List[str] = []
     list__filename: List[str] = []
+    list__item = []
     for note in Note.tree.iter(reverse=True):
         if not isinstance(note, Note):
             raise Exception("note is not a Note: %s" % type(note))
         if note.d.deleted:
             continue
-        list__modificationDate.append(note.d.modificationDate)
-        list__title.append(note.title)
-        list__filename.append(note.filename)
+        item = QuickPanelItem(
+            note,
+            note.title,
+            [
+                note.body,
+                # f"tags: {note.d.tags}",
+            ],  # type: ignore
+            f"version:{note.v} | update:{datetime.fromtimestamp(note.d.modificationDate).strftime('%Y-%m-%d %H:%M:%S')}",
+            kind=(sublime.KIND_ID_SNIPPET, "", ""),
+        )
+        list__item.append(item)
 
     placeholder = QuickPanelPlaceholder.DEFAULT
     if first_sync:
@@ -218,9 +235,9 @@ def show_quick_panel(first_sync: bool = False):
 
     def show_panel():
         sublime.active_window().show_quick_panel(
-            list__title,
-            partial(on_select, list__modificationDate),
-            flags=sublime.MONOSPACE_FONT,
+            list__item,
+            partial(on_select, list__item),
+            flags=sublime.MONOSPACE_FONT | sublime.KEEP_OPEN_ON_FOCUS_LOST | sublime.WANT_EVENT,
             # on_highlight=self.on_select,
             placeholder=placeholder,
         )

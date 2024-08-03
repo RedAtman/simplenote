@@ -16,6 +16,12 @@ Sublime Text 3 & 4 plugin of Simplenote, Use Sublime Text as a Simplenote client
 * Forked from [quick_simplenote](https://github.com/sickmartian/quick_simplenote)
 * UPDATES:
     * Sublime Text 3 & 4 compatibility: Adapt to latest version of Sublime Text's default Python interpreter(Python 3.8)
+    * Beautify the note list style:
+        * Introduce QuickPanelItem for improved note representation
+        * Enhance the quick panel to display notes with richer information, including:
+            - Note body snippet
+            - Version and update timestamp
+            - Tags (to be implemented in the future)
     * Bug fixes
 
 Planned features:
