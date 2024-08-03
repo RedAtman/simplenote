@@ -2,6 +2,7 @@ from importlib import import_module
 import logging
 from unittest import TestCase
 
+from _config import CONFIG
 from utils.tools import Json2Obj as Settings
 
 
@@ -11,7 +12,7 @@ logger = logging.getLogger()
 
 class TestSettings(TestCase):
     def test_settings(self):
-        settings = Settings("simplenote.sublime-settings")
+        settings = Settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         logger.info(settings)
         logger.info(settings.username)
         logger.info(settings.get("username"))
