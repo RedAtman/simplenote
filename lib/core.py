@@ -1,6 +1,7 @@
 from functools import partial
 import logging
 import os
+from threading import Thread
 from typing import List, Optional
 
 import sublime
@@ -23,8 +24,8 @@ __all__ = [
     "get_view_window",
     "open_view",
     "close_view",
-    "clear_orphaned_filepaths",
     "on_note_changed",
+    "clear_orphaned_filepaths",
     "QuickPanelPlaceholder",
     "show_quick_panel",
 ]
@@ -133,14 +134,6 @@ def close_view(view: sublime.View):
     window.run_command("close_file")
 
 
-def clear_orphaned_filepaths(list__filename: List[str] = []):
-    if not list__filename:
-        list__filename = [note.filename for note in Note.mapper_id_note.values()]
-    for filename in os.listdir(CONFIG.SIMPLENOTE_NOTES_DIR):
-        if filename not in list__filename:
-            os.remove(os.path.join(CONFIG.SIMPLENOTE_NOTES_DIR, filename))
-
-
 def on_note_changed(note: Note):
     old_window = sublime.active_window()
     old_view = old_window.find_open_file(note._filepath)
@@ -188,6 +181,14 @@ def on_select(list__modificationDate: List[float], selected_index: int):
     view = open_view(filepath)
 
 
+def clear_orphaned_filepaths(list__filename: List[str] = []):
+    if not list__filename:
+        list__filename = [note.filename for note in Note.mapper_id_note.values()]
+    for filename in os.listdir(CONFIG.SIMPLENOTE_NOTES_DIR):
+        if filename not in list__filename:
+            os.remove(os.path.join(CONFIG.SIMPLENOTE_NOTES_DIR, filename))
+
+
 from enum import Enum
 
 
@@ -196,11 +197,14 @@ class QuickPanelPlaceholder(str, Enum):
     FIRST_SYNC = "Sync complete. Press [super+shift+s] [super+shift+l] to display the note list again."
 
 
-def show_quick_panel(placeholder: str = QuickPanelPlaceholder.DEFAULT):
+def show_quick_panel(first_sync: bool = False):
+    logger.warning(("show_quick_panel", first_sync))
     if Note.tree.count <= 0:
         show_message(
             "No notes found. Please wait for the synchronization to complete, or press [super+shift+s, super+shift+c] to create a note."
         )
+        return
+
     list__modificationDate: List[float] = []
     list__title: List[str] = []
     list__filename: List[str] = []
@@ -213,8 +217,11 @@ def show_quick_panel(placeholder: str = QuickPanelPlaceholder.DEFAULT):
         list__title.append(note.title)
         list__filename.append(note.filename)
 
-    # TODO: Maybe doesn't need to run every time
-    clear_orphaned_filepaths(list__filename)
+    placeholder = QuickPanelPlaceholder.DEFAULT
+    if first_sync:
+        task = Thread(target=clear_orphaned_filepaths, args=(list__filename,))
+        task.start()
+        placeholder = QuickPanelPlaceholder.FIRST_SYNC
 
     def show_panel():
         sublime.active_window().show_quick_panel(
