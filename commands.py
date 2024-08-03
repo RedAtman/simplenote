@@ -7,8 +7,15 @@ import sublime
 import sublime_plugin
 
 from ._config import CONFIG
-from .lib.core import GlobalStorage, sync_once
-from .lib.gui import QuickPanelPlaceholder, close_view, on_note_changed, open_view, show_message, show_quick_panel
+from .lib.core import (
+    GlobalStorage,
+    QuickPanelPlaceholder,
+    close_view,
+    on_note_changed,
+    open_view,
+    show_message,
+    show_quick_panel,
+)
 from .lib.models import Note
 from .lib.operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, Operator
 
@@ -126,7 +133,7 @@ class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
         if Note.tree.count:
             show_quick_panel()
         if not global_storage.get(CONFIG.SIMPLENOTE_STARTED_KEY):
-            sync_once()
+            sublime.run_command("simplenote_sync")
 
 
 class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
@@ -151,6 +158,8 @@ class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
         global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, False)
 
     def run(self):
+        if operator.running:
+            return
         if global_storage.get(CONFIG.SIMPLENOTE_STARTED_KEY):
             return
         global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, True)
