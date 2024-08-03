@@ -4,14 +4,12 @@ __date__ = "2024-08-03"
 # TODO: ResultProcess unable to collect results yet
 
 
-from importlib import import_module
 import logging
 from multiprocessing import Process
 from threading import Thread
 from typing import Callable
 
 
-import_module("utils.logger.init")
 logger = logging.getLogger()
 
 
@@ -177,5 +175,7 @@ def run_tests():
 
 
 if __name__ == "__main__":
+    from importlib import import_module
 
+    import_module("utils.logger.init")
     run_tests()
