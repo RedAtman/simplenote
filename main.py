@@ -3,8 +3,7 @@ import logging
 import sublime
 
 from ._config import CONFIG
-from .lib.core import GlobalStorage, start
-from .lib.gui import show_message
+from .lib.core import GlobalStorage, show_message, start
 from .lib.models import Note
 
 

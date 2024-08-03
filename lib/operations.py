@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional
 import sublime
 
 from ..utils.patterns.singleton.base import Singleton
-from .gui import _show_message, edit_settings, remove_status
+from .core import _show_message, edit_settings, remove_status
 from .models import Note
 
 
@@ -17,7 +17,7 @@ __all__ = [
     "NoteUpdater",
     "NoteDeleter",
     "MultipleNoteDownloader",
-    "OperationManager",
+    "Operator",
 ]
 
 logger = logging.getLogger()
@@ -153,7 +153,7 @@ class MultipleNoteDownloader(Operation):
         self.result = results
 
 
-class OperationManager(Singleton):
+class Operator(Singleton):
     __lock = Lock()
 
     # def __new__(cls, *args, **kwargs):
