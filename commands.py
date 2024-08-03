@@ -8,7 +8,7 @@ import sublime_plugin
 
 from ._config import CONFIG
 from .lib.core import GlobalStorage, sync_once
-from .lib.gui import close_view, on_note_changed, open_view, show_message, show_quick_panel
+from .lib.gui import QuickPanelPlaceholder, close_view, on_note_changed, open_view, show_message, show_quick_panel
 from .lib.models import Note
 from .lib.operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 
@@ -146,7 +146,7 @@ class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
             )
         first_sync = sync_times == 0
         if first_sync:
-            show_quick_panel(first_sync)
+            show_quick_panel(QuickPanelPlaceholder.FIRST_SYNC)
         global_storage.optimistic_update(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, sync_times + 1)
         global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, False)
 

@@ -21,6 +21,7 @@ __all__ = [
     "close_view",
     "clear_orphaned_filepaths",
     "on_note_changed",
+    "QuickPanelPlaceholder",
     "show_quick_panel",
 ]
 
@@ -137,7 +138,15 @@ def on_select(list__modificationDate: List[float], selected_index: int):
     view = open_view(filepath)
 
 
-def show_quick_panel(first_sync: bool = False):
+from enum import Enum
+
+
+class QuickPanelPlaceholder(str, Enum):
+    DEFAULT = "Select Note press key 'enter' to open"
+    FIRST_SYNC = "Sync complete. Press [super+shift+s] [super+shift+l] to display the note list again."
+
+
+def show_quick_panel(placeholder: str = QuickPanelPlaceholder.DEFAULT):
     if Note.tree.count <= 0:
         show_message(
             "No notes found. Please wait for the synchronization to complete, or press [super+shift+s, super+shift+c] to create a note."
@@ -156,10 +165,6 @@ def show_quick_panel(first_sync: bool = False):
 
     # TODO: Maybe doesn't need to run every time
     clear_orphaned_filepaths(list__filename)
-
-    placeholder = "Select Note press key 'enter' to open"
-    if first_sync:
-        placeholder = "Sync complete. Press [super+shift+s] [super+shift+l] to display the note list again."
 
     def show_panel():
         sublime.active_window().show_quick_panel(
