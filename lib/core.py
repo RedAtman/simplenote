@@ -16,6 +16,7 @@ class GlobalStorage(Singleton, OptimisticLockingDict):
     __mapper_key_type = {CONFIG.SIMPLENOTE_SYNC_TIMES_KEY: int, CONFIG.SIMPLENOTE_STARTED_KEY: bool}
 
     def optimistic_update(self, key, new_value):
+        """Validate the type of the value before it is stored"""
         _type = self.__mapper_key_type.get(key)
         if not _type is None:
             if not isinstance(new_value, _type):
