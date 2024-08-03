@@ -17,7 +17,7 @@ __all__ = [
     "NoteUpdater",
     "NoteDeleter",
     "MultipleNoteDownloader",
-    "OperationManager",
+    "Operator",
 ]
 
 logger = logging.getLogger()
@@ -153,7 +153,7 @@ class MultipleNoteDownloader(Operation):
         self.result = results
 
 
-class OperationManager(Singleton):
+class Operator(Singleton):
     __lock = Lock()
 
     # def __new__(cls, *args, **kwargs):

@@ -6,7 +6,7 @@ from .._config import CONFIG
 from ..utils.lock.thread import OptimisticLockingDict
 from ..utils.patterns.singleton.base import Singleton
 from .gui import edit_settings, remove_status, show_message
-from .operations import OperationManager
+from .operations import Operator
 
 
 logger = logging.getLogger()
@@ -28,12 +28,12 @@ class GlobalStorage(Singleton, OptimisticLockingDict):
         return super().optimistic_update(key, new_value)
 
 
-manager = OperationManager()
+operator = Operator()
 global_storage = GlobalStorage()
 
 
 def sync_once():
-    if not manager.running:
+    if not operator.running:
         sublime.run_command("simplenote_sync")
     else:
         logger.debug("Sync omitted")

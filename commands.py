@@ -10,7 +10,7 @@ from ._config import CONFIG
 from .lib.core import GlobalStorage, sync_once
 from .lib.gui import QuickPanelPlaceholder, close_view, on_note_changed, open_view, show_message, show_quick_panel
 from .lib.models import Note
-from .lib.operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
+from .lib.operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, Operator
 
 
 __all__ = [
@@ -24,7 +24,7 @@ __all__ = [
 
 logger = logging.getLogger()
 
-
+operator = Operator()
 global_storage = GlobalStorage()
 
 
@@ -58,7 +58,7 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
     def on_modified(self, view: sublime.View):
 
         def flush_saves():
-            if OperationManager().running:
+            if operator.running:
                 sublime.set_timeout(flush_saves, self.autosave_debounce_time)
                 return
             if not isinstance(note, Note):
@@ -117,7 +117,7 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
         note.content = view_content
         note_updater = NoteUpdater(note=note)
         note_updater.set_callback(on_note_changed)
-        OperationManager().add_operation(note_updater)
+        operator.add_operation(note_updater)
 
 
 class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
@@ -162,7 +162,7 @@ class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
             return
         note_indicator = NotesIndicator(sync_note_number=sync_note_number)
         note_indicator.set_callback(self.callback)
-        OperationManager().add_operation(note_indicator)
+        operator.add_operation(note_indicator)
 
 
 class SimplenoteCreateCommand(sublime_plugin.ApplicationCommand):
@@ -173,7 +173,7 @@ class SimplenoteCreateCommand(sublime_plugin.ApplicationCommand):
     def run(self):
         note_creator = NoteCreator()
         note_creator.set_callback(self.handle_new_note)
-        OperationManager().add_operation(note_creator)
+        operator.add_operation(note_creator)
 
 
 class SimplenoteDeleteCommand(sublime_plugin.ApplicationCommand):
@@ -194,4 +194,4 @@ class SimplenoteDeleteCommand(sublime_plugin.ApplicationCommand):
             return
         note_deleter = NoteDeleter(note=note)
         note_deleter.set_callback(self.handle_deletion, {"view": view})
-        OperationManager().add_operation(note_deleter)
+        operator.add_operation(note_deleter)
