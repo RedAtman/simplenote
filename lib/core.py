@@ -200,7 +200,7 @@ def show_quick_panel(first_sync: bool = False):
     for note in Note.tree.iter(reverse=True):
         if not isinstance(note, Note):
             raise Exception("note is not a Note: %s" % type(note))
-        if note.d.deleted == True:
+        if note.d.deleted:
             continue
         list__modificationDate.append(note.d.modificationDate)
         list__title.append(note.title)
