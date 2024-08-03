@@ -228,7 +228,8 @@ class Note:
             content = self._content
         except Exception:
             return CONFIG.SIMPLENOTE_DEFAULT_NOTE_TITLE
-        return self.get_title(content)
+        title, _ = self.get_title_body(content)
+        return title
 
     @property
     def title(self):
@@ -236,16 +237,26 @@ class Note:
             content = self.d.content
         except Exception:
             return CONFIG.SIMPLENOTE_DEFAULT_NOTE_TITLE
-        return self.get_title(content)
+        title, _ = self.get_title_body(content)
+        return title
+
+    @property
+    def body(self) -> str:
+        _, body = self.get_title_body(self.d.content)
+        return body
 
     @staticmethod
-    def get_title(content: str) -> str:
-        index = content.find("\n")
-        if index > -1:
-            title = content[:index]
+    def get_title_body(content: str) -> tuple[str, str]:
+        if not isinstance(content, str):
+            return CONFIG.SIMPLENOTE_DEFAULT_NOTE_TITLE, "empty body"
+        _content = content.split("\n", 1)
+        title, body = CONFIG.SIMPLENOTE_DEFAULT_NOTE_TITLE, "empty body"
+        if len(_content) == 1:
+            title = _content[0] or title
         else:
-            title = content or CONFIG.SIMPLENOTE_DEFAULT_NOTE_TITLE
-        return title
+            title = _content[0] or title
+            body = _content[1] or body
+        return title, body
 
     @property
     def _filename(self) -> str:
