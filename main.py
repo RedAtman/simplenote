@@ -3,16 +3,10 @@ import logging
 import sublime
 
 from ._config import CONFIG
-from .lib.core import GlobalStorage, show_message, start
-from .lib.models import Note
+from .lib.core import show_message, start
 
 
 logger = logging.getLogger()
-
-
-global_storage = GlobalStorage()
-global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, False)
-global_storage.optimistic_update(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, 0)
 
 
 def reload_if_needed():
@@ -36,12 +30,7 @@ def reload_if_needed():
 
 def plugin_loaded():
     # load_notes()
-    logger.debug(("Loaded notes number: ", Note.tree.count))
-
     settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
-    # logger.debug(("SETTINGS.__dict__: ", SETTINGS.__dict__))
-    # logger.debug(("SETTINGS.username: ", SETTINGS.get("username")))
-
     settings.clear_on_change("username")
     settings.clear_on_change("password")
     settings.add_on_change("username", reload_if_needed)
