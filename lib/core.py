@@ -40,11 +40,6 @@ class GlobalStorage(Singleton, OptimisticLockingDict):
         if not _type is None:
             if not isinstance(new_value, _type):
                 raise TypeError("Value of %s must be type %s, got %s" % (key, _type, type(new_value)))
-
-        if key == CONFIG.SIMPLENOTE_SYNC_TIMES_KEY:
-            import time
-
-            logger.warning((time.time(), key, new_value))
         return super().optimistic_update(key, new_value)
 
 
@@ -79,11 +74,6 @@ def start():
 
 def edit_settings():
     settings_file = CONFIG.SIMPLENOTE_SETTINGS_USER_FILE_PATH
-    logger.warning((type(settings_file), settings_file))
-    # with open(settings_file) as f:
-    #     settings = f.read()
-    #     logger.warning(settings)
-    # sublime.run_command("open_file", {"file": settings_file})
     sublime.run_command(
         "edit_settings",
         {
@@ -198,7 +188,6 @@ class QuickPanelPlaceholder(str, Enum):
 
 
 def show_quick_panel(first_sync: bool = False):
-    logger.warning(("show_quick_panel", first_sync))
     if Note.tree.count <= 0:
         show_message(
             "No notes found. Please wait for the synchronization to complete, or press [super+shift+s, super+shift+c] to create a note."
