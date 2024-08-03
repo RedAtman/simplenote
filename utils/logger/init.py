@@ -188,10 +188,10 @@ LOG_CONFIG = {
         "": {
             "handlers": [
                 # "default",
-                "info",
-                "warning",
-                "error",
-                "critical",
+                # "info",
+                # "warning",
+                # "error",
+                # "critical",
                 # Keep console at the end. for colored output only at stdout.
                 "console",
             ],

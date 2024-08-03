@@ -55,19 +55,25 @@ The "Packages" directory is located at:
 * OS X:
 
 ```bash
-~/Library/Application Support/Sublime Text/Packages
+~/Library/Application Support/Sublime Text/Packages/
+# or
+~/Library/Application Support/Sublime Text/Installed Packages/
 ```
 
 * Linux:
 
 ```bash
 ~/.config/sublime-text/Packages/
+# or
+~/.config/sublime-text/Installed Packages/
 ```
 
 * Windows:
 
 ```bash
 %APPDATA%/Sublime Text/Packages/
+# or
+%APPDATA%/Sublime Text/Installed Packages/
 ```
 
 ## Configuration
@@ -107,7 +113,7 @@ After setting them it will download the notes.
 Hit the shortcut again after the download is done (check the message bar) and it will **show a list of the notes**:
 ![Alt Notes](assets/images/note_list.png "Note List")
 
-It will download notes every time sublime text is launched and every now and then if the _sync_every_ configuration is enabled (has a positive value), so take a look at the bar to check the status.
+It will download notes every time sublime text is launched and every now and then if the _sync_interval_ configuration is enabled (has a positive value), so take a look at the bar to check the status.
 
 If a note gets updated from somewhere else
 ![Alt External Update](http://i.imgur.com/p9pAY6z.png "External Update")

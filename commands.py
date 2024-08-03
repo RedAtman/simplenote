@@ -7,8 +7,8 @@ import sublime
 import sublime_plugin
 
 from ._config import CONFIG
-from .lib.core import start
-from .lib.gui import clear_orphaned_filepaths, close_view, on_note_changed, open_view, show_message
+from .lib.core import GlobalStorage, sync_once
+from .lib.gui import close_view, on_note_changed, open_view, show_message, show_quick_panel
 from .lib.models import Note
 from .lib.operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, OperationManager
 
@@ -25,7 +25,7 @@ __all__ = [
 logger = logging.getLogger()
 
 
-SIMPLENOTE_STARTED = False
+global_storage = GlobalStorage()
 
 
 class SimplenoteViewCommand(sublime_plugin.EventListener):
@@ -34,7 +34,6 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
 
     @cached_property
     def autosave_debounce_time(self) -> int:
-        logger.warning(("CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH", CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH))
         settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         _autosave_debounce_time = settings.get("autosave_debounce_time", 1)
         if not isinstance(_autosave_debounce_time, int):
@@ -123,53 +122,11 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
 
 class SimplenoteListCommand(sublime_plugin.ApplicationCommand):
 
-    def on_select(self, selected_index: int):
-        if selected_index == -1:
-            return
-        note_id = self.list__modificationDate[selected_index]
-        selected_note = Note.tree.find(note_id)
-        if not isinstance(selected_note, Note):
-            show_message("Note not found: note id(%s), Please restart simplenote or sublime text." % note_id)
-            return
-        filepath = selected_note.open()
-        selected_note.flush()
-        view = open_view(filepath)
-
     def run(self):
-        global SIMPLENOTE_STARTED
-        if not SIMPLENOTE_STARTED:
-            if not start():
-                return
-
-        if Note.tree.count <= 0:
-            show_message(
-                "No notes found. Please wait for the synchronization to complete, or press [super+shift+s, super+shift+c] to create a note."
-            )
-        self.list__modificationDate: List[float] = []
-        self.list__title: List[str] = []
-        list__filename: List[str] = []
-        for note in Note.tree.iter(reverse=True):
-            if not isinstance(note, Note):
-                raise Exception("note is not a Note: %s" % type(note))
-            if note.d.deleted == True:
-                continue
-            self.list__modificationDate.append(note.d.modificationDate)
-            self.list__title.append(note.title)
-            list__filename.append(note.filename)
-
-        # TODO: Maybe doesn't need to run every time
-        clear_orphaned_filepaths(list__filename)
-
-        def show_panel():
-            sublime.active_window().show_quick_panel(
-                self.list__title,
-                self.on_select,
-                flags=sublime.KEEP_OPEN_ON_FOCUS_LOST,
-                # on_highlight=self.on_select,
-                placeholder="Select Note press key 'enter' to open",
-            )
-
-        sublime.set_timeout(show_panel, 50)
+        if Note.tree.count:
+            show_quick_panel()
+        if not global_storage.get(CONFIG.SIMPLENOTE_STARTED_KEY):
+            sync_once()
 
 
 class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
@@ -179,14 +136,32 @@ class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
             if note.need_flush:
                 on_note_changed(note)
 
+    def callback(self, updated_notes: List[Note]):
+        self.merge_note(updated_notes)
+
+        sync_times = global_storage.get(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY)
+        if not isinstance(sync_times, int):
+            raise TypeError(
+                "Value of %s must be type %s, got %s" % (CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, int, type(sync_times))
+            )
+        first_sync = sync_times == 0
+        if first_sync:
+            show_quick_panel(first_sync)
+        global_storage.optimistic_update(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, sync_times + 1)
+        global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, False)
+
     def run(self):
+        if global_storage.get(CONFIG.SIMPLENOTE_STARTED_KEY):
+            return
+        global_storage.optimistic_update(CONFIG.SIMPLENOTE_STARTED_KEY, True)
+
         settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
         sync_note_number = settings.get("sync_note_number", 1000)
         if not isinstance(sync_note_number, int):
             show_message("`sync_note_number` must be an integer. Please check settings file.")
             return
         note_indicator = NotesIndicator(sync_note_number=sync_note_number)
-        note_indicator.set_callback(self.merge_note)
+        note_indicator.set_callback(self.callback)
         OperationManager().add_operation(note_indicator)
 
 
