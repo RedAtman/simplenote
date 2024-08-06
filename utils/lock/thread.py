@@ -1,13 +1,13 @@
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __author__ = "redatman"
-__date__ = "2024-08-03"
+__date__ = "2024-08-06"
 # TODO: ResultProcess unable to collect results yet
 
 
 import logging
 from multiprocessing import Process
 from threading import Thread
-from typing import Callable
+from typing import Any, Callable
 
 
 logger = logging.getLogger()
@@ -42,125 +42,164 @@ ResultThread = type("ResultThread", (ResultExecutorMixin, Thread), {})
 
 
 class OptimisticLockingError(Exception):
-    def __init__(self, key: str) -> None:
-        super().__init__(f"Update failed due to concurrent modification: {key}")
+
+    def __init__(self, key: str, value: Any, version: int, expected_version: int) -> None:
+        super().__init__(
+            f"Failed to concurrent update key `{key}` to value `{value}`, version `{version}` expected version `{expected_version}`"
+        )
 
 
 class OptimisticLockingDict:
 
-    def __init__(self, executor_cls=ResultThread):
-        if issubclass(executor_cls, Process):
-            from multiprocessing import Lock, Manager
+    def __init__(self, executor_cls: Any = None):
 
-            self.data = Manager().dict()
-            self.lock = Lock()
-        elif issubclass(executor_cls, Thread):
+        if executor_cls is None:
             from threading import Lock
 
             self.data = {}
             self.lock = Lock()
+        elif issubclass(executor_cls, Process):
+            from multiprocessing import Lock, Manager
+
+            self.data = Manager().dict()
+            self.lock = Lock()
         else:
-            raise ValueError(
-                f"Unsupported executor class: {executor_cls}, must be either multiprocessing.Process or threading.Thread"
-            )
+            from threading import Lock
+
+            self.data = {}
+            self.lock = Lock()
+        # elif issubclass(executor_cls, Thread):
+        logger.info((id(self), id(self.data)))
 
     def _get(self, key):
-
+        """
+        Returns (value, version)
+        """
+        # logger.info(self.data)
         # logger.debug(("_get", os.getpid(), threading.current_thread().name, threading.current_thread().ident))
         with self.lock:
             if key in self.data:
-                value, version = self.data[key]
-                return value, version
+                return self.data[key]
             else:
                 return None, None
 
     def get(self, key):
-        logger.info(self.data)
         value, version = self._get(key)
         return value
 
     def _set(self, key, new_value, expected_version):
+        logger.info((key, new_value, expected_version))
         # logger.warning((id(self.data), self.data))
         # logger.debug(("_set", os.getpid(), threading.current_thread().name, threading.current_thread().ident))
         with self.lock:
             if key in self.data:
                 current_value, current_version = self.data[key]
-                if current_version == expected_version:
-                    self.data[key] = (new_value, current_version + 1)
-                    return True
-                else:
-                    return False
+                if current_version != expected_version:
+                    raise OptimisticLockingError(key, new_value, current_version, expected_version)
+                current_version += 1
             else:
-                # If the key does not exist, initialize it
-                self.data[key] = (new_value, 1)
-                return True
-
-    def set(self, key, new_value):
-        return self._set(key, new_value, 0)
+                # self.data[key] = (new_value, 0)
+                current_version = 0
+            self.data[key] = (new_value, current_version)
+            return self.data[key]
 
     def optimistic_update(self, key, new_value):
-        # logger.warning((id(self), id(self.data)))
-        # logger.warning((id(self), self))
-        # logger.debug(f">>: {key} = {new_value}")
-        value, version = self._get(key)
-        # time.sleep(0.1)
-        if value is not None:
-            success = self._set(key, new_value, version)
-            if success:
-                logger.debug(f"Update successful: {key} from {value} to {new_value}")
-            else:
-                logger.debug(f"Update failed due to concurrent modification: {key} to {new_value}")
-                raise OptimisticLockingError(key)
-        else:
+        # logger.warning((id(self), self, id(self.data)))
+        value, expected_version = version = self._get(key)
+        import time
+
+        time.sleep(0.1)
+        if value is None:
             # Initialize the key if it doesn't exist
-            self.set(key, new_value)
-            logger.debug(f"Initial set: {key} = {new_value}")
+            expected_version = 0
+            logger.debug(f"Set: {key} = {new_value}, expected_version = {expected_version}")
+        self._set(key, new_value, expected_version)
         return new_value
+
+    async def optimistic_update_async(self, key, new_value):
+        return self.optimistic_update(key, new_value)
 
     # def update(self, key, new_value):
     #     with self.lock:
     #         return self.optimistic_update(key, new_value)
 
 
-def test_multiple_updates(executor_cls):
-    optimistic_dict = OptimisticLockingDict(executor_cls)
-    logger.warning((id(optimistic_dict), id(optimistic_dict.data)))
+# Simulate concurrent updates
+# def _concurrent_update(optimistic_dict: OptimisticLockingDict, key: str):
+#     import time
+
+#     results = set()
+#     for i in range(6):
+#         result = optimistic_dict.optimistic_update(key, i)
+#         # result = partial_fn(i)
+#         # time.sleep(0.01)
+#         logger.debug(result)
+#         results.add(result)
+
+#     return results
+
+
+def _concurrent_update(partial_fn, get_result, key: str):
+    import time
+
+    results = set()
+    for i in range(6):
+        result = get_result(partial_fn, key, i)
+        # time.sleep(0.01)
+        logger.debug(result)
+        results.add(result)
+
+    return results
+
+
+def _test_concurrent_update(results):
+    from functools import partial
+
+    # last_result = optimistic_dict.get(key)
+    # expected_result = 5
+    # assert last_result == expected_result, f"Expected last value is {expected_result}, but got %s" % last_result
+    expected_results = {0, 1, 2, 3, 4, 5}
+    assert isinstance(
+        results, type(expected_results)
+    ), f"Expected results type is {type(expected_results)}, but got {type(results)}"
+    assert results == expected_results, f"Expected results is {expected_results}, but got {results}"
+
+
+def test_concurrent_update(executor_cls=None):
     key = "name"
 
-    # Initialize a key-value pair
-    optimistic_dict.optimistic_update(key, "value1")
+    def get_result(partial_fn, key, i):
+        return partial_fn(args=(key, i))
 
-    # tasks = []
-    results = set()
+    optimistic_dict = OptimisticLockingDict(executor_cls=executor_cls)
+    results = _concurrent_update(lambda args: optimistic_dict.optimistic_update(*args), get_result, key)
+    _test_concurrent_update(results)
 
-    # Simulate concurrent updates
-    def concurrent_update():
-        for i in range(6):
-            task = executor_cls(target=optimistic_dict.optimistic_update, args=("name", i))
-            import time
 
-            # time.sleep(0.01)
-            # tasks.append(task)
-            # task.start()
-            # result = task.join()
-            result = task.get_result()
-            logger.debug(result)
-            results.add(result)
+def test_multiple_concurrent_update(executor_cls):
+    from functools import partial
 
-    logger.info(results)
+    optimistic_dict = OptimisticLockingDict(executor_cls=executor_cls)
+    partial_fn = partial(executor_cls, target=optimistic_dict.optimistic_update)
+    key = "name"
 
-    concurrent_update()
+    def get_result(partial_fn, key, i):
+        task = partial_fn(args=(key, i))
+        task.start()
+        return task.join()
+
+    results = _concurrent_update(partial_fn=partial_fn, get_result=get_result, key=key)
     last_result = optimistic_dict.get(key)
     expected_result = 5
     assert last_result == expected_result, f"Expected last value is {expected_result}, but got %s" % last_result
-    expected_results = {0, 1, 2, 3, 4, 5}
-    assert results == expected_results, f"Expected results is {expected_results}, but got {results}"
+    _test_concurrent_update(results)
 
 
 def run_tests():
     tests = {
-        ("Test test_multiple_process_updates          ", test_multiple_updates, (ResultProcess,)),
-        ("Test test_multiple_thread_updates           ", test_multiple_updates, (ResultThread,)),
+        ("Test test_concurrent_update                 ", test_concurrent_update, ()),
+        # ("Test test_multiple_process_updates          ", test_multiple_concurrent_update, (ResultProcess,)),
+        # ("Test test_multiple_thread_updates           ", test_multiple_concurrent_update, (ResultThread,)),
     }
 
     for test_name, test, args in tests:
@@ -169,8 +208,10 @@ def run_tests():
             test(*args)
             logger.info(f"{prefix} Succeeded")
         except AssertionError as e:
+            logger.exception(e)
             logger.error(f"{prefix} Failed => {e}")
         except Exception as e:
+            logger.exception(e)
             logger.critical(f"{prefix} Exception => {e}")
 
 
