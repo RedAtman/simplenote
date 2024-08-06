@@ -1,9 +1,8 @@
 # Simplenote for Sublime Text
-========================
 
 Sublime Text 3 & 4 plugin of Simplenote, Use Sublime Text as a Simplenote client.
 
-```sh
+```shell
      _                 _                  _
  ___(_)_ __ ___  _ __ | | ___ _ __   ___ | |_ ___
 / __| | '_ ` _ \| '_ \| |/ _ \ '_ \ / _ \| __/ _ \
@@ -11,7 +10,6 @@ Sublime Text 3 & 4 plugin of Simplenote, Use Sublime Text as a Simplenote client
 |___/_|_| |_| |_| '__/|_|\___|_| |_|\___/ \__\___| for Sublime Text
                 |_|
 ```
---------
 
 * Forked from [quick_simplenote](https://github.com/sickmartian/quick_simplenote)
 * UPDATES:
@@ -19,23 +17,23 @@ Sublime Text 3 & 4 plugin of Simplenote, Use Sublime Text as a Simplenote client
     * Beautify the note list style:
         * Introduce QuickPanelItem for improved note representation
         * Enhance the quick panel to display notes with richer information, including:
-            - Note body snippet
-            - Version and update timestamp
-            - Tags (to be implemented in the future)
+            * Note body snippet
+            * Version and update timestamp
+            * Tags (to be implemented in the future)
+    * Markdown syntax support
+        * Automatically detect whether a note is in Markdown format and apply Simplenote's systemTags to inform other platform clients.
+        * Automatically formatting(need install `markdownlint`).
     * Bug fixes
 
 Planned features:
 
 * Replace the existing RESTful API with WebSocket to reduce network I/O.
 * Add a new note list display mode.
-* Automatically detect whether a note is in Markdown format and apply system tags to inform other platform clients.
 * Using sqlite as the database as notes local cache.
 * Maybe adding APIs for other notebook providers.
 ...
 
 ## Installation
-
----------
 
 ### Package Control
 
@@ -84,7 +82,6 @@ The "Packages" directory is located at:
 
 ## Configuration
 
----------
 You need to set up your Simplenote credentials before using the plugin. You can do this by going to the menu `Preferences -> Package Settings -> Simplenote -> Settings - User` and adding your email and password:
 
 ```json
@@ -95,8 +92,6 @@ You need to set up your Simplenote credentials before using the plugin. You can 
 ```
 
 ## Usage
-
----------
 
 ### Keyboard shortcut
 
@@ -111,7 +106,6 @@ You can customize it: Sublime Text > Settings > Package Control > Simplenote > K
 
 ## Overview
 
----------
 Hit Command+Shift+S (OSX) and then Command+Shift+L (OSX) or Windows+Shift+S (Windows) and then Windows+Shift+L (Windows) to start. First time it will open the settings to setup the credentials.
 After setting them it will download the notes.
 ![Alt Settings](assets/images/settings.png "Settings files")
@@ -119,7 +113,7 @@ After setting them it will download the notes.
 Hit the shortcut again after the download is done (check the message bar) and it will **show a list of the notes**:
 ![Alt Notes](assets/images/note_list.png "Note List")
 
-It will download notes every time sublime text is launched and every now and then if the _sync_interval_ configuration is enabled (has a positive value), so take a look at the bar to check the status.
+It will download notes every time sublime text is launched and every now and then if the *sync_interval* configuration is enabled (has a positive value), so take a look at the bar to check the status.
 
 If a note gets updated from somewhere else
 ![Alt External Update](http://i.imgur.com/p9pAY6z.png "External Update")
@@ -132,18 +126,37 @@ If you change something on sublime the note will be updated after you save the f
 You can **create a note** with Command+Shift+S and then Command+Shift+C (OSX) or Windows+Shift+S and then Windows+Shift+C (Windows), a name is assigned according to the first line of the note (remember to save!)
 ![Alt Sublime New Note on List](http://i.imgur.com/vH5POCU.png "Sublime New Note on List")
 
-> Markdown syntax support: If your note begins with "# ", it will automatically be marked as markdown format and displayed accordingly.
-![Alt Sublime Note displayed in markdown format](assets/images/note_markdown.png "Sublime New Note on List")
-
 You can **delete notes** with Command+Shift+S and then Command+Shift+D (OSX) or Windows+Shift+S and then Windows+Shift+D (Windows) while seeing the note
 ![Alt Sublime Delete Note](http://i.imgur.com/3htEmBm.png "Sublime Delete Note")
 
 All those commands are also accesible from the command palette:
 ![Alt Command Palette](assets/images/command_palette.png "Command Palette")
 
-## Conflict Resolution
+### Markdown syntax support
 
----------
+If your note begins with "#", it will automatically be marked as Markdown format and displayed accordingly
+![Alt Sublime Note displayed in Markdown format](assets/images/note_markdown.png "Sublime New Note on List")
+
+### Automatically formatting
+
+> Default auto enable Markdown auto formatting. You can disable it in the settings file: `markdown: {"formatting": false}`
+> Before using this plug-in, you must ensure that [markdownlint][CLI] is installed on your system. To install `markdownlint`, do the following:
+    > If you use HomeBrew: `brew install markdownlint-cli`
+    > Other method:
+        1. Install [Node.js](http://nodejs.org).
+        2. Install `markdownlint` by typing the following in a terminal: `npm install -g markdownlint-cli`
+        3. If you are using `nvm` and `zsh`, ensure that the line to load `nvm` is in
+           `.zshenv` and not `.zshrc`.
+        4. If you are using `zsh` and `oh-my-zsh`, do not load the `nvm` plug-in for
+           `oh-my-zsh`.
+
+**Markdownlint Configuration Files**
+
+Markdownlint configuration files (`.markdownlintrc`) are resolved first by
+checking the source directory of file being linted, then by checking the user
+`$HOME` path.
+
+## Conflict Resolution
 
 If a change is made on a different client
 ![Alt Remote change](http://i.imgur.com/WjRAccA.png "Remote change")
@@ -154,17 +167,15 @@ And in the middle of that change and a sync we have made local changes in sublim
 We get a dialog asking what we want to do to resolve the conflict
 ![Alt Dialog](http://i.imgur.com/FUI0cFw.png "Dialog")
 
-Selecting _Overwrite_ will discard overwrite the local changes with what the server has.
+Selecting *Overwrite* will discard overwrite the local changes with what the server has.
 
-Selecting _Cancel_ instead will leave alone the local file, if you save after this the result will most likely be a merge performed by simplenote between the local data and the remote data.
+Selecting *Cancel* instead will leave alone the local file, if you save after this the result will most likely be a merge performed by simplenote between the local data and the remote data.
 
-There are two options that automate the conflict resolution mode: _on_conflict_use_server_ and _on_conflict_leave_alone_ for _Overwrite_ and _Cancel_ respectively.
+There are two options that automate the conflict resolution mode: *on_conflict_use_server* and *on_conflict_leave_alone* for *Overwrite* and *Cancel* respectively.
 
 ## Beta Features
 
----------
-
-The options _autosave_debounce_time_ and title_extension_map are on beta.
+The options *autosave_debounce_time* and title_extension_map are on beta.
 
 Uncommenting **autosave_debounce_time** makes Sublime Text behave similarly to a simplenote client, saving data after each change. The value of the option tells the plugin how much to wait after the last pressed key to save the data.
 
@@ -177,8 +188,6 @@ Each row of the array takes a regex that the plugin uses against the note title 
 ![Alt Plaintasks use](http://i.imgur.com/VgGOlLf.png "Plaintasks use")
 
 ## About your data and bugs
-
----------
 
 This is a free piece of software and is distributed as is, it might contain bugs that due to the nature of the application might result in data loss, please make periodic backups of any important piece of information.
 
