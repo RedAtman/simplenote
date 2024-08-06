@@ -190,6 +190,22 @@ class TestNote(TestCase):
         assert validate_result.keys() == note.d._nest_dict().keys()
         assert "_modificationDate" in note.d.__dict__
 
+    def test_get_title_body(self):
+        list_content = [
+            # "",
+            # "SimplenoteTitle",
+            "SimplenoteTitle\nSimplenoteBody\nheader",
+            # "SimplenoteTitle\n\nSimplenoteBody\nheader",
+            "SimplenoteTitle\nSimplenoteBody\n\nheader",
+            # "SimplenoteTitle\n\nSimplenoteBody\n\nheader",
+            "SimplenoteTitle\nSimplenoteBody",
+            # "# SimplenoteTitle\n\nSimplenoteBody",
+        ]
+        for content in list_content:
+            title, body = Note.get_title_body(content)
+            assert title == "SimplenoteTitle"
+            assert body.startswith("SimplenoteBody")
+
 
 if __name__ == "__main__":
     main()
