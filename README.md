@@ -141,10 +141,10 @@ If your note begins with "#", it will automatically be marked as Markdown format
 
 > Default auto enable Markdown auto formatting. You can disable it in the settings file: `markdown: {"formatting": false}`
 
-Before using this plug-in, you must ensure that [markdownlint][CLI] is installed on your system. To install `markdownlint`, do the following:
+Before enabling this feature, you must ensure that [markdownlint][CLI] is installed on your system. To install `markdownlint`, do the following:
 
-* If you use HomeBrew: `brew install markdownlint-cli`.
-* Other method:
+* If you are use Homebrew: `brew install markdownlint-cli`.
+* Other case:
     1. Install [Node.js](http://nodejs.org).
     2. Install `markdownlint` by typing the following in a terminal: `npm install -g markdownlint-cli`
     3. If you are using `nvm` and `zsh`, ensure that the line to load `nvm` is in
