@@ -251,9 +251,10 @@ class SimplenoteSyncCommand(sublime_plugin.ApplicationCommand):
 
         sync_times = global_storage.get(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY)
         if not isinstance(sync_times, int):
-            raise TypeError(
-                "Value of %s must be type %s, got %s" % (CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, int, type(sync_times))
-            )
+            global_storage.optimistic_update(CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, 0)
+            # raise TypeError(
+            #     "Value of %s must be type %s, got %s" % (CONFIG.SIMPLENOTE_SYNC_TIMES_KEY, int, type(sync_times))
+            # )
         first_sync = sync_times == 0
         if first_sync:
             show_quick_panel(True)
