@@ -26,6 +26,25 @@ logger = logging.getLogger()
 VALID_CHARS = "-_.() %s%s" % (string.ascii_letters, string.digits)
 
 
+def get_file_type(title: str):
+    # Determine extension based on title
+    file_type, extension = None, ""
+    settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+    title_extension_map: Dict[str, Dict[str, str]] = settings.get("title_extension_map")
+    if not title_extension_map is None and isinstance(title_extension_map, dict):
+        # logger.info(
+        #     "`title_extension_map` must be a list. Please check settings file: %s."
+        #     % CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
+        # )
+        for key, item in title_extension_map.items():
+            pattern = re.compile(item["title_regex"], re.UNICODE)
+            if re.search(pattern, title):
+                file_type = key
+                extension = item["extension"]
+                break
+    return file_type, extension
+
+
 class _Note:
     """Data class for a note object"""
 
@@ -57,11 +76,12 @@ class _Note:
         self.deleted: bool = deleted
         self.shareURL: str = shareURL
         self.systemTags: List[str] = systemTags or []
-        self.content: str = content
+        self._content: str = content
+        setattr(self, "content", self._content)
         self.publishURL: str = publishURL
         self._modificationDate: float = modificationDate or time.time()
-        self.creationDate: float = creationDate or time.time()
         setattr(self, "modificationDate", self._modificationDate)
+        self.creationDate: float = creationDate or time.time()
 
     @property
     def modificationDate(self) -> float:
@@ -76,6 +96,17 @@ class _Note:
         #     raise Exception("modificationDate can only be set on Note objects, not %s" % type(note))
         # Note.tree.insert(value, note)
         self._modificationDate = value
+
+    @property
+    def content(self) -> str:
+        return self._content
+
+    @content.setter
+    def content(self, value: str) -> None:
+        self._content = value
+        file_type, extension = get_file_type(value)
+        if file_type and file_type == "markdown":
+            self.systemTags.append("markdown")
 
     def _nest_dict(self) -> Dict[str, Any]:
         return {filed: getattr(self, filed) for filed in self.__serialize_fields}
@@ -260,32 +291,18 @@ class Note:
 
     @property
     def _filename(self) -> str:
-        return self.get_filename(self.id, self._title)
+        file_type, extension = get_file_type(self._title)
+        return self.get_filename(self.id, self._title, extension)
 
     @property
     def filename(self) -> str:
-        filename = self.get_filename(self.id, self.title)
-        return filename
+        file_type, extension = get_file_type(self.title)
+        return self.get_filename(self.id, self.title, extension)
 
     @staticmethod
-    def get_filename(id: str, title: str) -> str:
-        settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
-        title_extension_map: List[Dict[str, str]] = settings.get("title_extension_map")
-        if not isinstance(title_extension_map, list):
-            logger.info(
-                "`title_extension_map` must be a list. Please check settings file: %s."
-                % CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH
-            )
+    def get_filename(id: str, title: str, extension: str) -> str:
         base = "".join(c for c in title if c in VALID_CHARS)
-        # Determine extension based on title
-        extension = ""
-        if title_extension_map:
-            for item in title_extension_map:
-                pattern = re.compile(item["title_regex"], re.UNICODE)
-                if re.search(pattern, title):
-                    extension = "." + item["extension"]
-                    break
-        return base + " (" + id + ")" + extension
+        return base + " (" + id + ")." + extension
 
     @property
     def _filepath(self) -> str:
