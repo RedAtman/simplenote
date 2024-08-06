@@ -1,18 +1,30 @@
 from functools import cached_property
 import logging
-from threading import Lock
+import os
+import subprocess
+import sys
+import tempfile
 from typing import Any, Dict, List
 
 import sublime
 import sublime_plugin
 
 from ._config import CONFIG
-from .lib.core import GlobalStorage, close_view, on_note_changed, open_view, show_message, show_quick_panel
+from .lib.core import (
+    GlobalStorage,
+    PreserveSelectionAndView,
+    close_view,
+    on_note_changed,
+    open_view,
+    show_message,
+    show_quick_panel,
+)
 from .lib.models import Note
 from .lib.operations import NoteCreator, NoteDeleter, NotesIndicator, NoteUpdater, Operator
 
 
 __all__ = [
+    "SimplenoteMarkdownFormattingCommand",
     "SimplenoteViewCommand",
     "SimplenoteListCommand",
     "SimplenoteSyncCommand",
@@ -25,6 +37,99 @@ logger = logging.getLogger()
 
 operator = Operator()
 global_storage = GlobalStorage()
+
+
+# class SimplenoteTextChangeCommand(sublime_plugin.TextChangeListener):
+
+#     def on_text_changed(self, view: sublime.View):
+#         logger.warn("on_text_changed")
+
+
+# class SimplenoteViewEventCommand(sublime_plugin.ViewEventListener):
+
+#     def on_pre_save(self, view: sublime.View):
+#         logger.warn("on_pre_save")
+
+
+class SimplenoteMarkdownFormattingCommand(sublime_plugin.TextCommand):
+    def view_is_markdown(self):
+        try:
+            return self.view.score_selector(0, "text.html.markdown") > 0
+            return self.view.match_selector(view.sel()[0].begin(), "text.html.markdown")
+        except IndexError:
+            return False
+
+    def is_enabled(self):
+        """Only allow markdown documents."""
+        settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
+        markdown = settings.get("markdown")
+        formatting = False
+        if markdown and isinstance(markdown, dict):
+            formatting = markdown.get("formatting")
+        return formatting and self.view_is_markdown()
+
+    def read_result(self, stdout):
+        r = str(stdout, encoding="utf-8")
+        return r.strip().replace("\r", "").replace("(stdin):", "")
+
+    def run(self, edit: sublime.Edit, *args, **kwargs):
+        with PreserveSelectionAndView(self.view):
+            self._run(edit, *args, **kwargs)
+
+    def _run(self, edit: sublime.Edit, *args, **kwargs):
+        # logger.warning((args, kwargs, self.view.size(), os.getcwd()))
+        document = sublime.Region(0, self.view.size())
+        text_content = self.view.substr(document)
+        title, body = Note.get_title_body(text_content)
+        _body = body.encode("utf-8")
+
+        popen_startup_info = None
+        if sys.platform in ("win32", "cygwin"):
+            popen_startup_info = subprocess.STARTUPINFO()
+            popen_startup_info.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
+            popen_startup_info.wShowWindow = subprocess.SW_HIDE
+
+        file_obj, temp_filename = tempfile.mkstemp(suffix=".py")
+        temp_handle = os.fdopen(file_obj, "wb" if sys.version_info >= (3, 0) else "w")
+        temp_handle.write(_body)
+        temp_handle.close()
+
+        # command = ["~/.rbenv/shims/mdl", "-c", "~/.markdownlintrc"]
+        command = ["markdownlint", "-c", "~/.markdownlintrc", temp_filename, "-f"]
+        try:
+            with subprocess.Popen(
+                command,
+                bufsize=1024 * 1024 + len(_body),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                startupinfo=popen_startup_info,
+            ) as process:
+                # process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                stdout, stderr = process.communicate()
+                if stderr:
+                    result = False
+                    error = self.read_result(stderr)
+                    outputtxt = error
+                else:
+                    result = self.read_result(stdout)
+                    outputtxt = result
+                logger.info((outputtxt))
+                body = ""
+                with open(temp_filename, "r") as f:
+                    body = f.read()
+                os.remove(temp_filename)
+                content = title + "\n" + body
+                # self.view.set_read_only(False)
+                self.view.replace(edit, document, content)
+                # self.view.set_read_only(True)
+                self.view.set_status("simplenote_status_messages", "Simplenote: Markdown formatting complete")
+        except FileNotFoundError as e:
+            logger.error(e)
+            self.view.set_status(f"simplenote_status_messages", "Simplenote: {e}")
+            # _show_message(str(e))
+        except Exception as e:
+            logger.error(e)
 
 
 class SimplenoteViewCommand(sublime_plugin.EventListener):
@@ -54,45 +159,46 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
         assert isinstance(note, Note), "note is not a Note: %s" % type(note)
         # note.close()
 
-    def on_modified(self, view: sublime.View):
+    # def on_modified(self, view: sublime.View):
+    #     logger.warn("on_modified")
 
-        def flush_saves():
-            if operator.running:
-                sublime.set_timeout(flush_saves, self.autosave_debounce_time)
-                return
-            if not isinstance(note, Note):
-                return
+    #     def flush_saves():
+    #         if operator.running:
+    #             sublime.set_timeout(flush_saves, self.autosave_debounce_time)
+    #             return
+    #         if not isinstance(note, Note):
+    #             return
 
-            for entry in SimplenoteViewCommand.waiting_to_save:
-                if entry["note_id"] == note.id:
+    #         for entry in SimplenoteViewCommand.waiting_to_save:
+    #             if entry["note_id"] == note.id:
 
-                    with entry["lock"]:
-                        entry["count"] = entry["count"] - 1
-                        if entry["count"] == 0:
-                            view.run_command("save")
-                    break
+    #                 with entry["lock"]:
+    #                     entry["count"] = entry["count"] - 1
+    #                     if entry["count"] == 0:
+    #                         view.run_command("save")
+    #                 break
 
-        view_filepath = view.file_name()
-        if not isinstance(view_filepath, str):
-            return
-        note = Note.get_note_from_filepath(view_filepath)
-        if not isinstance(note, Note):
-            return
+    #     view_filepath = view.file_name()
+    #     if not isinstance(view_filepath, str):
+    #         return
+    #     note = Note.get_note_from_filepath(view_filepath)
+    #     if not isinstance(note, Note):
+    #         return
 
-        found = False
-        for entry in SimplenoteViewCommand.waiting_to_save:
-            if entry["note_id"] == note.id:
-                with entry["lock"]:
-                    entry["count"] = entry["count"] + 1
-                found = True
-                break
-        if not found:
-            new_entry = {}
-            new_entry["note_id"] = note.id
-            new_entry["lock"] = Lock()
-            new_entry["count"] = 1
-            SimplenoteViewCommand.waiting_to_save.append(new_entry)
-        sublime.set_timeout(flush_saves, self.autosave_debounce_time)
+    #     found = False
+    #     for entry in SimplenoteViewCommand.waiting_to_save:
+    #         if entry["note_id"] == note.id:
+    #             with entry["lock"]:
+    #                 entry["count"] = entry["count"] + 1
+    #             found = True
+    #             break
+    #     if not found:
+    #         new_entry = {}
+    #         new_entry["note_id"] = note.id
+    #         new_entry["lock"] = Lock()
+    #         new_entry["count"] = 1
+    #         SimplenoteViewCommand.waiting_to_save.append(new_entry)
+    #     sublime.set_timeout(flush_saves, self.autosave_debounce_time)
 
     # def on_load(self, view: sublime.View):
     #     settings = sublime.load_settings(CONFIG.SIMPLENOTE_SETTINGS_FILE_PATH)
@@ -102,7 +208,12 @@ class SimplenoteViewCommand(sublime_plugin.EventListener):
     #         return
     #     view.set_syntax_file(note_syntax)
 
+    def on_pre_save(self, view: sublime.View):
+        logger.warn(("on_pre_save"))
+        view.run_command("simplenote_markdown_formatting")
+
     def on_post_save(self, view: sublime.View):
+        logger.warn(("on_post_save", view.selection.__dict__))
         view_filepath = view.file_name()
         if not isinstance(view_filepath, str):
             return

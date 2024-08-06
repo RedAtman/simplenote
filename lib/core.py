@@ -2,6 +2,7 @@ from datetime import datetime
 from functools import partial
 import logging
 import os
+import sys
 from threading import Thread
 from typing import List, Optional
 
@@ -29,6 +30,7 @@ __all__ = [
     "clear_orphaned_filepaths",
     "QuickPanelPlaceholder",
     "show_quick_panel",
+    "PreserveSelectionAndView",
 ]
 
 
@@ -243,3 +245,59 @@ def show_quick_panel(first_sync: bool = False):
         )
 
     sublime.set_timeout(show_panel, 500)
+
+
+if not sys.version_info >= (3, 0):
+
+    class PreserveSelectionAndView:
+        """
+        Context manager to preserve selection and view when text is replaced.
+
+        Sublime Text 2 sucks at this, hence the manual lifting.
+        """
+
+        def __init__(self, view):
+            """Preserve the view (single open document)."""
+            self.view = view
+
+        def __enter__(self):
+            """Save selection and view."""
+            self.sel = list(self.view.sel())
+            self.visible_region_begin = self.view.visible_region().begin()
+            self.viewport_position = self.view.viewport_position()
+            return self
+
+        def __exit__(self, type, value, traceback):
+            """Restore selection."""
+            self.view.sel().clear()
+            for s in self.sel:
+                self.view.sel().add(s)
+
+            # restore view (this is somewhat cargo cultish, not sure why a
+            # single statement does not suffice)
+            self.view.show(self.visible_region_begin)
+            self.view.set_viewport_position(self.viewport_position)
+
+else:
+
+    class PreserveSelectionAndView:
+        """
+        Context manager to preserve selection and view when text is replaced.
+
+        Sublime Text 3 already does a good job preserving the view.
+        """
+
+        def __init__(self, view):
+            """Preserve view."""
+            self.view = view
+
+        def __enter__(self):
+            """Save selection."""
+            self.sel = list(self.view.sel())
+            return self
+
+        def __exit__(self, type, value, traceback):
+            """Restore selection."""
+            self.view.sel().clear()
+            for s in self.sel:
+                self.view.sel().add(s)
