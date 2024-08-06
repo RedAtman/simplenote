@@ -4,6 +4,7 @@ sublime_api.py
 # *.sublime-settings
 *.sublime-settings.example
 Markdown.tmLanguage
+.markdownlintrc
 *.pkl
 token.json
 tmp/

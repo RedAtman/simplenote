@@ -39,7 +39,7 @@ _SETTINGS_TEMPLATE = """
     // --------------------------------
     // Sync when sublime text starts:
     ,"autostart": true
-    // Sync automatically (in seconds)
+    // Sync automatically interval (in seconds)
     ,"sync_interval": 30
     // Number of notes synchronized each time
     ,"sync_note_number": 1000
@@ -60,15 +60,23 @@ _SETTINGS_TEMPLATE = """
     // Which file extension should the temporal files use?
     // This allows you to interact with other plugins such as
     // PlainTasks defining an extension for certain note title
-    ,"title_extension_map": [{
-        "title_regex": "[ST]"
-        ,"extension": "todo"
-    },
-    {
-        "title_regex": "# "
-        ,"extension": "md"
-        ,"systemTags": ["markdown"]
-    }]
+    ,"title_extension_map": {
+        "markdown": {
+            "title_regex": "#"
+            ,"extension": "md"
+        }
+        ,"todo": {
+            "title_regex": "[ST]"
+            ,"extension": "todo"
+        }
+    }
+    // --------------------------------
+    // Markdown
+    // --------------------------------
+    ,"markdown": {
+        // Auto Formatting
+        "formatting": true
+    }
 }
 """
 
