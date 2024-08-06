@@ -76,10 +76,12 @@ norecursedirs = [
 [tool.isort]
 # reference: https://pycqa.github.io/isort/docs/configuration/options.html
 # settings_file = ".isort.cfg"
-profile = "black"
-# reverse_sort = true
 atomic = true
 line_length = 120
+skip_gitignore = true
+profile = "black"
+src_paths = ["isort", "test"]
+# reverse_sort = true
 # tuple_bracket_spacing = true
 # tuple_brackets = false
 force_grid_wrap = 0
@@ -87,23 +89,16 @@ force_grid_wrap = 0
 # 是否按照嵌套顺序分组导入
 force_sort_within_sections = true
 # 导入顺序 例如: 在项目中应该先导入标准库、然后是第三方库、最后是自己的模块
-sections = [
-    "FUTURE",
-    "STDLIB",
-    "DJANGO",
-    "THIRDPARTY",
-    "FIRSTPARTY",
-    "LOCALFOLDER",
-]
-# no_lines_before = ["FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+# no_lines_before = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 # 是否根据文件中导入语句的顺序对导入进行排序
 force_single_line = false
 # 是否在导入语句过多时分割成多行
 combine_as_imports = false
-known_third_party = ["django", "rest_framework"]
-known_first_party = ["my_module1"]
-known_local_folder = ["my_module3"]
-known_django = "django"
+# known_third_party = ["django", "rest_framework"]
+# known_first_party = ["black", "blib2to3", "blackd", "_black_version"]
+# known_local_folder = ["my_module3"]
+# known_django = "django"
 lines_after_imports = 2
 lines_between_types = 1
 # multi_line = 3
@@ -116,6 +111,8 @@ skip = [
     "static",
     "templates",
     'node_modules',
+    "build",
+    ".tox",
     'venv',
     'env',
     "apps/*/migrations",
@@ -123,7 +120,7 @@ skip = [
     "apps/*/templates",
 ]
 extend_skip = ['.md', '.json', '.gitignore', '.dockerignore']
-skip_glob = ['docs/*']
+skip_glob = ['docs/*', "tests/data", "profiling"]
 extend_skip_glob = ['my_*_module.py']
-# 是否在导入中添加导入时间戳注释: 要求 isort=>5.5.0
+# 在导入中添加导入时间戳注释: 要求 isort=>5.5.0
 # annotate = true
