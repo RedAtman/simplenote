@@ -221,7 +221,7 @@ def show_quick_panel(first_sync: bool = False):
             note,
             note.title,
             [
-                note.body,
+                note.body[:120] + "..." if len(note.body) > 120 else note.body,
                 # f"tags: {note.d.tags}",
             ],  # type: ignore
             f"version:{note.v} | update:{datetime.fromtimestamp(note.d.modificationDate).strftime('%Y-%m-%d %H:%M:%S')}",
